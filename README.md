@@ -3,7 +3,7 @@
 ![Prometheus82 Banner](https://via.placeholder.com/800x200/0D1117/FFFFFF?text=Prometheus82)
 
 ## Description
-Prometheus82 is an Arduino-based electromechanical device project for impact testing. The device uses a solenoid to create controlled impulses and measure physical parameters.
+Prometheus 82 is an open-source, Arduino-based electromechanical device for testing gamepad input latency. It uses a solenoid to simulate button presses and stick movements, paired with Python software to measure the delay between physical actions and system response. Perfect for gamepad enthusiasts, developers, and researchers.
 
 ## Test bench
 The test bench itself must be printed on a 3D printer from PLA or PETG plastic. You can download the STL files of the project on the website [https://www.thingiverse.com/thing:3079719](https://www.thingiverse.com/cakama3a/designs)
