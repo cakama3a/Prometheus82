@@ -16,15 +16,8 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 
 ## Assembly Diagram
 
-### Graphical Diagram (without connected solenoid and end button)
-<div align="center">
-  <img src="https://github.com/user-attachments/assets/8c17d8f9-cce3-47f8-83fb-9892acff7fa0" alt="Prometheus82 Graphical Diagram" width="700">
-</div>
-
 ### Complete Device Diagram
-<div align="center">
-  <img src="https://github.com/user-attachments/assets/7f40e521-a6a4-4bab-9374-84d5d2b56029" alt="Prometheus82 Complete Diagram" width="700">
-</div>
+<img src="https://github.com/user-attachments/assets/7f40e521-a6a4-4bab-9374-84d5d2b56029" alt="Prometheus82 Complete Diagram">
 
 ## Components for Assembly
 
