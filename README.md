@@ -5,6 +5,10 @@
 ## Description
 Prometheus82 is an Arduino-based electromechanical device project for impact testing. The device uses a solenoid to create controlled impulses and measure physical parameters.
 
+## Test bench
+The test bench itself must be printed on a 3D printer from PLA or PETG plastic. You can download the STL files of the project on the website [https://www.thingiverse.com/thing:3079719](https://www.thingiverse.com/cakama3a/designs)
+![PadTester v106 (1)](https://github.com/user-attachments/assets/a75fc10b-8110-416a-8f8a-26b7f26e1005)
+
 ## Assembly Diagram
 
 ### Graphical Diagram (without connected solenoid and end button)
