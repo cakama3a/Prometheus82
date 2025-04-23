@@ -42,7 +42,7 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 ### Construction and Connection Materials
 | № | Component Name | Price | Link |
 |---|----------------|-------|------|
-| 1 | Silver Plated Copper Wire 38AWG | $1.04 | [AliExpress](https://s.click.aliexpress.com/e/_ooeTIil) |
+| 1 | Silver Plated Copper Wire 38AWG | $1.04 | --- |
 | 2 | UL2468 2 Pins Electrical Wire 30AWG | $1.33 | [AliExpress](https://s.click.aliexpress.com/e/_oDjYJVX) |
 | 3 | Wire Connector Set 2.54mm | $3.10 | [AliExpress](https://s.click.aliexpress.com/e/_oElq2W9) |
 | 4 | Solder Cable 24AWG 8cm | $2.32 | [AliExpress](https://s.click.aliexpress.com/e/_olvnxRB) |
@@ -54,9 +54,6 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 | 10 | Brass Heat Insert Nut M3 | $3.59 | [AliExpress](https://s.click.aliexpress.com/e/_oCiDrMZ) |
 
 **Total component cost: ~$59.16**
-
-> [!NOTE]
-> For the Wire Connector Set 2.54mm, an [alternative](https://s.click.aliexpress.com/e/_oEsNba9) is available for $1.75.
 
 ## Required Tools
 
