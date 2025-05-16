@@ -1,6 +1,6 @@
 # Prometheus82
 
-![Prometheus82 Banner](https://via.placeholder.com/800x200/0D1117/FFFFFF?text=Prometheus82)
+![image](https://github.com/user-attachments/assets/c381a466-5ec2-460f-a508-51514bf5bfd5)
 
 ## Description
 Prometheus 82 is an open-source, Arduino-based electromechanical device for testing gamepad input latency. It uses a solenoid to simulate button presses and stick movements, paired with Python software to measure the delay between physical actions and system response. Perfect for gamepad enthusiasts, developers, and researchers.
