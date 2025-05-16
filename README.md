@@ -1,4 +1,4 @@
-# Prometheus82
+# Prometheus 82
 > [!WARNING]
 > The page is still under development and the data is not yet complete.
 
