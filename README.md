@@ -25,25 +25,25 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 ### Main Electronic Components
 | № | Component Name | Price | Link |
 |---|----------------|-------|------|
-| 1 | Solenoid TAU-0530T 6V | $1.58 | [AliExpress](https://s.click.aliexpress.com/e/_olUL07J) |
+| 1 | Solenoid TAU-0530T 12V | $1.58 | [AliExpress](https://s.click.aliexpress.com/e/_olUL07J) |
 | 2 | Arduino Nano 3.0 ATMEGA328P TypeC | $2.79 | [AliExpress](https://s.click.aliexpress.com/e/_oDnDkCb) |
 | 3 | Transistor IRLB8721PBF | $2.08 | [AliExpress](https://s.click.aliexpress.com/e/_oEGL679) |
 | 4 | Kailh Mute Button 6*6*7.3mm | $2.24 | [AliExpress](https://s.click.aliexpress.com/e/_om11hvf) |
-| 5 | Diode P6KE8CA2 | $1.80 | [AliExpress](https://s.click.aliexpress.com/e/_omyXoF5) |
-| 6 | Capacitor 10V470uF | $1.68 | [AliExpress](https://s.click.aliexpress.com/e/_oDBudqn) |
+| 5 | Diode P6KE18A | $1.80 | [AliExpress](https://s.click.aliexpress.com/e/_oFMCugb) |
+| 6 | Capacitor 25V 680uF | $1.68 | [AliExpress](https://www.aliexpress.com/item/1005003020234581.html) |
 | 7 | PCB Circuit Board 4x6 | $0.56 | [AliExpress](https://s.click.aliexpress.com/e/_opZCvzR) |
 | 8 | Resistor Set | $1.28 | [AliExpress](https://s.click.aliexpress.com/e/_oBNMBNX) |
 
 ### Power and Charging
 | № | Component Name | Price | Link |
 |---|----------------|-------|------|
-| 1 | 503450/523450 1000mAh 3.7V Polymer Lithium (x2) | $9.83 | [AliExpress](https://s.click.aliexpress.com/e/_ooQ8rYN) |
-| 2 | 2S LiPo Polymer Li-Ion Charger | $1.61 | [AliExpress](https://s.click.aliexpress.com/e/_oBXvLqP) |
+| 1 | 2S Balanced | $0.53 | [AliExpress](https://s.click.aliexpress.com/e/_onEbl6L) |
+| 2 | 20W Charger | $6.61 | [AliExpress](https://s.click.aliexpress.com/e/_okS7gqX) |
 
 ### Construction and Connection Materials
 | № | Component Name | Price | Link |
 |---|----------------|-------|------|
-| 1 | Silver Plated Copper Wire 38AWG | $1.04 | --- |
+| 1 | Silver Plated Copper Wire 38AWG | $1.04 | I'm still looking for the best option |
 | 2 | UL2468 2 Pins Electrical Wire 30AWG | $1.33 | [AliExpress](https://s.click.aliexpress.com/e/_oDjYJVX) |
 | 3 | Wire Connector Set 2.54mm | $3.10 | [AliExpress](https://s.click.aliexpress.com/e/_oElq2W9) |
 | 4 | Solder Cable 24AWG 8cm | $2.32 | [AliExpress](https://s.click.aliexpress.com/e/_olvnxRB) |
