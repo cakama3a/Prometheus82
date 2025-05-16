@@ -71,16 +71,14 @@ For successful assembly, you will need the following tools:
 
 ## Assembly Instructions
 
-[Detailed assembly instructions can be found here]
+[Detailed assembly instructions can be found here] - In development
 
 ## Software Installation
 
-[Instructions for downloading and configuring the software]
+[Instructions for downloading and configuring the software] - In development
 
 ## License
-
-MIT License
+This project is licensed under the Prometheus 82 License. It may be used for non-commercial purposes only. Any derivative works must include a prominent notice crediting "Prometheus 82 by John Punch (https://gamepadla.com)" in the visible part of the program. See the [LICENSE](LICENSE) file for details.
 
 ## Contact
-
-[Your contact information for feedback]
+john@gamepadla.com
