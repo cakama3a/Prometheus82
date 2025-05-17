@@ -39,7 +39,7 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 ### Power and Charging
 | № | Component Name | Price | Link |
 |---|----------------|-------|------|
-| 1 | 2S Balanced | $0.53 | [AliExpress](https://s.click.aliexpress.com/e/_onEbl6L) |
+| 1 | Decoy Trigger | $1.51 | [AliExpress](https://s.click.aliexpress.com/e/_oBGoF71) |
 | 2 | 20W Charger | $6.61 | [AliExpress](https://s.click.aliexpress.com/e/_okS7gqX) |
 
 ### Construction and Connection Materials
