@@ -86,3 +86,6 @@ This project is licensed under the Prometheus 82 License. It may be used for non
 
 ## Contact
 john@gamepadla.com
+
+## Donation
+https://ko-fi.com/gamepadla
