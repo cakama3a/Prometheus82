@@ -1,9 +1,11 @@
-# Prometheus82
+# Prometheus 82
+> [!WARNING]
+> The page is still under development and the data is not yet complete.
 
 ![image](https://github.com/user-attachments/assets/c381a466-5ec2-460f-a508-51514bf5bfd5)
 
 ## Description
-Prometheus 82 is an open-source, Arduino-based electromechanical device for testing gamepad input latency. It uses a solenoid to simulate button presses and stick movements, paired with Python software to measure the delay between physical actions and system response. Perfect for gamepad enthusiasts, developers, and researchers.
+Prometheus 82 is an open-source, Arduino-based electromechanical device designed for testing gamepad input latency. It utilizes a solenoid to simulate button presses and stick movements, paired with Python software that mimics a game engine to precisely measure the delay between physical actions and system response. This testing method is an advanced alternative to high-speed camera testing, eliminating monitor input lag and the need for frame counting. Ideal for gamepad enthusiasts, developers, and researchers. [Reddit article](https://www.reddit.com/r/Controller/comments/1i5uglp/gamepad_punch_tester_a_new_method_for_testing/) 
 
 ## How to Get Prometheus 82
 You have two options to obtain a Prometheus 82 device:  
@@ -30,7 +32,7 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 | 3 | Transistor IRLB8721PBF | $2.08 | [AliExpress](https://s.click.aliexpress.com/e/_oEGL679) |
 | 4 | Kailh Mute Button 6*6*7.3mm | $2.24 | [AliExpress](https://s.click.aliexpress.com/e/_om11hvf) |
 | 5 | Diode P6KE18A | $1.80 | [AliExpress](https://s.click.aliexpress.com/e/_oFMCugb) |
-| 6 | Capacitor 25V 680uF | $1.68 | [AliExpress](https://www.aliexpress.com/item/1005003020234581.html) |
+| 6 | Capacitor 25V 680uF 10x12 | $4.12 | [AliExpress](https://www.aliexpress.com/item/1005003020234581.html) |
 | 7 | PCB Circuit Board 4x6 | $0.56 | [AliExpress](https://s.click.aliexpress.com/e/_opZCvzR) |
 | 8 | Resistor Set | $1.28 | [AliExpress](https://s.click.aliexpress.com/e/_oBNMBNX) |
 
@@ -71,16 +73,14 @@ For successful assembly, you will need the following tools:
 
 ## Assembly Instructions
 
-[Detailed assembly instructions can be found here]
+[Detailed assembly instructions can be found here] - In development
 
 ## Software Installation
 
-[Instructions for downloading and configuring the software]
+[Instructions for downloading and configuring the software] - In development
 
 ## License
-
-MIT License
+This project is licensed under the Prometheus 82 License. It may be used for non-commercial purposes only. Any derivative works must include a prominent notice crediting "Prometheus 82 by John Punch (https://gamepadla.com)" in the visible part of the program. See the [LICENSE](LICENSE) file for details.
 
 ## Contact
-
-[Your contact information for feedback]
+john@gamepadla.com
