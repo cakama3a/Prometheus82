@@ -21,6 +21,8 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 ### Complete Device Diagram
 ![image](https://github.com/user-attachments/assets/39a846e3-c9c2-45e3-8988-d850116b56fa)
 
+### Visually clear scheme
+![Prometheus82](https://github.com/user-attachments/assets/bb9c2d93-a70e-4c45-9feb-41d506592edf)
 
 ## Components for Assembly
 
