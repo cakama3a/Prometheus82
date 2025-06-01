@@ -12,7 +12,7 @@ The Prometheus 82 solenoid has its own inherent delays that are part of the test
 Video demonstration of solenoid speed measurement: https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/
 
 - For analog sticks: The solenoid adds approximately 4ms of delay
-- For buttons: The solenoid adds 1-2ms of delay, but the code includes a delay compensation mechanism to complement the GPDL tester (considered the most accurate device for button measurement)
+- For buttons: The solenoid adds 1-2ms of delay, but the code includes a delay compensation mechanism to complement the [GPDL](https://github.com/cakama3a/GPDL) tester (considered the most accurate device for button measurement)
 
 Actual delays after compensation:
 - Buttons: ~0.2-0.7ms
