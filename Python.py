@@ -22,7 +22,7 @@ TEST_ITERATIONS = 500           # Number of test iterations
 PULSE_DURATION = 40             # Solenoid pulse duration (ms)
 
 # Variables that should not be changed without need
-COOLING_PERIOD_MINUTES = 8      # Cooling period in minutes
+COOLING_PERIOD_MINUTES = 10      # Cooling period in minutes
 COOLING_PERIOD_SECONDS = COOLING_PERIOD_MINUTES * 60  # Cooling period in seconds
 LOWER_QUANTILE = 0.05           # Lower quantile for filtering
 UPPER_QUANTILE = 0.95           # Upper quantile for filtering
