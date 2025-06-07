@@ -91,8 +91,8 @@ For successful assembly, you will need the following tools:
 | 6 | 3D Printer | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
 
 ## Assembly Instructions
-
-[Detailed assembly instructions can be found here] - In development
+### Main board assembly
+Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
 
 ## Software Installation
 
