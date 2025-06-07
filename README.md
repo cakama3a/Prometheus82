@@ -39,7 +39,7 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 ![Prometheus82](https://github.com/user-attachments/assets/055e337a-9f6a-4397-af42-172fb8b6794c)
 
 
-### Finished product (Without case and solenoid with sensor)
+### Finished product (May not be relevant, see the scheme above)
 ![image](https://github.com/user-attachments/assets/0d869e9c-6ba7-44e7-b669-271fb21384e4)
 
 
