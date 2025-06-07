@@ -32,10 +32,11 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 ## Assembly Diagram
 
 ### Complete Device Diagram
-![image](https://github.com/user-attachments/assets/39a846e3-c9c2-45e3-8988-d850116b56fa)
+![image](https://github.com/user-attachments/assets/5768d50b-eec4-45a8-af1f-702fe822724b)
+
 
 ### Visually clear scheme
-![Prometheus82](https://github.com/user-attachments/assets/ad4d62e9-7cb6-4e6e-8a57-a29958b17a57)
+![Prometheus82](https://github.com/user-attachments/assets/055e337a-9f6a-4397-af42-172fb8b6794c)
 
 
 ### Finished product (Without case and solenoid with sensor)
