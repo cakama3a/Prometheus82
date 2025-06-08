@@ -5,7 +5,7 @@ setlocal EnableDelayedExpansion
 :: CONFIGURATION - Change these parameters as needed
 :: =====================================================================
 :: OUTPUT_NAME will be set dynamically as the folder name
-set "USE_NOCONSOLE=false"                     :: Change to true to hide console
+set "USE_NOCONSOLE=false"                    :: Change to true to hide console
 set "GENERATE_CERTIFICATE=true"              :: Generate self-signed certificate?
 set "CERT_COMPANY=Gamepadla"                 :: Company name for certificate
 set "CERT_EMAIL=john@gamepadla.com"          :: Email for certificate (no escaping here)
