@@ -11,7 +11,7 @@ set "CERT_COMPANY=Gamepadla"                 :: Company name for certificate
 set "CERT_EMAIL=john@gamepadla.com"          :: Email for certificate (no escaping here)
 set "CERT_PASSWORD=password123"              :: Certificate password
 set "SIGN_EXE=true"                          :: Sign the EXE file?
-set "REQUIRED_PACKAGES=pygame serial matplotlib requests colorama pyserial numpy pillow" :: Required Python packages
+set "REQUIRED_PACKAGES=pygame matplotlib requests colorama pyserial numpy pillow" :: Required Python packages
 set "USE_PYARMOR=false"                      :: Use PyArmor for code obfuscation?
 set "PYARMOR_OPTIONS="                       :: PyArmor options (empty for free version)
 :: =====================================================================
@@ -299,15 +299,17 @@ for %%P in (%REQUIRED_PACKAGES%) do (
     set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=%%P"
 )
 echo Checking for special packages that need additional hidden imports...
-echo %REQUIRED_PACKAGES% | findstr /C:"serial" >nul
+echo %REQUIRED_PACKAGES% | findstr /C:"pyserial" >nul
 if %ERRORLEVEL% equ 0 (
-    echo Adding special hidden imports for serial module...
+    echo Adding special hidden imports for pyserial module...
     set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=serial"
     set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=serial.Serial"
     set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=serial.tools.list_ports"
     set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=serial.tools.list_ports_windows"
     set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=serial.win32"
     set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=serial.tools.list_ports_common"
+    set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=serial.exceptions"
+    set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=serial.serialutil"
 )
 
 echo %REQUIRED_PACKAGES% | findstr /C:"pygame" >nul
@@ -327,6 +329,7 @@ echo %REQUIRED_PACKAGES% | findstr /C:"numpy" >nul
 if %ERRORLEVEL% equ 0 (
     echo Adding special hidden imports for numpy module...
     set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=numpy.core._dtype_ctypes"
+    set "PYINSTALLER_CMD=!PYINSTALLER_CMD! --hidden-import=numpy._core._exceptions"
 )
 :: Ensure PyArmor runtime is included
 if "%USE_PYARMOR%"=="true" (
