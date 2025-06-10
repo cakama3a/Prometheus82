@@ -68,7 +68,7 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 | № | Component Name | Price | Link |
 |---|----------------|-------|------|
 | 1 | Wire 30AWG (For Sensor) | $1.04 | [Aliexpress](https://s.click.aliexpress.com/e/_oBqNaqw) |
-| 2 | UL2468 2 Pins Electrical Wire 26AWG | $1.33 | [AliExpress](https://s.click.aliexpress.com/e/_oDjYJVX) |
+| 2 | UL2468 2 Pins Electrical Wire 24AWG | $1.33 | [AliExpress](https://s.click.aliexpress.com/e/_oDjYJVX) |
 | 3 | Wire Connector Set 2.54mm | $3.10 | [AliExpress](https://s.click.aliexpress.com/e/_oElq2W9) |
 | 4 | Solder Cable 24AWG 8cm | $2.32 | [AliExpress](https://s.click.aliexpress.com/e/_olvnxRB) |
 | 5 | PETG/PLA Filament 1.75mm | $16.99 | [AliExpress](https://s.click.aliexpress.com/e/_oFkcL3T) |
