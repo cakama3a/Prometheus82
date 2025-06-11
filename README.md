@@ -42,7 +42,9 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 ### Finished product (May not be relevant, see the scheme above)
 ![image](https://github.com/user-attachments/assets/0d869e9c-6ba7-44e7-b669-271fb21384e4)
 
-
+> [!NOTE]
+> - The Decoy Trigger voltage should be set to 15 volts instead of 12 volts, as this reduces the number of test errors, although it does lead to higher heat.
+> - The lower port of the tester is for the power supply, the upper port is for connecting to a PC.
 
 ## Components for Assembly
 
