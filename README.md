@@ -99,9 +99,20 @@ For successful assembly, you will need the following tools:
 ### Main board assembly
 Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
 
-## Software Installation
+## How to Perform Testing
+1. Connect the device to the computer (Upper port).
+2. Connect the power supply to the device (Lower port).
+3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
+4. Place the gamepad in the test stand and secure it (not too tightly).
+5. Adjust the solenoid for testing the gamepad's buttons or sticks as shown.
 
-[Instructions for downloading and configuring the software] - In development
+   > [!NOTE]
+   > The video will be added soon.
+
+6. Launch the testing program: https://github.com/cakama3a/Prometheus82/releases/
+7. Select the testing option for the gamepad's sticks or buttons in the program menu.
+8. Start the test and wait for it to complete.
+9. Submit the test to Gamepadla.com for detailed analysis or exit the program.
 
 ## License
 This project is licensed under the Prometheus 82 License. It may be used for non-commercial purposes only. Any derivative works must include a prominent notice crediting "Prometheus 82 by John Punch (https://gamepadla.com)" in the visible part of the program. See the [LICENSE](LICENSE) file for details.
