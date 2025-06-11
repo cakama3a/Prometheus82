@@ -79,6 +79,7 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 | 8 | Heat Shrink Tube 5mm | $0.42 | [AliExpress](https://s.click.aliexpress.com/e/_oEHmeLX) |
 | 9 | PET Expandable Cable Sleeve 4mm | $0.32 | [AliExpress](https://s.click.aliexpress.com/e/_opZIqHF) |
 | 10 | Brass Heat Insert Nut M3 | $3.59 | [AliExpress](https://s.click.aliexpress.com/e/_oCiDrMZ) |
+| 11 | M3 Screws 50 pcs | $2.08 | [AliExpress](https://s.click.aliexpress.com/e/_olQ572m) |
 
 **Total component cost: ~$59.16**
 
