@@ -95,9 +95,10 @@ For successful assembly, you will need the following tools:
 | 5 | Solder | [AliExpress](https://s.click.aliexpress.com/e/_oF4jIPD) |
 | 6 | 3D Printer | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
 
-## Assembly Instructions
-### Main board assembly
-Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
+## Assembly Instructions (For DIY)
+1. [Main board assembly](https://youtu.be/GRk6pmUU0J8)
+2. Solenoid assembly (Comoing Soon)
+3. Stand assembly (Comoing Soon)
 
 ## How to Perform Testing
 1. Connect the device to the computer (Upper port).
