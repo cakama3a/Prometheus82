@@ -1,4 +1,4 @@
-# Prometheus 82
+![image](https://github.com/user-attachments/assets/8562da96-2114-4d19-9c6c-4de34eefd52b)# Prometheus 82
 > [!WARNING]
 > The page is still under development and the data is not yet complete.
 
@@ -119,6 +119,9 @@ For successful assembly, you will need the following tools:
 7. Select the testing option for the gamepad's sticks or buttons in the program menu.
 8. Start the test and wait for it to complete.
 9. Submit the test to Gamepadla.com for detailed analysis or exit the program.
+
+![image](https://github.com/user-attachments/assets/0900068d-f3f0-4ae1-958f-e919bea8ca53)
+Test results on a temporary personalized Gamepadla.com page
 
 ## License
 This project is licensed under the Prometheus 82 License. It may be used for non-commercial purposes only. Any derivative works must include a prominent notice crediting "Prometheus 82 by John Punch (https://gamepadla.com)" in the visible part of the program. See the [LICENSE](LICENSE) file for details.
