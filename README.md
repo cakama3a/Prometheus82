@@ -14,7 +14,7 @@ You have two options to obtain a Prometheus 82 device:
 2. Order a Pre-Built Device: Purchase a ready-to-use Prometheus 82 from our shop at [Ko-fi Shop](https://ko-fi.com/gamepadla/shop?g=3) for $196 (Quantity is limited).
 
 ## Test bench
-The test bench itself must be printed on a 3D printer from PLA or PETG plastic. You can download the STL files of the project on the website [https://www.thingiverse.com/thing:3079719](https://www.thingiverse.com/cakama3a/designs)
+The test bench itself must be printed on a 3D printer from PLA or PETG plastic. You can download the STL files of the project on [thingiverse](https://www.thingiverse.com/cakama3a/designs)
 ![PadTester v106 (1)](https://github.com/user-attachments/assets/a75fc10b-8110-416a-8f8a-26b7f26e1005)
 
 ## Assembly Diagram
