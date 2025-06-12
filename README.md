@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/8562da96-2114-4d19-9c6c-4de34eefd52b)# Prometheus 82
+# Prometheus 82
 > [!WARNING]
 > The page is still under development and the data is not yet complete.
 
