@@ -8,19 +8,6 @@ Prometheus 82 is an open-source, Arduino-based electromechanical device designed
 ![photo-collage png (1)](https://github.com/user-attachments/assets/62b7c93d-78df-475c-8eaa-3c639ab4379a)
 *Prometheus 82 in full assembly*
 
-## Solenoid Response Time
-The Prometheus 82 solenoid has its own inherent delays that are part of the testing system:
-Video demonstration of solenoid speed measurement: https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/
-
-- For analog sticks: The solenoid adds approximately 4ms of delay
-- For buttons: The solenoid adds 1-2ms of delay, but the code includes a delay compensation mechanism to complement the [GPDL](https://github.com/cakama3a/GPDL) tester (considered the most accurate device for button measurement)
-
-Actual delays after compensation:
-- Buttons: ~0.2-0.7ms
-- Analog sticks: ~3-4ms
-
-All tests include these delays as they are an inherent part of the Prometheus 82 testing system.
-
 ## How to Get Prometheus 82
 You have two options to obtain a Prometheus 82 device:  
 1. Build It Yourself: Follow the instructions in this repository to 3D-print the test bench, source components, and assemble the device. All necessary files and guides are provided below.
@@ -120,6 +107,19 @@ For successful assembly, you will need the following tools:
 
 ![image](https://github.com/user-attachments/assets/0900068d-f3f0-4ae1-958f-e919bea8ca53)
 Test results on a temporary personalized Gamepadla.com page
+
+## Solenoid Response Time
+The Prometheus 82 solenoid has its own inherent delays that are part of the testing system:
+Video demonstration of solenoid speed measurement: https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/
+
+- For analog sticks: The solenoid adds approximately 4ms of delay
+- For buttons: The solenoid adds 1-2ms of delay, but the code includes a delay compensation mechanism to complement the [GPDL](https://github.com/cakama3a/GPDL) tester (considered the most accurate device for button measurement)
+
+Actual delays after compensation:
+- Buttons: ~0.2-0.7ms
+- Analog sticks: ~3-4ms
+
+All tests include these delays as they are an inherent part of the Prometheus 82 testing system.
 
 ## License
 This project is licensed under the Prometheus 82 License. It may be used for non-commercial purposes only. Any derivative works must include a prominent notice crediting "Prometheus 82 by John Punch (https://gamepadla.com)" in the visible part of the program. See the [LICENSE](LICENSE) file for details.
