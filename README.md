@@ -18,19 +18,8 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 All parts can be printed in 3 passes in about 10 hours and 250 grams of plastic.  
 ![photo-collage png](https://github.com/user-attachments/assets/7bed604b-53cf-4254-9142-979886f6fa6e)
 
-
 ## Assembly Diagram
-
-### Complete Device Diagram
-![image](https://github.com/user-attachments/assets/5768d50b-eec4-45a8-af1f-702fe822724b)
-
-
-### Visually clear scheme
-![Prometheus82](https://github.com/user-attachments/assets/1977329f-0190-45db-8a4a-3186e70f244c)
-
-
-### The final look of the board (May be outdated, see the scheme above)
-![image](https://github.com/user-attachments/assets/0d869e9c-6ba7-44e7-b669-271fb21384e4)
+![photo-collage png (1)](https://github.com/user-attachments/assets/8b571622-a591-41de-b929-1cd37f4bbdb3)
 
 ## Components for Assembly
 
