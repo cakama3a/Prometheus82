@@ -86,9 +86,10 @@ For successful assembly, you will need the following tools:
 | 6 | 3D Printer | To create a test bench, board case, and solenoid unit | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
 
 ## Assembly Instructions (For DIY)
-1. [Main board assembly](https://youtu.be/GRk6pmUU0J8)
-2. Solenoid assembly (Comoing Soon)
-3. Stand assembly (Comoing Soon)
+1. Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
+2. Video: Solenoid assembly (Comoing Soon)
+3. Video: Cable assembly (Comoing Soon)
+4. Video: Stand assembly (Comoing Soon)
 
 ## How to Perform Testing
 1. Connect the device to the computer (Upper port).
@@ -110,7 +111,9 @@ Test results on a temporary personalized Gamepadla.com page
 
 ## Notes and tips
 - Video comparison of [6V solenoid with 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) filmed at 1000 FPS and tips on power supply
+- For a 6V solenoid, you should set the power supply to 9V, for a 12V solenoid, you should set the power supply to 15V, this guarantees stable results when testing
 - Video about the [solenoid's own delays](https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/) and how it is reflected in the measurements at 1000 FPS
+- Prometheus 82 has its own delays that are not compensated for after the test is completed. For buttons, it's an additional ~0.2-0.7ms, for joysticks it's ~3-4ms.
 
 ## License
 This project is licensed under the Prometheus 82 License. It may be used for non-commercial purposes only. Any derivative works must include a prominent notice crediting "Prometheus 82 by John Punch (https://gamepadla.com)" in the visible part of the program. See the [LICENSE](LICENSE) file for details.
