@@ -76,14 +76,14 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 
 For successful assembly, you will need the following tools:
 
-| № | Tool Name | Link |
-|---|-----------|------|
-| 1 | Side Cutters 4.5 inch | [AliExpress](https://s.click.aliexpress.com/e/_oF9KQnh) |
-| 2 | Soldering Iron | [AliExpress](https://s.click.aliexpress.com/e/_oF9euD9) |
-| 3 | Crimping Tool 2.54 | [AliExpress](https://s.click.aliexpress.com/e/_oD0rvjH) |
-| 4 | Flux | [AliExpress](https://s.click.aliexpress.com/e/_opcxu03) |
-| 5 | Solder | [AliExpress](https://s.click.aliexpress.com/e/_oF4jIPD) |
-| 6 | 3D Printer | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
+| № | Tool Name | Why | Link |
+|---|-----------|------|-------|
+| 1 | Side Cutters 4.5 inch | For cutting wires during main board assembly | [AliExpress](https://s.click.aliexpress.com/e/_oF9KQnh) |
+| 2 | Soldering Iron | For soldering the main board and solenoid block | [AliExpress](https://s.click.aliexpress.com/e/_oF9euD9) |
+| 3 | Crimping Tool 2.54 | To create a cable between the main board and the solenoid | [AliExpress](https://s.click.aliexpress.com/e/_oD0rvjH) |
+| 4 | Flux | To make the solder behave well =) | [AliExpress](https://s.click.aliexpress.com/e/_opcxu03) |
+| 5 | Solder | To install components and wires on the board | [AliExpress](https://s.click.aliexpress.com/e/_oF4jIPD) |
+| 6 | 3D Printer | To create a test bench, board case, and solenoid unit | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
 
 ## Assembly Instructions (For DIY)
 1. [Main board assembly](https://youtu.be/GRk6pmUU0J8)
