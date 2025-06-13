@@ -30,11 +30,6 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 ### The final look of the board (May be outdated, see the scheme above)
 ![image](https://github.com/user-attachments/assets/0d869e9c-6ba7-44e7-b669-271fb21384e4)
 
-
-> [!NOTE]
-> - The Decoy Trigger voltage should be set to 15 volts instead of 12 volts, as this reduces the number of test errors, although it does lead to higher heat.
-> - The lower port of the tester is for the power supply, the upper port is for connecting to a PC.
-
 ## Components for Assembly
 
 ### Main Electronic Components
@@ -114,6 +109,7 @@ Test results on a temporary personalized Gamepadla.com page
 - For a 6V solenoid, you should set the power supply to 9V, for a 12V solenoid, you should set the power supply to 15V, this guarantees stable results when testing
 - Video about the [solenoid's own delays](https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/) and how it is reflected in the measurements at 1000 FPS
 - Prometheus 82 has its own delays that are not compensated for after the test is completed. For buttons, it's an additional ~0.2-0.7ms, for joysticks it's ~3-4ms.
+- Both ports of the control board use Type-C interfaces, so do not confuse them, remember that the lower port is used for power, and the upper port is used to connect to a PC.
 
 ## License
 This project is licensed under the Prometheus 82 License. It may be used for non-commercial purposes only. Any derivative works must include a prominent notice crediting "Prometheus 82 by John Punch (https://gamepadla.com)" in the visible part of the program. See the [LICENSE](LICENSE) file for details.
