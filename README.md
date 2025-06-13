@@ -21,8 +21,13 @@ All parts can be printed in 3 passes in about 10 hours and 250 grams of plastic.
 ## Assembly Diagram
 ![photo-collage png (1)](https://github.com/user-attachments/assets/8b571622-a591-41de-b929-1cd37f4bbdb3)
 
-## Components for Assembly
+## Assembly Instructions (For DIY)
+1. Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
+2. Video: Solenoid assembly (Comoing Soon)
+3. Video: Cable assembly (Comoing Soon)
+4. Video: Stand assembly (Comoing Soon)
 
+## Components for Assembly
 ### Main Electronic Components
 | № | Component Name | Price | Why | Link |
 |---|----------------|-------|------|-------|
@@ -70,12 +75,6 @@ For successful assembly, you will need the following tools:
 | 4 | Flux | To make the solder behave well =) | [AliExpress](https://s.click.aliexpress.com/e/_opcxu03) |
 | 5 | Solder | To install components and wires on the board | [AliExpress](https://s.click.aliexpress.com/e/_oF4jIPD) |
 | 6 | 3D Printer | To create a test bench, board case, and solenoid unit | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
-
-## Assembly Instructions (For DIY)
-1. Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
-2. Video: Solenoid assembly (Comoing Soon)
-3. Video: Cable assembly (Comoing Soon)
-4. Video: Stand assembly (Comoing Soon)
 
 ## How to Perform Testing
 1. Connect the device to the computer (Upper port).
