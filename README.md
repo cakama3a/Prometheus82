@@ -56,19 +56,19 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 | 2 | 20W Charger | $6.61 | [AliExpress](https://s.click.aliexpress.com/e/_okS7gqX) |
 
 ### Construction and Connection Materials
-| № | Component Name | Price | Link |
-|---|----------------|-------|------|
-| 1 | Wire 30AWG (For Sensor) | $1.04 | [Aliexpress](https://s.click.aliexpress.com/e/_oBqNaqw) |
-| 2 | UL2468 2 Pins Electrical Wire 24AWG | $1.33 | [AliExpress](https://s.click.aliexpress.com/e/_oDjYJVX) |
-| 3 | Wire Connector Set 2.54mm | $3.10 | [AliExpress](https://s.click.aliexpress.com/e/_oElq2W9) |
-| 4 | Solder Cable 24AWG 8cm | $2.32 | [AliExpress](https://s.click.aliexpress.com/e/_olvnxRB) |
-| 5 | PETG/PLA Filament 1.75mm | $16.99 | [AliExpress](https://s.click.aliexpress.com/e/_oFkcL3T) |
-| 6 | Double Sided Adhesive Tape 10mm | $2.64 | [AliExpress](https://www.aliexpress.com/item/1005007294703509.html) |
-| 7 | Cosplay Eva Foam 2mm | $2.06 | [AliExpress](https://s.click.aliexpress.com/e/_opseJQv) |
-| 8 | Heat Shrink Tube 5mm | $0.42 | [AliExpress](https://s.click.aliexpress.com/e/_oEHmeLX) |
-| 9 | PET Expandable Cable Sleeve 4mm | $0.32 | [AliExpress](https://s.click.aliexpress.com/e/_opZIqHF) |
-| 10 | Brass Heat Insert Nut M3 | $3.59 | [AliExpress](https://s.click.aliexpress.com/e/_oCiDrMZ) |
-| 11 | Screws M3 50Pcs, 10mm | $2.08 | [AliExpress](https://s.click.aliexpress.com/e/_olQ572m) |
+| № | Component Name | Price | Why | Link |
+|---|----------------|-------|------|------|
+| 1 | Wire 30AWG | $1.04 | Must be elastic to connect the sensor button | [Aliexpress](https://s.click.aliexpress.com/e/_oBqNaqw) |
+| 2 | UL2468 2 Pins Electrical Wire 24AWG | $1.33 | Connects the solenoid ports to the main board | [AliExpress](https://s.click.aliexpress.com/e/_oDjYJVX) |
+| 3 | Wire Connector Set XH2.54 mm | $3.10 | A set of ports and connectors for creating connections | [AliExpress](https://s.click.aliexpress.com/e/_oElq2W9) |
+| 4 | Solder Cable 24AWG 8cm | $2.32 | Wires for soldering the main control board | [AliExpress](https://s.click.aliexpress.com/e/_olvnxRB) |
+| 5 | PETG/PLA Filament 1.75mm | $16.99 | Filament for printing test bench components | [AliExpress](https://s.click.aliexpress.com/e/_oFkcL3T) |
+| 6 | Double Sided Adhesive Tape 10mm | $2.64 | Adhesive tape for mounting eva material to the stand | [AliExpress](https://www.aliexpress.com/item/1005007294703509.html) |
+| 7 | Cosplay Eva Foam 2mm | $2.06 | Eva material for the stand, necessary for the gamepad to be securely fixed | [AliExpress](https://s.click.aliexpress.com/e/_opseJQv) |
+| 8 | Heat Shrink Tube 5mm | $0.42 | It is required when creating a cable connecting the main board with the solenoid unit | [AliExpress](https://s.click.aliexpress.com/e/_oEHmeLX) |
+| 9 | PET Expandable Cable Sleeve 4mm | $0.32 | Wrapping the cable to make it look good | [AliExpress](https://s.click.aliexpress.com/e/_opZIqHF) |
+| 10 | Brass Heat Insert Nut M3 | $3.59 | Required for secure fixation of the button at the end of the solenoid | [AliExpress](https://s.click.aliexpress.com/e/_oCiDrMZ) |
+| 11 | Screws M3 50Pcs, 10mm | $2.08 | To connect components printed on a 3D printer | [AliExpress](https://s.click.aliexpress.com/e/_olQ572m) |
 
 **Total component cost: ~$59.16**
 
