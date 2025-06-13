@@ -38,16 +38,16 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 ## Components for Assembly
 
 ### Main Electronic Components
-| № | Component Name | Price | Link |
-|---|----------------|-------|------|
-| 1 | Solenoid TAU-0530T 12V | $1.58 | [AliExpress](https://s.click.aliexpress.com/e/_olUL07J) |
-| 2 | Arduino Nano 3.0 ATMEGA328P TypeC | $2.79 | [AliExpress](https://s.click.aliexpress.com/e/_oDnDkCb) |
-| 3 | Transistor IRLB8721PBF | $2.08 | [AliExpress](https://s.click.aliexpress.com/e/_oEGL679) |
-| 4 | Kailh Mute Button 6*6*7.3mm | $2.24 | [AliExpress](https://s.click.aliexpress.com/e/_om11hvf) |
-| 5 | Diode P6KE18A | $1.80 | [AliExpress](https://s.click.aliexpress.com/e/_oFMCugb) |
-| 6 | Capacitor 25V 680uF 10x12 | $4.12 | [AliExpress](https://www.aliexpress.com/item/1005003020234581.html) |
-| 7 | PCB Circuit Board 4x6 | $0.56 | [AliExpress](https://s.click.aliexpress.com/e/_opZCvzR) |
-| 8 | Resistor Set | $1.28 | [AliExpress](https://s.click.aliexpress.com/e/_oBNMBNX) |
+| № | Component Name | Price | Why | Link |
+|---|----------------|-------|------|-------|
+| 1 | Solenoid TAU-0530T 12V | $1.58 | The main component for moving sticks and buttons | [AliExpress](https://s.click.aliexpress.com/e/_olUL07J) |
+| 2 | Arduino Nano 3.0 ATMEGA328P TypeC | $2.79 | Sensor and solenoid control board | [AliExpress](https://s.click.aliexpress.com/e/_oDnDkCb) |
+| 3 | Transistor IRLB8721PBF | $2.08 | To activate the solenoid move | [AliExpress](https://s.click.aliexpress.com/e/_oEGL679) |
+| 4 | Kailh Mute Button 6*6*7.3mm | $2.24 | To record the moment you press a button or stick on the gamepad | [AliExpress](https://s.click.aliexpress.com/e/_om11hvf) |
+| 5 | Diode P6KE18A | $1.80 | To protect the board control circuitry | [AliExpress](https://s.click.aliexpress.com/e/_oFMCugb) |
+| 6 | Capacitor 25V 680uF 10x12 | $4.12 | To protect the board control circuitry | [AliExpress](https://www.aliexpress.com/item/1005003020234581.html) |
+| 7 | PCB Circuit Board 4x6 | $0.56 | To install all components of the control board | [AliExpress](https://s.click.aliexpress.com/e/_opZCvzR) |
+| 8 | Resistor Set | $1.28 | To protect the board control circuitry | [AliExpress](https://s.click.aliexpress.com/e/_oBNMBNX) |
 
 ### Power and Charging
 | № | Component Name | Price | Link |
