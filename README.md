@@ -50,10 +50,10 @@ The test bench itself must be printed on a 3D printer from PLA or PETG plastic. 
 | 8 | Resistor Set | $1.28 | To protect the board control circuitry | [AliExpress](https://s.click.aliexpress.com/e/_oBNMBNX) |
 
 ### Power and Charging
-| № | Component Name | Price | Link |
-|---|----------------|-------|------|
-| 1 | Decoy Trigger | $1.51 | [AliExpress](https://s.click.aliexpress.com/e/_oDIgTYG) |
-| 2 | 20W Charger | $6.61 | [AliExpress](https://s.click.aliexpress.com/e/_okS7gqX) |
+| № | Component Name | Price | Why | Link |
+|---|----------------|-------|------|------|
+| 1 | Decoy Trigger | $1.51 | To convert 5V from the power supply to the required voltage | [AliExpress](https://s.click.aliexpress.com/e/_oDIgTYG) |
+| 2 | 20W Charger | $6.61 | It is important to use a powerful power supply, at least 20W | [AliExpress](https://s.click.aliexpress.com/e/_okS7gqX) |
 
 ### Construction and Connection Materials
 | № | Component Name | Price | Why | Link |
