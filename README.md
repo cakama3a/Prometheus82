@@ -118,4 +118,4 @@ This project is licensed under the Prometheus 82 License. It may be used for non
 john@gamepadla.com
 
 ## Donation
-https://ko-fi.com/gamepadla
+Gamepadla is not a commercial project, and its development is based solely on the author's enthusiasm. If you want to support me, please do so at https://ko-fi.com/gamepadla
