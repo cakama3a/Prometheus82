@@ -103,6 +103,7 @@ Test results on a temporary personalized Gamepadla.com page
 - Both ports of the control board use Type-C interfaces, so do not confuse them, remember that the lower port is used for power, and the upper port is used to connect to a PC.
 - The movement of the solenoid should be easy, it should not cling to the inner hole. Make sure that its leg is smooth and free of snags, as this can cause friction, which increases heat, wear and tear on the component and introduces an error in the measurement.
 - Distance matters. When positioning the gamepad during tests, you need to install the stick and button as far away from the sensor as possible so that the solenoid has time to accelerate sufficiently. If you install the solenoid too close, it will give incorrect measurement results.
+- Over time, the solenoid can degrade, especially if it is frequently overheated. Therefore, it is worth getting a separate control gamepad (with stable firmware) to periodically check if the delay has changed.
 
 ## License
 This project is licensed under the Prometheus 82 License. It may be used for non-commercial purposes only. Any derivative works must include a prominent notice crediting "Prometheus 82 by John Punch (https://gamepadla.com)" in the visible part of the program. See the [LICENSE](LICENSE) file for details.
