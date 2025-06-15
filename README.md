@@ -25,7 +25,7 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 ## Assembly Instructions (For DIY)
 1. Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
 2. Video: [Solenoid assembly](https://ko-fi.com/post/Prometheus-82-Assembling-solenoid-block-instructi-P5P41GFCHP) (Only available to ko-fi supporters for now)
-3. Video: Cable assembly (Comoing Soon)
+3. Video: [Cable assembly](https://youtu.be/LMggf17Mmno)
 4. Video: Stand assembly (Comoing Soon)
 
 ## Components for Assembly
