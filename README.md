@@ -10,7 +10,7 @@ Prometheus 82 is an open-source, Arduino-based electromechanical device designed
 
 ## How to Get Prometheus 82
 You have two options to obtain a Prometheus 82 device:  
-1. Build It Yourself: Follow the [instructions](https://github.com/cakama3a/Prometheus82?tab=readme-ov-file#test-bench) in this repository to 3D-print the test bench, source components, and assemble the device. All necessary files and guides are provided below.
+1. Build It Yourself: Follow the [instructions](#test-bench) in this repository to 3D-print the test bench, source components, and assemble the device. All necessary files and guides are provided below.
 2. Order a Pre-Built Device: Purchase a ready-to-use Prometheus 82 from our shop at [Ko-fi Shop](https://ko-fi.com/gamepadla/shop?g=3) for $196 (Quantity is limited).
 
 ## How to Use Prometheus 82
