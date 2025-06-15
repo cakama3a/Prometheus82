@@ -13,6 +13,24 @@ You have two options to obtain a Prometheus 82 device:
 1. Build It Yourself: Follow the instructions in this repository to 3D-print the test bench, source components, and assemble the device. All necessary files and guides are provided below.
 2. Order a Pre-Built Device: Purchase a ready-to-use Prometheus 82 from our shop at [Ko-fi Shop](https://ko-fi.com/gamepadla/shop?g=3) for $196 (Quantity is limited).
 
+## How to Use Prometheus 82
+1. Connect the P82 device to the computer (Upper port).
+2. Connect the power supply to the device (Lower port).
+3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
+4. Place the gamepad in the test stand and secure it (not too tightly).
+5. Adjust the solenoid for testing the gamepad's buttons or sticks as shown.
+
+   > [!NOTE]
+   > The video will be added soon.
+
+6. Launch the testing program: https://github.com/cakama3a/Prometheus82/releases/
+7. Select the testing option for the gamepad's sticks or buttons in the program menu.
+8. Start the test and wait for it to complete.
+9. Submit the test to Gamepadla.com for detailed analysis or exit the program.
+
+![image](https://github.com/user-attachments/assets/0900068d-f3f0-4ae1-958f-e919bea8ca53)
+Test results on a temporary personalized Gamepadla.com page
+
 ## Test bench
 The test bench itself must be printed on a 3D printer from PLA or PETG plastic. You can download the STL files of the project on [thingiverse](https://www.thingiverse.com/cakama3a/designs).   
 All parts can be printed in 3 passes in about 10 hours and 250 grams of plastic.  
@@ -76,24 +94,6 @@ For successful assembly, you will need the following tools:
 | 25 | Flux | To make the solder behave well =) | [AliExpress](https://s.click.aliexpress.com/e/_opcxu03) |
 | 26 | Solder | To install components and wires on the board | [AliExpress](https://s.click.aliexpress.com/e/_oF4jIPD) |
 | 27 | 3D Printer | To create a test bench, board case, and solenoid unit | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
-
-## How to Perform Testing
-1. Connect the device to the computer (Upper port).
-2. Connect the power supply to the device (Lower port).
-3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
-4. Place the gamepad in the test stand and secure it (not too tightly).
-5. Adjust the solenoid for testing the gamepad's buttons or sticks as shown.
-
-   > [!NOTE]
-   > The video will be added soon.
-
-6. Launch the testing program: https://github.com/cakama3a/Prometheus82/releases/
-7. Select the testing option for the gamepad's sticks or buttons in the program menu.
-8. Start the test and wait for it to complete.
-9. Submit the test to Gamepadla.com for detailed analysis or exit the program.
-
-![image](https://github.com/user-attachments/assets/0900068d-f3f0-4ae1-958f-e919bea8ca53)
-Test results on a temporary personalized Gamepadla.com page
 
 ## Notes and tips
 - Video comparison of [6V solenoid with 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) filmed at 1000 FPS and tips on power supply
