@@ -76,11 +76,12 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 | 14 | Solder Cable 24AWG 8cm | $2.32 | Wires for soldering the main control board | [AliExpress](https://s.click.aliexpress.com/e/_olvnxRB) |
 | 15 | PETG/PLA Filament 1.75mm | $16.99 | Filament for printing test bench components | [AliExpress](https://s.click.aliexpress.com/e/_oFkcL3T) |
 | 16 | Double Sided Adhesive Tape 10mm | $2.64 | Adhesive tape for mounting eva material to the stand | [AliExpress](https://www.aliexpress.com/item/1005007294703509.html) |
-| 17 | Cosplay Eva Foam 2mm | $2.06 | Eva material for the stand, necessary for the gamepad to be securely fixed | [AliExpress](https://s.click.aliexpress.com/e/_opseJQv) |
-| 18 | Heat Shrink Tube 5mm | $0.42 | It is required when creating a cable connecting the main board with the solenoid unit | [AliExpress](https://s.click.aliexpress.com/e/_oEHmeLX) |
-| 19 | PET Expandable Cable Sleeve 4mm | $0.32 | Wrapping the cable to make it look good | [AliExpress](https://s.click.aliexpress.com/e/_opZIqHF) |
-| 20 | Brass Heat Insert Nut M3 | $3.59 | Required for secure fixation of the button at the end of the solenoid | [AliExpress](https://s.click.aliexpress.com/e/_oCiDrMZ) |
-| 21 | Screws M3 50Pcs, 10mm | $2.08 | To connect components printed on a 3D printer | [AliExpress](https://s.click.aliexpress.com/e/_olQ572m) |
+| 17 | Gecko tape 1mm | $1.36 | To glue the power trigger to the board | [AliExpress](https://s.click.aliexpress.com/e/_oFLtiPk) |
+| 18 | Cosplay Eva Foam 2mm | $2.06 | Eva material for the stand, necessary for the gamepad to be securely fixed | [AliExpress](https://s.click.aliexpress.com/e/_opseJQv) |
+| 19 | Heat Shrink Tube 5mm | $0.42 | It is required when creating a cable connecting the main board with the solenoid unit | [AliExpress](https://s.click.aliexpress.com/e/_oEHmeLX) |
+| 20 | PET Expandable Cable Sleeve 4mm | $0.32 | Wrapping the cable to make it look good | [AliExpress](https://s.click.aliexpress.com/e/_opZIqHF) |
+| 21 | Brass Heat Insert Nut M3 | $3.59 | Required for secure fixation of the button at the end of the solenoid | [AliExpress](https://s.click.aliexpress.com/e/_oCiDrMZ) |
+| 22 | Screws M3 50Pcs, 10mm | $2.08 | To connect components printed on a 3D printer | [AliExpress](https://s.click.aliexpress.com/e/_olQ572m) |
 
 ## Required Tools
 
@@ -88,12 +89,12 @@ For successful assembly, you will need the following tools:
 
 | № | Tool Name | Why | Link |
 |---|-----------|------|-------|
-| 22 | Side Cutters 4.5 inch | For cutting wires during main board assembly | [AliExpress](https://s.click.aliexpress.com/e/_oF9KQnh) |
+| 23| Side Cutters 4.5 inch | For cutting wires during main board assembly | [AliExpress](https://s.click.aliexpress.com/e/_oF9KQnh) |
 | 24 | Soldering Iron | For soldering the main board and solenoid block | [AliExpress](https://s.click.aliexpress.com/e/_oF9euD9) |
-| 24 | Crimping Tool 2.54 | To create a cable between the main board and the solenoid | [AliExpress](https://s.click.aliexpress.com/e/_oD0rvjH) |
-| 25 | Flux | To make the solder behave well =) | [AliExpress](https://s.click.aliexpress.com/e/_opcxu03) |
-| 26 | Solder | To install components and wires on the board | [AliExpress](https://s.click.aliexpress.com/e/_oF4jIPD) |
-| 27 | 3D Printer | To create a test bench, board case, and solenoid unit | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
+| 25 | Crimping Tool 2.54 | To create a cable between the main board and the solenoid | [AliExpress](https://s.click.aliexpress.com/e/_oD0rvjH) |
+| 26 | Flux | To make the solder behave well =) | [AliExpress](https://s.click.aliexpress.com/e/_opcxu03) |
+| 27 | Solder | To install components and wires on the board | [AliExpress](https://s.click.aliexpress.com/e/_oF4jIPD) |
+| 28 | 3D Printer | To create a test bench, board case, and solenoid unit | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
 
 ## Notes and tips
 - Video comparison of [6V solenoid with 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) filmed at 1000 FPS and tips on power supply
