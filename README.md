@@ -39,7 +39,7 @@ All parts can be printed in 3 passes in about 10 hours and 250 grams of plastic.
 ## Assembly Diagram
 The diagrams show the schematic of the current Prometheus 82 tester assembly of revision 1.0.4 (not to be confused with the program revision). The blueprint also adds a solenoid and a sensor button, and the diagram exactly reflects the device on the photo. The solenoid and the sensor button are connected via a separate power cable, which can be made according to the video instructions below.  
 ![photo-collage png (2)](https://github.com/user-attachments/assets/727d81b4-aca1-4deb-8ebc-2ac8486cb9eb)
-- There is also an alternative build scheme (newer and more optimized) [for Patreons](https://www.patreon.com/posts/prometheus-82-v5-133249717?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link)
+- There is also an alternative build scheme (newer and more optimized) [for Patreons](https://www.patreon.com/posts/prometheus-82-v5-133249717?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link) or [Ko-Fi supporters](https://ko-fi.com/i/II2I81HINLS)
 
 ## Assembly Instructions (For DIY)
 1. Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
@@ -110,6 +110,7 @@ For successful assembly, you will need the following tools:
 - Distance matters. When positioning the gamepad during tests, you need to install the stick and button as far away from the sensor as possible so that the solenoid has time to accelerate sufficiently. If you install the solenoid too close, it will give incorrect measurement results.
 - Over time, the solenoid can degrade, especially if it is frequently overheated. Therefore, it is worth getting a separate control gamepad (with stable firmware) to periodically check if the delay has changed.
 - When conducting tests, you should do it at least 2 times. It is better to recalibrate the position of the gamepad on the stand before the second test to avoid positioning errors.
+- Some Chinese Arduino devices may not work well with the button press detection function (voltage drop on D3), if something does not work, it may be worth replacing the Arduino board.
 
 ## License
 This project is licensed under the Prometheus 82 License. It may be used for non-commercial purposes only. Any derivative works must include a prominent notice crediting "Prometheus 82 by John Punch (https://gamepadla.com)" in the visible part of the program. See the [LICENSE](LICENSE) file for details.
