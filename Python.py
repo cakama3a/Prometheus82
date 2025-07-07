@@ -17,9 +17,10 @@ import string
 import sys
 
 # Global settings
-VERSION = "5.2.0.1"             # Updated version with microsecond support
+VERSION = "5.2.1.2"             # Updated version with microsecond support
 TEST_ITERATIONS = 500           # Number of test iterations
 PULSE_DURATION = 40             # Solenoid pulse duration (ms)
+LATENCY_TEST_ITERATIONS = 1000  # Number of measurements for Arduino latency test
 
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10      # Cooling period in minutes
@@ -30,7 +31,7 @@ STICK_THRESHOLD = 0.99          # Stick activation threshold
 RATIO = 5                       # Delay to pulse duration ratio
 TEST_INTERVAL = PULSE_DURATION * RATIO  # Delay time before next pulse
 MAX_LATENCY = TEST_INTERVAL - PULSE_DURATION  # Maximum possible gamepad latency
-CONTACT_DELAY = 0.2             # Contact sensor delay (ms) for correction
+CONTACT_DELAY = 0.2             # Contact sensor delay (ms) for correction (will be updated after calibration)
 INCREASE_DURATION = 10          # Pulse duration increase increment (ms)
 LATENCY_EQUALITY_THRESHOLD = 0.001  # Threshold for comparing latencies (ms)
 CONSECUTIVE_EVENT_LIMIT = 5     # Number of consecutive events for action
@@ -89,6 +90,39 @@ def save_test_completion_time():
     except IOError as e:
         print(f"\n{Fore.RED}Error recording test completion time: {e}{Fore.RESET}")
 
+# Function to test Arduino communication latency
+def test_arduino_latency(ser):
+    print(f"\nTesting Arduino communication latency... {LATENCY_TEST_ITERATIONS} measurements")
+    latencies = []
+    ser.timeout = 1
+    ser.reset_input_buffer()
+    ser.reset_output_buffer()
+    
+    for i in range(LATENCY_TEST_ITERATIONS):
+        start_time = time.perf_counter()
+        ser.write(b'D')
+        ser.flush()
+        response = ser.read()
+        if response == b'R':
+            end_time = time.perf_counter()
+            latency = (end_time - start_time) * 1000  # Convert to ms
+            latencies.append(latency)
+        else:
+            print(f"\n{Fore.RED}Error testing Arduino latency: No response at measurement {i+1}{Fore.RESET}")
+            return None
+    
+    if latencies:
+        avg_latency = statistics.mean(latencies)
+        print(f"Arduino latency test results:")
+        print(f"Total measurements: {len(latencies)}")
+        print(f"Minimum latency:    {min(latencies):.3f} ms")
+        print(f"Maximum latency:    {max(latencies):.3f} ms")
+        print(f"Average latency:    {avg_latency:.3f} ms")
+        print(f"Jitter deviation:   {statistics.stdev(latencies):.3f} ms")
+        return avg_latency
+    print(f"\n{Fore.RED}Error testing Arduino latency: No valid measurements{Fore.RESET}")
+    return None
+
 # ASCII Logo
 print(f" ")
 print(f" ")
@@ -103,10 +137,11 @@ print(f"Support the project: " + Fore.LIGHTRED_EX + "https://ko-fi.com/gamepadla
 print(f" ")
 
 class LatencyTester:
-    def __init__(self, gamepad, serial_port, test_type):
+    def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY):
         self.joystick = gamepad
         self.serial = serial_port
         self.test_type = test_type
+        self.contact_delay = contact_delay  # Use calibrated contact delay
         
         self.measuring = False
         self.start_time_us = 0  # Start time in microseconds
@@ -257,7 +292,7 @@ class LatencyTester:
             if self.measuring and self.is_stick_at_extreme():
                 # Measure time in microseconds
                 current_time_us = time.perf_counter() * 1000000
-                latency_us = current_time_us - self.start_time_us + (CONTACT_DELAY * 1000)
+                latency_us = current_time_us - self.start_time_us + (self.contact_delay * 1000)
                 latency_ms = latency_us / 1000.0  # Convert to ms for display and comparison
 
                 max_latency_ms = self.max_latency_us / 1000.0
@@ -279,7 +314,7 @@ class LatencyTester:
             if self.measuring and self.is_button_pressed():
                 # Measure time in microseconds
                 current_time_us = time.perf_counter() * 1000000
-                latency_us = current_time_us - self.start_time_us + (CONTACT_DELAY * 1000)
+                latency_us = current_time_us - self.start_time_us + (self.contact_delay * 1000)
                 latency_ms = latency_us / 1000.0  # Convert to ms for display and comparison
                 
                 max_latency_ms = self.max_latency_us / 1000.0
@@ -317,7 +352,7 @@ class LatencyTester:
             'jitter': round(jitter, 2),  # 2 decimal places
             'filtered_results': filtered_results,
             'pulse_duration': self.pulse_duration_us / 1000,  # Convert to ms for display
-            'contact_delay': CONTACT_DELAY
+            'contact_delay': self.contact_delay
         }
     
     def check_for_stall_and_adjust(self):
@@ -420,7 +455,7 @@ if __name__ == "__main__":
         pygame.quit()
         sys.exit()
 
-     # Add detailed instructions for testing
+    # Add detailed instructions for testing
     print("="*70)
     print("TEST INSTRUCTIONS".center(70))
     print("="*70)
@@ -508,7 +543,7 @@ if __name__ == "__main__":
             port = ports[0]
 
         try:
-            ser = serial.Serial(port.device, 115200, timeout=0)
+            ser = serial.Serial(port.device, 115200, timeout=1)
             print(f" ")
             print(f"Connecting to {port.device} ({port.description})")
             
@@ -530,6 +565,14 @@ if __name__ == "__main__":
                 ser.close()
                 pygame.quit()
                 sys.exit()
+
+            # Test Arduino latency and update CONTACT_DELAY
+            avg_latency = test_arduino_latency(ser)
+            if avg_latency is None:
+                print(f"\n{Fore.RED}Error calibrating Arduino latency: Test failed. Using default CONTACT_DELAY ({CONTACT_DELAY} ms).{Fore.RESET}")
+            else:
+                CONTACT_DELAY = avg_latency
+                print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
         except serial.SerialException as e:
             print(f"Error opening port: {e}")
             pygame.quit()
@@ -539,7 +582,7 @@ if __name__ == "__main__":
         pygame.quit()
         sys.exit()
 
-    tester = LatencyTester(joystick, ser, test_type)
+    tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY)
     
     if test_type == TEST_TYPE_BUTTON:
         print("\nPress the button on your gamepad that you want to test (A, B, X, Y)...")
