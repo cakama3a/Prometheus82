@@ -114,7 +114,12 @@ For successful assembly, you will need the following tools:
 - Currently, the permissible error of the Prometheus 82 tester is ±0.69 ms (when testing sticks).
 
 ## License
-This project is licensed under the Prometheus 82 License. It may be used for non-commercial purposes only. Any derivative works must include a prominent notice crediting "Prometheus 82 by John Punch (https://gamepadla.com)" in the visible part of the program. See the [LICENSE](LICENSE) file for details.
+This project is licensed under the Prometheus 82 License. 
+
+- **For enthusiasts and bloggers**: You may use the Prometheus 82 Tester for non-commercial purposes (e.g., videos, posts, reviews) free of charge, provided you include a prominent notice crediting "Prometheus 82 by John Punch" and a link to https://gamepadla.com in your content.
+- **For commercial use**: Corporations or organizations wishing to use the tester for commercial purposes, such as testing gamepads and publishing results, must contact the author at john@gamepadla.com to negotiate a commercial license. Commercial use without a prior agreement is prohibited.
+
+See the [LICENSE](LICENSE) file for details.
 
 ## Contact
 john@gamepadla.com
