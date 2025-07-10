@@ -1,3 +1,7 @@
+# Author: John Punch
+# Email: john@gamepadla.com
+# License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
+
 import time
 import platform
 import serial
