@@ -613,7 +613,7 @@ if __name__ == "__main__":
             print(f"Average latency: {stats['avg']:.2f} ms")
             print(f"Jitter: {stats['jitter']} ms")
 
-            if input(f"\nOpen the test in the browser Y Exit the program Q: ").upper() == 'Y':
+            if input(f"\nOpen the test on Gamepadla.com Y Exit the program Q: ").upper() == 'Y':
                 while True:
                     test_key = generate_short_id()
                     gamepad_name = input(f"Enter gamepad name: ")
