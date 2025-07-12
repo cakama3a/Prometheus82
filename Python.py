@@ -134,6 +134,7 @@ print("╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     �
 print(f"v.{VERSION} by John Punch (" + Fore.LIGHTRED_EX + "https://gamepadla.com" + Fore.RESET + ")")
 print(f"Support the project: " + Fore.LIGHTRED_EX + "https://ko-fi.com/gamepadla" + Fore.RESET)
 print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_tU-7VqA" + Fore.RESET)
+print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometheus82" + Fore.RESET)
 
 class LatencyTester:
     def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY):
