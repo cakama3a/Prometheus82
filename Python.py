@@ -21,10 +21,11 @@ import string
 import sys
 
 # Global settings
-VERSION = "5.2.1.2"             # Updated version with microsecond support
+VERSION = "5.2.2.0"             # Updated version with microsecond support
 TEST_ITERATIONS = 500           # Number of test iterations
 PULSE_DURATION = 40             # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000  # Number of measurements for Arduino latency test
+STICK_MOVEMENT_COMPENSATION = 3.5 # Compensation for stick movement time in ms at 99% deflection
 
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10      # Cooling period in minutes
@@ -63,11 +64,7 @@ def check_cooling_period():
             
             if elapsed_seconds < COOLING_PERIOD_SECONDS:
                 remaining_seconds = COOLING_PERIOD_SECONDS - elapsed_seconds
-                print(f"\n{Fore.YELLOW}WARNING: Device has not cooled down yet!{Fore.RESET}")
-                print(f"Time since last test: {int(elapsed_seconds)} seconds.")
-                print(f"You need to wait {int(remaining_seconds)} more seconds before running a new test.")
-                print(f"Running tests without proper cooling may lead to inaccurate results or damage to the solenoid.")
-                
+                print(f"\n{Fore.YELLOW}WARNING: Device needs {int(remaining_seconds)} more seconds to cool down!{Fore.RESET}")
                 while True:
                     choice = input(f"Continue anyway? (Y/N): ").upper()
                     if choice == 'Y':
@@ -88,9 +85,7 @@ def save_test_completion_time():
         with open(LAST_TEST_TIME_FILE, 'w') as f:
             f.write(str(time.time()))
         print(f"\n{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
-        print(f"{Fore.YELLOW}IMPORTANT: Allow the device to cool down for at least {COOLING_PERIOD_MINUTES} minutes ({COOLING_PERIOD_SECONDS} seconds) before starting a new test!{Fore.RESET}")
-        print("This will prevent solenoid overheating and ensure accurate measurements.")
-        print(f" ")
+        print(f"{Fore.YELLOW}Wait {COOLING_PERIOD_MINUTES} minutes before next test to prevent solenoid overheating.{Fore.RESET}")
     except IOError as e:
         print(f"\n{Fore.RED}Error recording test completion time: {e}{Fore.RESET}")
 
@@ -138,7 +133,7 @@ print("██║     ██║  ██║╚██████╔╝██║ �
 print("╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝   " + Fore.LIGHTRED_EX + " ╚════╝ ╚══════╝" + Fore.RESET + "")                                                                                                 
 print(f"v.{VERSION} by John Punch (" + Fore.LIGHTRED_EX + "https://gamepadla.com" + Fore.RESET + ")")
 print(f"Support the project: " + Fore.LIGHTRED_EX + "https://ko-fi.com/gamepadla" + Fore.RESET)
-print(f" ")
+print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_tU-7VqA" + Fore.RESET)
 
 class LatencyTester:
     def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY):
@@ -297,8 +292,8 @@ class LatencyTester:
                 # Measure time in microseconds
                 current_time_us = time.perf_counter() * 1000000
                 latency_us = current_time_us - self.start_time_us + (self.contact_delay * 1000)
-                latency_ms = latency_us / 1000.0  # Convert to ms for display and comparison
-
+                latency_ms = (latency_us / 1000.0) - STICK_MOVEMENT_COMPENSATION  # Apply stick movement compensation
+                
                 max_latency_ms = self.max_latency_us / 1000.0
                 
                 if latency_ms <= max_latency_ms:
@@ -458,20 +453,6 @@ if __name__ == "__main__":
         print("\nClosing program...")
         pygame.quit()
         sys.exit()
-
-    # Add detailed instructions for testing
-    print("="*70)
-    print("TEST INSTRUCTIONS".center(70))
-    print("="*70)
-    print("• Connect the power cable to Prometheus 82 and the USB cable to your PC")
-    print("• Securely mount the gamepad in the test stand")
-    print("• Manually check that the solenoid is positioned at the optimal distance")
-    print("  from the button or stick - it should fully press/deflect it when activated")
-    print("• Connect your gamepad using any mode (Bluetooth, Cable, or Receiver)")
-    print("• During the test, do not touch the gamepad or test stand")
-    print("• If the test stalls, the program will automatically adjust pulse duration")
-    print("• Wait until the test is complete before removing the gamepad")
-    print("="*70 + "")
     
     joystick = None
     if pygame.joystick.get_count() > 0:
