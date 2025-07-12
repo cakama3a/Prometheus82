@@ -100,7 +100,8 @@ For successful assembly, you will need the following tools:
 - Video comparison of [6V solenoid with 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) filmed at 1000 FPS and tips on power supply
 - For a 6V solenoid, you should set the power supply to 9V, for a 12V solenoid, you should set the power supply to 15V, this guarantees stable results when testing
 - Video about the [solenoid's own delays](https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/) and how it is reflected in the measurements at 1000 FPS
-- Prometheus 82 has its own delays that are not compensated for after the test is completed. For buttons, it's an additional ~0.2-0.7ms, for joysticks it's ~3-4ms.
+- ~~Prometheus 82 has its own delays that are not compensated for after the test is completed. For buttons, it's an additional ~0.2-0.7ms, for joysticks it's ~3-4ms.~~
+- Starting from version 5.2.2.0, Prometheus 82 compensates for the solenoid delay when testing sticks and now the test error is 1-2 ms.
 - Both ports of the control board use Type-C interfaces, so do not confuse them, remember that the lower port is used for power, and the upper port is used to connect to a PC.
 - The movement of the solenoid should be easy, it should not cling to the inner hole. Make sure that its leg is smooth and free of snags, as this can cause friction, which increases heat, wear and tear on the component and introduces an error in the measurement.
 - Distance matters. When positioning the gamepad during tests, you need to install the stick and button as far away from the sensor as possible so that the solenoid has time to accelerate sufficiently. If you install the solenoid too close, it will give incorrect measurement results.
