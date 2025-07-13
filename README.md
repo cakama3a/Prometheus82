@@ -8,12 +8,41 @@ Prometheus 82 is an open-source, Arduino-based electromechanical device designed
 ![photo-collage png (1)](https://github.com/user-attachments/assets/62b7c93d-78df-475c-8eaa-3c639ab4379a)
 *Prometheus 82 in full assembly*
 
+## Prometheus82 Testing Process
+This section outlines the testing process for the Prometheus82 device, designed to measure input latency between the controller and a PC.
+
+### Testing Procedure
+1. **Test Initiation**  
+   The `Prometheus82.exe` program on the PC sends a signal to the "P82" device to activate the solenoid.
+2. **Solenoid Movement**  
+   The solenoid moves and, at a specific moment, strikes a button or stick on the gamepad.
+3. **Interaction Detection**  
+   The "Kalih Mute Button" sensor at the end of the solenoid registers the moment of contact.
+4. **Signal Transmission**  
+   The "P82" device instantly sends a signal to the `Prometheus82.exe` program, confirming interaction with the gamepad's button or stick.
+5. **Latency Timer Start**  
+   The `Prometheus82.exe` program starts a timer to measure input latency.
+6. **Gamepad Signal**  
+   Starting from the moment of contact (step 3), the gamepad sends a signal to the PC, received by `Prometheus82.exe`.
+7. **Timer Stop**  
+   Upon receiving the gamepad signal, the timer from step 5 stops. The elapsed time represents the input latency.
+8. **Test Repetition**  
+   The program repeats this process 500 times to calculate minimum, average, and maximum latency, as well as jitter.
+
+### Summary
+The testing process ensures accurate measurement of the Prometheus82 device's input latency. Running the test 500 times provides comprehensive data to evaluate the device's stability and performance under real-world conditions.
+
 ## How to Get Prometheus 82
 You have two options to obtain a Prometheus 82 device:  
 1. Build It Yourself: Follow the [instructions](#test-bench) in this repository to 3D-print the test bench, source components, and assemble the device. All necessary files and guides are provided below.
 2. Order a Pre-Built Device: Purchase a ready-to-use Prometheus 82 from our shop at [Ko-fi Shop](https://ko-fi.com/gamepadla/shop?g=3) for $196 (Quantity is limited).
 
 ## How to Use Prometheus 82
+<img width="1847" height="1049" alt="image" src="https://github.com/user-attachments/assets/023217e1-ac2e-4061-9049-84adb78c597f" />  
+https://www.youtube.com/watch?v=NBS_tU-7VqA  
+
+
+  
 1. Connect the P82 device to the computer (Upper port).
 2. Connect the power supply to the device (Lower port).
 3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
