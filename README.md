@@ -8,7 +8,7 @@ Prometheus 82 is an open-source, Arduino-based electromechanical device designed
 ![photo-collage png (1)](https://github.com/user-attachments/assets/62b7c93d-78df-475c-8eaa-3c639ab4379a)
 *Prometheus 82 in full assembly*
 
-## Prometheus82 Testing Process
+## Testing Process
 This section outlines the testing process for the Prometheus82 device, designed to measure input latency between the controller and a PC.
 
 ### Testing Procedure
@@ -38,10 +38,7 @@ You have two options to obtain a Prometheus 82 device:
 2. Order a Pre-Built Device: Purchase a ready-to-use Prometheus 82 from our shop at [Ko-fi Shop](https://ko-fi.com/gamepadla/shop?g=3) for $196 (Quantity is limited).
 
 ## How to Use Prometheus 82
-<img width="1847" height="1049" alt="image" src="https://github.com/user-attachments/assets/023217e1-ac2e-4061-9049-84adb78c597f" />  
-https://www.youtube.com/watch?v=NBS_tU-7VqA  
-
-
+[![2025-07-13_09-59](https://github.com/user-attachments/assets/1f5d08aa-0afb-40de-a22f-f82d48ff92d4)](https://www.youtube.com/watch?v=NBS_tU-7VqA)
   
 1. Connect the P82 device to the computer (Upper port).
 2. Connect the power supply to the device (Lower port).
