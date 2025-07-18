@@ -1,6 +1,6 @@
 ![image](https://github.com/user-attachments/assets/c381a466-5ec2-460f-a508-51514bf5bfd5)
 > [!WARNING]
-> The page is still under development and the data is not yet complete.
+> The page is still under development and the data is not yet complete.  
 > Sales of Prometheus 82 are temporarily suspended. Follow the news here [https://www.reddit.com/r/GPDL/](https://www.reddit.com/r/GPDL/)
 
 ## Description
