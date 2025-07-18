@@ -19,10 +19,11 @@ import matplotlib.pyplot as plt
 import random
 import string
 import sys
+import csv  # Додано для роботи з CSV
 
 # Global settings
 VERSION = "5.2.2.0"             # Updated version with microsecond support
-TEST_ITERATIONS = 500           # Number of test iterations
+TEST_ITERATIONS = 40           # Number of test iterations
 PULSE_DURATION = 40             # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000  # Number of measurements for Arduino latency test
 STICK_MOVEMENT_COMPENSATION = 3.5 # Compensation for stick movement time in ms at 99% deflection
@@ -121,6 +122,19 @@ def test_arduino_latency(ser):
         return avg_latency
     print(f"\n{Fore.RED}Error testing Arduino latency: No valid measurements{Fore.RESET}")
     return None
+
+# Функція для експорту статистики в CSV
+def export_to_csv(stats):
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    filename = f"latency_test_{timestamp}.csv"
+    stats_copy = stats.copy()
+    stats_copy['filtered_results'] = ', '.join(str(round(x, 2)) for x in stats['filtered_results'])
+    with open(filename, 'w', newline='') as csvfile:
+        fieldnames = stats_copy.keys()
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerow(stats_copy)
+    print(f"Дані збережено у файл {filename}")
 
 # ASCII Logo
 print(f" ")
@@ -581,14 +595,23 @@ if __name__ == "__main__":
         print(f"Selected button #{tester.button_to_test}!")
     
     if test_type == TEST_TYPE_STICK:
-        print("\nMove the analog stick that you want to test to its extreme position...")
+        print("\nInitiating automatic solenoid strike to detect analog stick axes...")
+        time.sleep(1)
+        tester.trigger_solenoid()  # Виконуємо один удар соленоїда
         waiting_for_stick = True
-        while waiting_for_stick:
+        start_time = time.time()
+        while waiting_for_stick and (time.time() - start_time) < 5:  # 5-секундний тайм-аут
             if tester.detect_active_stick():
                 waiting_for_stick = False
             pygame.event.pump()
             time.sleep(0.01)
-        print(f"Selected analog stick axes: {tester.stick_axes}!")
+        if not waiting_for_stick:
+            print(f"Selected analog stick axes: {tester.stick_axes}!")
+        else:
+            print("Error: No stick movement detected after solenoid strike. Check gamepad or solenoid setup.")
+            ser.close()
+            pygame.quit()
+            sys.exit()
     
     test_completed_normally = False
     
@@ -598,67 +621,77 @@ if __name__ == "__main__":
         stats = tester.get_statistics()
         if stats:
             test_completed_normally = True  # Test completed normally
-            print("\nTest completed!")
+            print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
+            print(f"\n{Fore.GREEN}==={Fore.RESET}")
             
             # Record completion time right after the test completes
             save_test_completion_time()
             
-            print(f"Total measurements: {stats['total_samples']}")
+            print(f"\nTotal measurements: {stats['total_samples']}")
             print(f"Valid measurements: {stats['valid_samples']}")
-            print(f"Invalid measurements (>{stats['pulse_duration']*(RATIO-1)}ms): {stats['invalid_samples']}")
+            print(f"Invalid measurements (>{stats['pulse_duration']*(RATIO-1):.1f}ms): {stats['invalid_samples']}")
             print(f"Measurements after filtering: {stats['filtered_samples']}")
-            print(f"===")
             print(f"Minimum latency: {stats['min']:.2f} ms")
             print(f"Maximum latency: {stats['max']:.2f} ms")
             print(f"Average latency: {stats['avg']:.2f} ms")
-            print(f"Jitter: {stats['jitter']} ms")
+            print(f"Jitter: {stats['jitter']:.2f} ms")
+            print(f"{Fore.GREEN}==={Fore.RESET}")
 
-            if input(f"\nOpen the test on Gamepadla.com Y Exit the program Q: ").upper() == 'Y':
-                while True:
-                    test_key = generate_short_id()
-                    gamepad_name = input(f"Enter gamepad name: ")
-                    
-                    connection = {
-                        "1": "Cable",
-                        "2": "Bluetooth",
-                        "3": "Dongle"
-                    }.get(input(f"Current connection (1. Cable, 2. Bluetooth, 3. Dongle): "), "Unset")
-
-                    data = {
-                        'test_key': str(test_key),
-                        'version': VERSION,
-                        'url': 'https://gamepadla.com',
-                        'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
-                        'driver': joystick.get_name() if joystick else "N/A",
-                        'connection': connection,
-                        'name': gamepad_name,
-                        'os_name': platform.system(),
-                        'os_version': platform.uname().version,
-                        'min_latency': round(stats['min'], 2),  # Round to 2 decimal places
-                        'max_latency': round(stats['max'], 2),  # Round to 2 decimal places
-                        'avg_latency': round(stats['avg'], 2),  # Round to 2 decimal places
-                        'jitter': stats['jitter'],
-                        'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB',
-                        'delay_list': ', '.join(str(round(x, 2)) for x in stats['filtered_results']),  # Round to 2 decimal places
-                        'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
-                        'contact_delay': stats['contact_delay'],
-                        'pulse_duration': stats['pulse_duration']
-                    }
-
-                    try:
-                        response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
-                        if response.status_code == 200:
-                            print("Test results successfully sent to the server.")
-                            webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
+            # Вибір дії у стилі вибору типу тесту
+            print("\nSelect action:")
+            print("1: Open on Gamepadla.com")
+            print("2: Export to CSV")
+            print("3: Exit")
+            try:
+                choice = int(input("Enter your choice (1-3): "))
+                if choice == 1:
+                    while True:
+                        test_key = generate_short_id()
+                        gamepad_name = input(f"Enter gamepad name: ")
+                        connection = {
+                            "1": "Cable",
+                            "2": "Bluetooth",
+                            "3": "Dongle"
+                        }.get(input(f"Current connection (1. Cable, 2. Bluetooth, 3. Dongle): "), "Unset")
+                        data = {
+                            'test_key': str(test_key),
+                            'version': VERSION,
+                            'url': 'https://gamepadla.com',
+                            'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
+                            'driver': joystick.get_name() if joystick else "N/A",
+                            'connection': connection,
+                            'name': gamepad_name,
+                            'os_name': platform.system(),
+                            'os_version': platform.uname().version,
+                            'min_latency': round(stats['min'], 2),
+                            'max_latency': round(stats['max'], 2),
+                            'avg_latency': round(stats['avg'], 2),
+                            'jitter': stats['jitter'],
+                            'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB',
+                            'delay_list': ', '.join(str(round(x, 2)) for x in stats['filtered_results']),
+                            'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
+                            'contact_delay': stats['contact_delay'],
+                            'pulse_duration': stats['pulse_duration']
+                        }
+                        try:
+                            response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
+                            if response.status_code == 200:
+                                print("Test results successfully sent to the server.")
+                                webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
+                                break
+                            else:
+                                print(f"\  nServer error. Status code: {response.status_code}")
+                        except requests.exceptions.RequestException as e:
+                            print("\nNo internet connection or server is unreachable")
+                        retry = input(f"\nDo you want to try sending the data again? (Y/N): ").upper()
+                        if retry != 'Y':
                             break
-                        else:
-                            print(f"\nServer error. Status code: {response.status_code}")
-                    except requests.exceptions.RequestException as e:
-                        print("\nNo internet connection or server is unreachable")
-                        
-                    retry = input(f"\nDo you want to try sending the data again? (Y/N): ").upper()
-                    if retry != 'Y':
-                        break
+                elif choice == 2:
+                    export_to_csv(stats)
+                elif choice != 3:
+                    print("Invalid selection!")
+            except ValueError:
+                print("Invalid input!")
         
     except KeyboardInterrupt:
         print("\nTest interrupted by user.")
