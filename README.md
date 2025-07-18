@@ -133,8 +133,10 @@ For successful assembly, you will need the following tools:
 - Distance matters. When positioning the gamepad during tests, you need to install the stick and button as far away from the sensor as possible so that the solenoid has time to accelerate sufficiently. If you install the solenoid too close, it will give incorrect measurement results.
 - Over time, the solenoid can degrade, especially if it is frequently overheated. Therefore, it is worth getting a separate control gamepad (with stable firmware) to periodically check if the delay has changed.
 - When conducting tests, you should do it at least 2 times. It is better to recalibrate the position of the gamepad on the stand before the second test to avoid positioning errors.
-- Some Chinese Arduino devices may not work well with the button press detection function (voltage drop on D3), if something does not work, it may be worth replacing the Arduino board.
+- Some Chinese Arduino devices may not work well, if something does not work, it may be worth replacing the Arduino board.
 - Currently, the permissible error of the Prometheus 82 tester is ±0.69 ms (when testing sticks).
+- You should not modify the device in your own way, as this can skew the test results and cause an error in the latency. Currently, the code is optimally adapted for the components listed above.
+- P82 device should be plugged directly into your PC's motherboard, as the ports on the front of the case can sometimes cause problems.
 
 ## License
 This project is licensed under the Prometheus 82 License. 
