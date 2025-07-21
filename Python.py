@@ -85,7 +85,7 @@ def save_test_completion_time():
     try:
         with open(LAST_TEST_TIME_FILE, 'w') as f:
             f.write(str(time.time()))
-        print(f"\n{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
+        print(f"{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
         print(f"{Fore.YELLOW}Wait {COOLING_PERIOD_MINUTES} minutes before next test to prevent solenoid overheating.{Fore.RESET}")
     except IOError as e:
         print(f"\n{Fore.RED}Error recording test completion time: {e}{Fore.RESET}")
@@ -647,7 +647,7 @@ if __name__ == "__main__":
         if stats:
             test_completed_normally = True  # Test completed normally
             print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
-            print(f"\n{Fore.GREEN}==={Fore.RESET}")
+            print(f"===============")
             
             # Record completion time right after the test completes
             save_test_completion_time()
@@ -656,13 +656,13 @@ if __name__ == "__main__":
             print(f"Valid measurements: {stats['valid_samples']}")
             print(f"Invalid measurements (>{stats['pulse_duration']*(RATIO-1):.1f}ms): {stats['invalid_samples']}")
             print(f"Measurements after filtering: {stats['filtered_samples']}")
-            print(f"Minimum latency: {stats['min']:.2f} ms")
+            print(f"\nMinimum latency: {stats['min']:.2f} ms")
             print(f"Maximum latency: {stats['max']:.2f} ms")
             print(f"Average latency: {stats['avg']:.2f} ms")
             print(f"Jitter: {stats['jitter']:.2f} ms")
             if stats['contact_delay'] > 1.2:
-                print(f"{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
-            print(f"{Fore.GREEN}==={Fore.RESET}")
+                print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
+            print(f"===============")
 
             # Вибір дії у стилі вибору типу тесту
             print("\nSelect action:")
