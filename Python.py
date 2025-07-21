@@ -660,6 +660,8 @@ if __name__ == "__main__":
             print(f"Maximum latency: {stats['max']:.2f} ms")
             print(f"Average latency: {stats['avg']:.2f} ms")
             print(f"Jitter: {stats['jitter']:.2f} ms")
+            if stats['contact_delay'] > 1.2:
+                print(f"{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
             print(f"{Fore.GREEN}==={Fore.RESET}")
 
             # Вибір дії у стилі вибору типу тесту
