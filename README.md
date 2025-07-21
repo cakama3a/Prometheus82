@@ -98,7 +98,7 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 | № | Component Name | Price | Why | Link |
 |---|----------------|-------|------|------|
 | 11 | Wire 30AWG | $1.04 | Must be elastic to connect the sensor button | [Aliexpress](https://s.click.aliexpress.com/e/_oBqNaqw) |
-| 12 | XH-2.54mm Male/Female Plug Connector Opposite direction, 300mm Length, 4P | $1.13 | Connects the solenoid ports to the main board | [AliExpress](https://s.click.aliexpress.com/e/_oEC0SC0) |
+| 12 | XH-2.54mm Plug Opposite direction, 300mm, 4P | $1.13 | Connects the solenoid ports to the main board | [AliExpress](https://s.click.aliexpress.com/e/_oou9268) |
 | 13 | Wire Connector Set XH2.54 mm | $3.10 | A set of ports and connectors for creating connections | [AliExpress](https://s.click.aliexpress.com/e/_oElq2W9) |
 | 14 | Solder Cable 24AWG 8cm | $2.32 | Wires for soldering the main control board | [AliExpress](https://s.click.aliexpress.com/e/_olvnxRB) |
 | 15 | PETG/PLA Filament 1.75mm | $16.99 | Filament for printing test bench components | [AliExpress](https://s.click.aliexpress.com/e/_oFkcL3T) |
