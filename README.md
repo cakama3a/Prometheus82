@@ -71,8 +71,7 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 4. Video: [Stand assembly](https://youtu.be/FciFS4pwg_E)
 
 ## Components for Assembly
-![DSC03593 copy-min](https://github.com/user-attachments/assets/c7fd17e1-17a8-420c-a5c7-bb23654ae301)
-
+![P82Tools copy-min](https://github.com/user-attachments/assets/a0feabfa-252b-4bd4-aa79-819fbe1b1112)
 
 > [!NOTE]
 > If the link doesn't open the product and instead displays a 404 page, [write here](https://github.com/cakama3a/Prometheus82/issues/1)
