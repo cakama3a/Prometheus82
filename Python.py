@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
@@ -15,7 +16,6 @@ from colorama import Fore
 import pygame
 from pygame.locals import *
 import statistics
-import matplotlib.pyplot as plt
 import random
 import string
 import sys
@@ -23,7 +23,7 @@ import csv  # Додано для роботи з CSV
 
 # Global settings
 VERSION = "5.2.2.0"             # Updated version with microsecond support
-TEST_ITERATIONS = 40           # Number of test iterations
+TEST_ITERATIONS = 200           # Number of test iterations
 PULSE_DURATION = 40             # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000  # Number of measurements for Arduino latency test
 STICK_MOVEMENT_COMPENSATION = 3.5 # Compensation for stick movement time in ms at 99% deflection
@@ -231,7 +231,7 @@ class LatencyTester:
         self.last_latency = latency
 
         if self.consecutive_same_latencies >= CONSECUTIVE_EVENT_LIMIT:
-            print(f"Detected {CONSECUTIVE_EVENT_LIMIT} consecutive identical latencies. Increasing pulse duration.")
+            print(f"Detected {CONSECUTIVE_EVENT_LIMIT} consecutive_latencies. Increasing pulse duration.")
             self.update_pulse_parameters()
             self.consecutive_same_latencies = 0
 
@@ -593,23 +593,48 @@ if __name__ == "__main__":
             pygame.event.pump()
             time.sleep(0.01)
         print(f"Selected button #{tester.button_to_test}!")
-    
+
     if test_type == TEST_TYPE_STICK:
+        if not joystick or not ser:
+            print(f"{Fore.RED}Error: Gamepad or serial connection not initialized. Cannot proceed with stick test.{Fore.RESET}")
+            if ser:
+                ser.close()
+            pygame.quit()
+            sys.exit()
+        
+        # Try initial solenoid strike with slightly increased pulse, retry with stronger pulse if needed
         print("\nInitiating automatic solenoid strike to detect analog stick axes...")
-        time.sleep(1)
-        tester.trigger_solenoid()  # Виконуємо один удар соленоїда
+        tester.set_pulse_duration(PULSE_DURATION + 5)  # Increase by 5ms for better reliability
+        tester.trigger_solenoid()
         waiting_for_stick = True
         start_time = time.time()
-        while waiting_for_stick and (time.time() - start_time) < 5:  # 5-секундний тайм-аут
+        retry_attempted = False
+        
+        while waiting_for_stick and (time.time() - start_time) < 3:  # Reduced timeout to 3 seconds
             if tester.detect_active_stick():
                 waiting_for_stick = False
             pygame.event.pump()
             time.sleep(0.01)
+        
+        # Single retry with increased pulse duration if no detection
+        if waiting_for_stick and not retry_attempted:
+            print(f"{Fore.YELLOW}No stick movement detected. Retrying with stronger pulse...{Fore.RESET}")
+            tester.update_pulse_parameters()  # Increase pulse duration
+            tester.trigger_solenoid()
+            start_time = time.time()
+            retry_attempted = True
+            while waiting_for_stick and (time.time() - start_time) < 3:
+                if tester.detect_active_stick():
+                    waiting_for_stick = False
+                pygame.event.pump()
+                time.sleep(0.01)
+        
         if not waiting_for_stick:
             print(f"Selected analog stick axes: {tester.stick_axes}!")
         else:
-            print("Error: No stick movement detected after solenoid strike. Check gamepad or solenoid setup.")
-            ser.close()
+            print(f"{Fore.RED}Error: No stick movement detected after retry. Check gamepad or solenoid setup.{Fore.RESET}")
+            if ser:
+                ser.close()
             pygame.quit()
             sys.exit()
     
@@ -680,7 +705,7 @@ if __name__ == "__main__":
                                 webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
                                 break
                             else:
-                                print(f"\  nServer error. Status code: {response.status_code}")
+                                print(f"\nServer error. Status code: {response.status_code}")
                         except requests.exceptions.RequestException as e:
                             print("\nNo internet connection or server is unreachable")
                         retry = input(f"\nDo you want to try sending the data again? (Y/N): ").upper()
