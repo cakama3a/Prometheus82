@@ -98,7 +98,7 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 | № | Component Name | Price | Why | Link |
 |---|----------------|-------|------|------|
 | 11 | Wire 30AWG | $1.04 | Must be elastic to connect the sensor button | [Aliexpress](https://s.click.aliexpress.com/e/_oBqNaqw) |
-| 12 | UL2468 2 Pins Electrical Wire 24AWG | $1.33 | Connects the solenoid ports to the main board | [AliExpress](https://s.click.aliexpress.com/e/_oDjYJVX) |
+| 12 | XH-2.54mm Male/Female Plug Connector Opposite direction, 300mm Length, 4P | $1.13 | Connects the solenoid ports to the main board | [AliExpress](https://s.click.aliexpress.com/e/_oEC0SC0) |
 | 13 | Wire Connector Set XH2.54 mm | $3.10 | A set of ports and connectors for creating connections | [AliExpress](https://s.click.aliexpress.com/e/_oElq2W9) |
 | 14 | Solder Cable 24AWG 8cm | $2.32 | Wires for soldering the main control board | [AliExpress](https://s.click.aliexpress.com/e/_olvnxRB) |
 | 15 | PETG/PLA Filament 1.75mm | $16.99 | Filament for printing test bench components | [AliExpress](https://s.click.aliexpress.com/e/_oFkcL3T) |
@@ -118,7 +118,7 @@ For successful assembly, you will need the following tools:
 |---|-----------|------|-------|
 | 23| Side Cutters 4.5 inch | For cutting wires during main board assembly | [AliExpress](https://s.click.aliexpress.com/e/_oF9KQnh) |
 | 24 | Soldering Iron | For soldering the main board and solenoid block | [AliExpress](https://s.click.aliexpress.com/e/_oF9euD9) |
-| 25 | Crimping Tool 2.54 | To create a cable between the main board and the solenoid | [AliExpress](https://s.click.aliexpress.com/e/_oD0rvjH) |
+| 25 | --- | --- | --- |
 | 26 | Flux | To make the solder behave well =) | [AliExpress](https://s.click.aliexpress.com/e/_opcxu03) |
 | 27 | Solder | To install components and wires on the board | [AliExpress](https://s.click.aliexpress.com/e/_oF4jIPD) |
 | 28 | 3D Printer | To create a test bench, board case, and solenoid unit | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
