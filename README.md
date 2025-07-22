@@ -127,7 +127,7 @@ For successful assembly, you will need the following tools:
 - Video comparison of [6V solenoid with 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) filmed at 1000 FPS and tips on power supply
 - For a 6V solenoid, you should set the power supply to 9V, for a 12V solenoid, you should set the power supply to 15V, this guarantees stable results when testing
 - Video about the [solenoid's own delays](https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/) and how it is reflected in the measurements at 1000 FPS
-- The error between different Prometheus 82 devices can be up to 0.51 ms tested in a 5-device stіck test.
+- The permissible error between different Prometheus 82 devices can be up to 0.51 ms, which was verified in a test with 5 devices.
 - The error from the actual result of the input delay provided by the gamepad under ideal conditions can be up to ±0.69 ms.
 - To reduce the error, you need to use a new solenoid, a fast Arduino device with its own delay of no more than 0.5 ms, and connect the device directly to the PC motherboard.
 - Both ports of the control board use Type-C interfaces, so do not confuse them, remember that the lower port is used for power, and the upper port is used to connect to a PC.
