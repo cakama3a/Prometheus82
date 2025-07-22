@@ -602,42 +602,15 @@ if __name__ == "__main__":
             pygame.quit()
             sys.exit()
         
-        # Try initial solenoid strike with slightly increased pulse, retry with stronger pulse if needed
-        print("\nInitiating automatic solenoid strike to detect analog stick axes...")
-        tester.set_pulse_duration(PULSE_DURATION + 5)  # Increase by 5ms for better reliability
-        tester.trigger_solenoid()
+        print("\nMove the analog stick that you want to test to its extreme position...")
         waiting_for_stick = True
-        start_time = time.time()
-        retry_attempted = False
-        
-        while waiting_for_stick and (time.time() - start_time) < 3:  # Reduced timeout to 3 seconds
+        while waiting_for_stick:
             if tester.detect_active_stick():
                 waiting_for_stick = False
             pygame.event.pump()
             time.sleep(0.01)
-        
-        # Single retry with increased pulse duration if no detection
-        if waiting_for_stick and not retry_attempted:
-            print(f"{Fore.YELLOW}No stick movement detected. Retrying with stronger pulse...{Fore.RESET}")
-            tester.update_pulse_parameters()  # Increase pulse duration
-            tester.trigger_solenoid()
-            start_time = time.time()
-            retry_attempted = True
-            while waiting_for_stick and (time.time() - start_time) < 3:
-                if tester.detect_active_stick():
-                    waiting_for_stick = False
-                pygame.event.pump()
-                time.sleep(0.01)
-        
-        if not waiting_for_stick:
-            print(f"Selected analog stick axes: {tester.stick_axes}!")
-        else:
-            print(f"{Fore.RED}Error: No stick movement detected after retry. Check gamepad or solenoid setup.{Fore.RESET}")
-            if ser:
-                ser.close()
-            pygame.quit()
-            sys.exit()
-    
+        print(f"Selected analog stick axes: {tester.stick_axes}!")
+
     test_completed_normally = False
     
     try:
