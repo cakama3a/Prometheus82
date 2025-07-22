@@ -127,14 +127,15 @@ For successful assembly, you will need the following tools:
 - Video comparison of [6V solenoid with 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) filmed at 1000 FPS and tips on power supply
 - For a 6V solenoid, you should set the power supply to 9V, for a 12V solenoid, you should set the power supply to 15V, this guarantees stable results when testing
 - Video about the [solenoid's own delays](https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/) and how it is reflected in the measurements at 1000 FPS
-- Starting from version 5.2.2.0, Prometheus 82 compensates for the solenoid delay when testing sticks and now the stick test error is ~1-2ms.
+- The error between different Prometheus 82 devices can be up to 0.51 ms tested in a 5-device stіck test.
+- The error from the actual result of the input delay provided by the gamepad under ideal conditions can be up to ±0.69 ms.
+- To reduce the error, you need to use a new solenoid, a fast Arduino device with its own delay of no more than 0.5 ms, and connect the device directly to the PC motherboard.
 - Both ports of the control board use Type-C interfaces, so do not confuse them, remember that the lower port is used for power, and the upper port is used to connect to a PC.
 - The movement of the solenoid should be easy, it should not cling to the inner hole. Make sure that its leg is smooth and free of snags, as this can cause friction, which increases heat, wear and tear on the component and introduces an error in the measurement.
 - Distance matters. When positioning the gamepad during tests, you need to install the stick and button as far away from the sensor as possible so that the solenoid has time to accelerate sufficiently. If you install the solenoid too close, it will give incorrect measurement results.
 - Over time, the solenoid can degrade, especially if it is frequently overheated. Therefore, it is worth getting a separate control gamepad (with stable firmware) to periodically check if the delay has changed.
 - When conducting tests, you should do it at least 2 times. It is better to recalibrate the position of the gamepad on the stand before the second test to avoid positioning errors.
 - Some Chinese Arduino devices may not work well, if something does not work, it may be worth replacing the Arduino board.
-- Currently, the permissible error of the Prometheus 82 tester is ±0.69 ms (when testing sticks).
 - You should not modify the device in your own way, as this can skew the test results and cause an error in the latency. Currently, the code is optimally adapted for the components listed above.
 - P82 device should be plugged directly into your PC's motherboard, as the ports on the front of the case can sometimes cause problems.
 
