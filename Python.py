@@ -18,28 +18,28 @@ import statistics
 import random
 import string
 import sys
-import csv  # Додано для роботи з CSV
+import csv
 
 # Global settings
-VERSION = "5.2.3.0"             # Updated version with microsecond support
-TEST_ITERATIONS = 200           # Number of test iterations
-PULSE_DURATION = 40             # Solenoid pulse duration (ms)
-LATENCY_TEST_ITERATIONS = 1000  # Number of measurements for Arduino latency test
-STICK_MOVEMENT_COMPENSATION = 3.5 # Compensation for stick movement time in ms at 99% deflection
+VERSION = "5.2.3.0"                 # Updated version with microsecond support
+TEST_ITERATIONS = 400               # Number of test iterations
+PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
+LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
+STICK_MOVEMENT_COMPENSATION = 3.5   # Compensation for stick movement time in ms at 99% deflection
 
 # Variables that should not be changed without need
-COOLING_PERIOD_MINUTES = 10      # Cooling period in minutes
+COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
 COOLING_PERIOD_SECONDS = COOLING_PERIOD_MINUTES * 60  # Cooling period in seconds
-LOWER_QUANTILE = 0.05           # Lower quantile for filtering
-UPPER_QUANTILE = 0.95           # Upper quantile for filtering
-STICK_THRESHOLD = 0.99          # Stick activation threshold
-RATIO = 10                       # Delay to pulse duration ratio
+LOWER_QUANTILE = 0.05               # Lower quantile for filtering
+UPPER_QUANTILE = 0.95               # Upper quantile for filtering
+STICK_THRESHOLD = 0.99              # Stick activation threshold
+RATIO = 5                           # Delay to pulse duration ratio
 TEST_INTERVAL = PULSE_DURATION * RATIO  # Delay time before next pulse
 MAX_LATENCY = TEST_INTERVAL - PULSE_DURATION  # Maximum possible gamepad latency
-CONTACT_DELAY = 0.2             # Contact sensor delay (ms) for correction (will be updated after calibration)
-INCREASE_DURATION = 10          # Pulse duration increase increment (ms)
+CONTACT_DELAY = 0.2                 # Contact sensor delay (ms) for correction (will be updated after calibration)
+INCREASE_DURATION = 10              # Pulse duration increase increment (ms)
 LATENCY_EQUALITY_THRESHOLD = 0.001  # Threshold for comparing latencies (ms)
-CONSECUTIVE_EVENT_LIMIT = 5     # Number of consecutive events for action
+CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
 
 # Constants for test types
 TEST_TYPE_STICK = "stick"
