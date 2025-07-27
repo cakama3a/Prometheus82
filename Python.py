@@ -26,6 +26,7 @@ TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
 STICK_MOVEMENT_COMPENSATION = 3.5   # Compensation for stick movement time in ms at 99% deflection
+HARDWARE_TEST_ITERATIONS = 10       # Number of iterations for hardware test
 
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
@@ -44,6 +45,7 @@ CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
 # Constants for test types
 TEST_TYPE_STICK = "stick"
 TEST_TYPE_BUTTON = "button"
+TEST_TYPE_HARDWARE = "hardware"     # New test type for hardware check
 
 # File to store the last completed test time
 LAST_TEST_TIME_FILE = os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 'Temp', 'last_test_time.txt') if platform.system() == 'Windows' else os.path.join('/tmp', 'last_test_time.txt')
@@ -122,7 +124,7 @@ def test_arduino_latency(ser):
     print(f"\n{Fore.RED}Error testing Arduino latency: No valid measurements{Fore.RESET}")
     return None
 
-# Функція для експорту статистики в CSV
+# Function to export statistics to CSV
 def export_to_csv(stats):
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     filename = f"latency_test_{timestamp}.csv"
@@ -133,7 +135,7 @@ def export_to_csv(stats):
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerow(stats_copy)
-    print(f"Дані збережено у файл {filename}")
+    print(f"Data saved to file {filename}")
 
 # ASCII Logo
 print(f" ")
@@ -296,6 +298,52 @@ class LatencyTester:
         self.measuring = False  # Not starting measurement yet, waiting for 'S'
         self.last_trigger_time_us = time.perf_counter() * 1000000  # Time in microseconds
 
+    def test_hardware(self):
+        """Tests the solenoid and sensor functionality"""
+        print(f"\nStarting hardware test with {HARDWARE_TEST_ITERATIONS} iterations...\n")
+        successful_tests = 0
+        failed_tests = 0
+        
+        for i in range(HARDWARE_TEST_ITERATIONS):
+            print(f"Test {i+1}/{HARDWARE_TEST_ITERATIONS}")
+            self.serial.reset_input_buffer()
+            self.serial.reset_output_buffer()
+            
+            # Trigger solenoid
+            self.trigger_solenoid()
+            
+            # Wait for sensor response ('S') with timeout
+            start_time = time.time()
+            response_received = False
+            while time.time() - start_time < 1.0:  # 1 second timeout
+                if self.serial.in_waiting:
+                    data = self.serial.read()
+                    if data == b'S':
+                        response_received = True
+                        break
+                time.sleep(0.001)  # Short delay to reduce CPU load
+            
+            if response_received:
+                print(f"{Fore.GREEN}Test {i+1}: Solenoid activated, sensor detected contact successfully.{Fore.RESET}")
+                successful_tests += 1
+            else:
+                print(f"{Fore.RED}Test {i+1}: Failed - No sensor response detected.{Fore.RESET}")
+                failed_tests += 1
+            
+            # Wait for solenoid pulse to complete and add small delay
+            time.sleep(self.pulse_duration_us / 1000000 + 0.2)
+        
+        print(f"\n{Fore.CYAN}Hardware Test Results:{Fore.RESET}")
+        print(f"Total tests: {HARDWARE_TEST_ITERATIONS}")
+        print(f"Successful: {successful_tests}")
+        print(f"Failed: {failed_tests}")
+        if failed_tests == 0:
+            print(f"{Fore.GREEN}Hardware test passed: Solenoid and sensor are functioning correctly.{Fore.RESET}")
+        else:
+            print(f"{Fore.RED}Hardware test failed: Check solenoid and sensor connections or hardware integrity.{Fore.RESET}")
+        
+        return successful_tests == HARDWARE_TEST_ITERATIONS
+
     def check_input(self):
         if self.test_type == TEST_TYPE_STICK:
             if not self.stick_axes and self.measuring:
@@ -437,7 +485,7 @@ class LatencyTester:
             if self.check_for_stall_and_adjust():
                 # If there was an adjustment, make a new push immediately
                 self.trigger_solenoid()
-                
+            
             # Regular interval check for push
             elif not self.measuring and (current_time_us - self.last_trigger_time_us >= self.test_interval_us):
                 self.trigger_solenoid()
@@ -494,9 +542,10 @@ if __name__ == "__main__":
     print("\nSelect test type:")
     print("1: Test analog stick (99% threshold)")
     print("2: Test button")
+    print("3: Test hardware (solenoid and sensor)")
     
     try:
-        test_choice = int(input(f"Enter your choice (1-2): "))
+        test_choice = int(input(f"Enter your choice (1-3): "))
         if test_choice == 1:
             if not joystick:
                 print("Error: No gamepad found! Can't run stick test.")
@@ -509,6 +558,8 @@ if __name__ == "__main__":
                 pygame.quit()
                 sys.exit()
             test_type = TEST_TYPE_BUTTON
+        elif test_choice == 3:
+            test_type = TEST_TYPE_HARDWARE
         else:
             print("Invalid selection!")
             pygame.quit()
@@ -613,84 +664,91 @@ if __name__ == "__main__":
     test_completed_normally = False
     
     try:
-        tester.test_loop()
-        
-        stats = tester.get_statistics()
-        if stats:
-            test_completed_normally = True  # Test completed normally
-            print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
-            print(f"===============")
+        if test_type == TEST_TYPE_HARDWARE:
+            test_passed = tester.test_hardware()
+            if test_passed:
+                print(f"{Fore.GREEN}Hardware is fully functional. Ready for stick or button testing.{Fore.RESET}")
+            else:
+                print(f"{Fore.RED}Hardware issues detected. Please check connections and try again.{Fore.RESET}")
+        else:
+            tester.test_loop()
             
-            # Record completion time right after the test completes
-            save_test_completion_time()
-            
-            print(f"\nTotal measurements: {stats['total_samples']}")
-            print(f"Valid measurements: {stats['valid_samples']}")
-            print(f"Invalid measurements (>{stats['pulse_duration']*(RATIO-1):.1f}ms): {stats['invalid_samples']}")
-            print(f"Measurements after filtering: {stats['filtered_samples']}")
-            print(f"\nMinimum latency: {stats['min']:.2f} ms")
-            print(f"Maximum latency: {stats['max']:.2f} ms")
-            print(f"Average latency: {stats['avg']:.2f} ms")
-            print(f"Jitter: {stats['jitter']:.2f} ms")
-            if stats['contact_delay'] > 1.2:
-                print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
-            print(f"===============")
+            stats = tester.get_statistics()
+            if stats:
+                test_completed_normally = True  # Test completed normally
+                print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
+                print(f"===============")
+                
+                # Record completion time right after the test completes
+                save_test_completion_time()
+                
+                print(f"\nTotal measurements: {stats['total_samples']}")
+                print(f"Valid measurements: {stats['valid_samples']}")
+                print(f"Invalid measurements (>{stats['pulse_duration']*(RATIO-1):.1f}ms): {stats['invalid_samples']}")
+                print(f"Measurements after filtering: {stats['filtered_samples']}")
+                print(f"\nMinimum latency: {stats['min']:.2f} ms")
+                print(f"Maximum latency: {stats['max']:.2f} ms")
+                print(f"Average latency: {stats['avg']:.2f} ms")
+                print(f"Jitter: {stats['jitter']:.2f} ms")
+                if stats['contact_delay'] > 1.2:
+                    print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
+                print(f"===============")
 
-            # Вибір дії у стилі вибору типу тесту
-            print("\nSelect action:")
-            print("1: Open on Gamepadla.com")
-            print("2: Export to CSV")
-            print("3: Exit")
-            try:
-                choice = int(input("Enter your choice (1-3): "))
-                if choice == 1:
-                    while True:
-                        test_key = generate_short_id()
-                        gamepad_name = input(f"Enter gamepad name: ")
-                        connection = {
-                            "1": "Cable",
-                            "2": "Bluetooth",
-                            "3": "Dongle"
-                        }.get(input(f"Current connection (1. Cable, 2. Bluetooth, 3. Dongle): "), "Unset")
-                        data = {
-                            'test_key': str(test_key),
-                            'version': VERSION,
-                            'url': 'https://gamepadla.com',
-                            'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
-                            'driver': joystick.get_name() if joystick else "N/A",
-                            'connection': connection,
-                            'name': gamepad_name,
-                            'os_name': platform.system(),
-                            'os_version': platform.uname().version,
-                            'min_latency': round(stats['min'], 2),
-                            'max_latency': round(stats['max'], 2),
-                            'avg_latency': round(stats['avg'], 2),
-                            'jitter': stats['jitter'],
-                            'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB',
-                            'delay_list': ', '.join(str(round(x, 2)) for x in stats['filtered_results']),
-                            'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
-                            'contact_delay': stats['contact_delay'],
-                            'pulse_duration': stats['pulse_duration']
-                        }
-                        try:
-                            response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
-                            if response.status_code == 200:
-                                print("Test results successfully sent to the server.")
-                                webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
+                # Action selection similar to test type selection
+                print("\nSelect action:")
+                print("1: Open on Gamepadla.com")
+                print("2: Export to CSV")
+                print("3: Exit")
+                try:
+                    choice = int(input("Enter your choice (1-3): "))
+                    if choice == 1:
+                        while True:
+                            test_key = generate_short_id()
+                            gamepad_name = input(f"Enter gamepad name: ")
+                            connection = {
+                                "1": "Cable",
+                                "2": "Bluetooth",
+                                "3": "Dongle"
+                            }.get(input(f"Current connection (1. Cable, 2. Bluetooth, 3. Dongle): "), "Unset")
+                            data = {
+                                'test_key': str(test_key),
+                                'version': VERSION,
+                                'url': 'https://gamepadla.com',
+                                'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
+                                'driver': joystick.get_name() if joystick else "N/A",
+                                'connection': connection,
+                                'name': gamepad_name,
+                                'os_name': platform.system(),
+                                'os_version': platform.uname().version,
+                                'min_latency': round(stats['min'], 2),
+                                'max_latency': round(stats['max'], 2),
+                                'avg_latency': round(stats['avg'], 2),
+                                'jitter': stats['jitter'],
+                                'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB',
+                                'delay_list': ', '.join(str(round(x, 2)) for x in stats['filtered_results']),
+                                'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
+                                'contact_delay': stats['contact_delay'],
+                                'pulse_duration': stats['pulse_duration']
+                            }
+                            try:
+                                response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
+                                if response.status_code == 200:
+                                    print("Test results successfully sent to the server.")
+                                    webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
+                                    break
+                                else:
+                                    print(f"\nServer error. Status code: {response.status_code}")
+                            except requests.exceptions.RequestException as e:
+                                print("\nNo internet connection or server is unreachable")
+                            retry = input(f"\nDo you want to try sending the data again? (Y/N): ").upper()
+                            if retry != 'Y':
                                 break
-                            else:
-                                print(f"\nServer error. Status code: {response.status_code}")
-                        except requests.exceptions.RequestException as e:
-                            print("\nNo internet connection or server is unreachable")
-                        retry = input(f"\nDo you want to try sending the data again? (Y/N): ").upper()
-                        if retry != 'Y':
-                            break
-                elif choice == 2:
-                    export_to_csv(stats)
-                elif choice != 3:
-                    print("Invalid selection!")
-            except ValueError:
-                print("Invalid input!")
+                    elif choice == 2:
+                        export_to_csv(stats)
+                    elif choice != 3:
+                        print("Invalid selection!")
+                except ValueError:
+                    print("Invalid input!")
         
     except KeyboardInterrupt:
         print("\nTest interrupted by user.")
