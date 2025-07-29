@@ -107,12 +107,13 @@ def test_arduino_latency(ser):
     return None
 
 # Function to export statistics to CSV
-def export_to_csv(stats, gamepad_name):
+def export_to_csv(stats, gamepad_name, raw_results):
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     filename = f"latency_test_{timestamp}.csv"
     stats_copy = stats.copy()
     stats_copy['filtered_results'] = ', '.join(str(round(x, 2)) for x in stats['filtered_results'])
     stats_copy['gamepad_name'] = gamepad_name  # Add gamepad name to stats
+    stats_copy['raw_results'] = ', '.join(str(round(x, 2)) for x in raw_results)  # Add raw results to stats
     with open(filename, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=stats_copy.keys())
         writer.writeheader()
@@ -536,7 +537,7 @@ if __name__ == "__main__":
                                     if input("\nDo you want to try sending the data again? (Y/N): ").upper() != 'Y':
                                         break
                             elif choice == 2:
-                                export_to_csv(stats, joystick.get_name() if joystick else "N/A")
+                                export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
                             elif choice != 3:
                                 print("Invalid selection!")
                         except ValueError:
