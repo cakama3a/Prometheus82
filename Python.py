@@ -21,7 +21,7 @@ import sys
 import csv
 
 # Global settings
-VERSION = "5.2.3.0"                 # Updated version with microsecond support
+VERSION = "5.2.3.1"                 # Updated version with microsecond support
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
@@ -31,8 +31,8 @@ HARDWARE_TEST_ITERATIONS = 10       # Number of iterations for hardware test
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
 COOLING_PERIOD_SECONDS = COOLING_PERIOD_MINUTES * 60  # Cooling period in seconds
-LOWER_QUANTILE = 0.05               # Lower quantile for filtering
-UPPER_QUANTILE = 0.95               # Upper quantile for filtering
+LOWER_QUANTILE = 0.02               # Lower quantile for filtering
+UPPER_QUANTILE = 0.98               # Upper quantile for filtering
 STICK_THRESHOLD = 0.99              # Stick activation threshold
 RATIO = 5                           # Delay to pulse duration ratio
 TEST_INTERVAL = PULSE_DURATION * RATIO  # Delay time before next pulse
@@ -520,8 +520,8 @@ if __name__ == "__main__":
                                         'name': gamepad_name, 'os_name': platform.system(), 'os_version': platform.uname().version,
                                         'min_latency': round(stats['min'], 2), 'max_latency': round(stats['max'], 2),
                                         'avg_latency': round(stats['avg'], 2), 'jitter': stats['jitter'],
-                                        'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB',
-                                        'delay_list': ', '.join(str(round(x, 2)) for x in stats['filtered_results']),
+                                        'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB', # mathod name is not a mistake!
+                                        'delay_list': ', '.join(str(round(x, 2)) for x in tester.latency_results),
                                         'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
                                         'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration']
                                     }
