@@ -22,7 +22,7 @@ import csv
 
 # Global settings
 VERSION = "5.2.3.0"                 # Updated version with microsecond support
-TEST_ITERATIONS = 100               # Number of test iterations
+TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
 STICK_MOVEMENT_COMPENSATION = 3.5   # Compensation for stick movement time in ms at 99% deflection
@@ -107,11 +107,12 @@ def test_arduino_latency(ser):
     return None
 
 # Function to export statistics to CSV
-def export_to_csv(stats):
+def export_to_csv(stats, gamepad_name):
     timestamp = time.strftime("%Y%m%d-%H%M%S")
     filename = f"latency_test_{timestamp}.csv"
     stats_copy = stats.copy()
     stats_copy['filtered_results'] = ', '.join(str(round(x, 2)) for x in stats['filtered_results'])
+    stats_copy['gamepad_name'] = gamepad_name  # Add gamepad name to stats
     with open(filename, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=stats_copy.keys())
         writer.writeheader()
@@ -535,7 +536,7 @@ if __name__ == "__main__":
                                     if input("\nDo you want to try sending the data again? (Y/N): ").upper() != 'Y':
                                         break
                             elif choice == 2:
-                                export_to_csv(stats)
+                                export_to_csv(stats, joystick.get_name() if joystick else "N/A")
                             elif choice != 3:
                                 print("Invalid selection!")
                         except ValueError:
