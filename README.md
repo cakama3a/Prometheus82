@@ -151,4 +151,5 @@ See the [LICENSE](LICENSE) file for details.
 john@gamepadla.com
 
 ## Donation
-Gamepadla is not a commercial project, and its development is based solely on the author's enthusiasm. If you want to support me, please do so at https://ko-fi.com/gamepadla
+- Gamepadla is not a commercial project, and its development is based solely on the author's enthusiasm. If you want to support me, please do so at https://ko-fi.com/gamepadla
+- Or you can donate in cryptocurrency at [https://plisio.net/donate/1pkNYhBv](https://plisio.net/donate/1pkNYhBv)
