@@ -36,7 +36,7 @@ The testing process ensures accurate measurement of the Prometheus82 device's in
 ## How to Get Prometheus 82
 You have two options to obtain a Prometheus 82 device:  
 1. Build It Yourself: Follow the [instructions](#test-bench) in this repository to 3D-print the test bench, source components, and assemble the device. All necessary files and guides are provided below.
-2. Order a Pre-Built Device: Purchase a ready-to-use Prometheus 82 from our shop at [Ko-fi Shop](https://ko-fi.com/gamepadla/shop?g=3) (Quantity is limited).
+2. Order a Pre-Built Device: Purchase a ready-to-use Prometheus 82 from our shop at [Ko-fi Shop](https://ko-fi.com/gamepadla/shop?g=3).
 3. Buy cheaper [in cryptocurrency](https://plisio.net/payment-button/new/qsmQXIMiKA9T). After the purchase, be sure to write to me at john@gamepadla.com
 
 ## How to Use Prometheus 82
