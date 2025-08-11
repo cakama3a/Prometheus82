@@ -503,45 +503,50 @@ if __name__ == "__main__":
                             print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
                         print(f"===============")
 
-                        # Action selection similar to test type selection
-                        print("\nSelect action:\n1: Open on Gamepadla.com\n2: Export to CSV\n3: Exit")
-                        try:
-                            choice = int(input("Enter your choice (1-3): "))
-                            if choice == 1:
-                                while True:
-                                    test_key = generate_short_id()
-                                    gamepad_name = input("Enter gamepad name: ")
-                                    connection = {"1": "Cable", "2": "Bluetooth", "3": "Dongle"}.get(
-                                        input("Current connection (1. Cable, 2. Bluetooth, 3. Dongle): "), "Unset")
-                                    data = {
-                                        'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
-                                        'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
-                                        'driver': joystick.get_name() if joystick else "N/A", 'connection': connection,
-                                        'name': gamepad_name, 'os_name': platform.system(), 'os_version': platform.uname().version,
-                                        'min_latency': round(stats['min'], 2), 'max_latency': round(stats['max'], 2),
-                                        'avg_latency': round(stats['avg'], 2), 'jitter': stats['jitter'],
-                                        'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB', # mathod name is not a mistake!
-                                        'delay_list': ', '.join(str(round(x, 2)) for x in tester.latency_results),
-                                        'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
-                                        'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration']
-                                    }
-                                    try:
-                                        response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
-                                        if response.status_code == 200:
-                                            print("Test results successfully sent to the server.")
-                                            webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
+                        # Action selection with retry on invalid input
+                        while True:
+                            print("\nSelect action:\n1: Open on Gamepadla.com\n2: Export to CSV\n3: Exit")
+                            try:
+                                choice = int(input("Enter your choice (1-3): "))
+                                if choice not in [1, 2, 3]:
+                                    print("Invalid selection! Please enter 1, 2, or 3.")
+                                    continue
+                                if choice == 1:
+                                    while True:
+                                        test_key = generate_short_id()
+                                        gamepad_name = input("Enter gamepad name: ")
+                                        connection = {"1": "Cable", "2": "Bluetooth", "3": "Dongle"}.get(
+                                            input("Current connection (1. Cable, 2. Bluetooth, 3. Dongle): "), "Unset")
+                                        data = {
+                                            'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
+                                            'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
+                                            'driver': joystick.get_name() if joystick else "N/A", 'connection': connection,
+                                            'name': gamepad_name, 'os_name': platform.system(), 'os_version': platform.uname().version,
+                                            'min_latency': round(stats['min'], 2), 'max_latency': round(stats['max'], 2),
+                                            'avg_latency': round(stats['avg'], 2), 'jitter': stats['jitter'],
+                                            'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB', # mathod name is not a mistake!
+                                            'delay_list': ', '.join(str(round(x, 2)) for x in tester.latency_results),
+                                            'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
+                                            'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration']
+                                        }
+                                        try:
+                                            response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
+                                            if response.status_code == 200:
+                                                print("Test results successfully sent to the server.")
+                                                webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
+                                                break
+                                            print(f"\nServer error. Status code: {response.status_code}")
+                                        except requests.exceptions.RequestException:
+                                            print("\nNo internet connection or server is unreachable")
+                                        if input("\nDo you want to try sending the data again? (Y/N): ").upper() != 'Y':
                                             break
-                                        print(f"\nServer error. Status code: {response.status_code}")
-                                    except requests.exceptions.RequestException:
-                                        print("\nNo internet connection or server is unreachable")
-                                    if input("\nDo you want to try sending the data again? (Y/N): ").upper() != 'Y':
-                                        break
-                            elif choice == 2:
-                                export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
-                            elif choice != 3:
-                                print("Invalid selection!")
-                        except ValueError:
-                            print("Invalid input!")
+                                elif choice == 2:
+                                    export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
+                                elif choice == 3:
+                                    break
+                                break
+                            except ValueError:
+                                print("Invalid input! Please enter 1, 2, or 3.")
             except KeyboardInterrupt:
                 print("\nTest interrupted by user.")
     except serial.SerialException as e:
