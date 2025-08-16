@@ -146,6 +146,7 @@ For successful assembly, you will need the following tools:
 - Over time, the solenoid can degrade, especially if it is frequently overheated. Therefore, it is worth getting a separate control gamepad (with stable firmware) to periodically check if the delay has changed.
 - When conducting tests, you should do it at least 2 times. It is better to recalibrate the position of the gamepad on the stand before the second test to avoid positioning errors.
 - Some Chinese Arduino devices may not work well, if something does not work, it may be worth replacing the Arduino board.
+- Some Arduino boards are slower than others. For the Prometheus 82 tester, only boards with self-delay ≤0.6 ms should be used. You can check it with [this script](https://github.com/cakama3a/Prometheus82/tree/main/ArduinoSpeedTestScript)
 - You should not modify the device in your own way, as this can skew the test results and cause an error in the latency. Currently, the code is optimally adapted for the components listed above.
 - P82 device should be plugged directly into your PC's motherboard, as the ports on the front of the case can sometimes cause problems.
 
