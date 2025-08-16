@@ -48,12 +48,32 @@ def main():
                 print(f"Test {i + 1}/{NUM_TESTS}: {latency:.3f} ms")
         
         if latencies:
+            avg_latency = statistics.mean(latencies)
+            jitter = statistics.stdev(latencies)
+
             print("\nResults:")
             print(f"Total measurements: {len(latencies)}")
-            print(f"Minimum latency: {min(latencies):.3f} ms")
-            print(f"Maximum latency: {max(latencies):.3f} ms")
-            print(f"Average latency: {statistics.mean(latencies):.3f} ms")
-            print(f"Jitter (standard deviation): {statistics.stdev(latencies):.3f} ms")
+            print(f"Jitter (standard deviation): {jitter:.3f} ms")
+
+            # Оцінка якості
+            if avg_latency <= 0.3:
+                rating = "EXCELLENT"
+            elif avg_latency <= 0.6:
+                rating = "GOOD"
+            elif avg_latency <= 1.0:
+                rating = "AVERAGE"
+            elif avg_latency > 1.2:
+                rating = "CRITICAL"
+            else:
+                rating = "POOR"
+
+            # Акуратна рамка
+            print("\n" + "-" * 40)
+            print(f"   AVG LATENCY : {avg_latency:.3f} ms")
+            print(f"   RATING      : {rating}")
+            print("-" * 40 + "\n")
+
+
             
     except Exception as e:
         print(f"Error: {e}")
