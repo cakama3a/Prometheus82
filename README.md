@@ -40,6 +40,15 @@ You have two options to obtain a Prometheus 82 device:
 3. Buy cheaper [in cryptocurrency](https://plisio.net/payment-button/new/qsmQXIMiKA9T). After the purchase, be sure to write to me at john@gamepadla.com
 
 ## How to Use Prometheus 82
+> **⚠️ IMPORTANT: Upload Firmware to Arduino**
+> 
+> Before using the device, you must flash the Arduino with the provided firmware:
+> 1. Open the [Arduino.ino](https://github.com/cakama3a/Prometheus82/blob/main/Arduino.ino) file in the **Arduino IDE**.
+> 2. Connect your Arduino board to the computer via USB.
+> 3. In the Arduino IDE, go to **Tools → Board** and select the correct Arduino model.
+> 4. Go to **Tools → Port** and select the correct COM port.
+> 5. Click the **Upload** button to flash the code to the Arduino.
+
 [![2025-07-13_09-59](https://github.com/user-attachments/assets/1f5d08aa-0afb-40de-a22f-f82d48ff92d4)](https://www.youtube.com/watch?v=NBS_tU-7VqA)
   
 1. Connect the P82 device to the computer (Upper port).
@@ -63,7 +72,7 @@ All parts can be printed in 3 passes in about 10 hours and 250 grams of plastic.
 ## Assembly Diagram
 The diagrams show the schematic of the current Prometheus 82 tester assembly of revision 1.0.4 (not to be confused with the program revision). The blueprint also adds a solenoid and a sensor button, and the diagram exactly reflects the device on the photo. The solenoid and the sensor button are connected via a separate power cable, which can be made according to the video instructions below.  
 ![photo-collage png (2)](https://github.com/user-attachments/assets/727d81b4-aca1-4deb-8ebc-2ac8486cb9eb)
-- There is also an alternative build scheme (newer and more optimized) [for Patreons](https://www.patreon.com/posts/prometheus-82-v5-133249717?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link) or [Ko-Fi supporters](https://ko-fi.com/i/II2I81HINLS)
+- There is also an alternative build scheme (newer and more optimized) [for Ko-Fi supporters](https://ko-fi.com/i/IM4M61JQ8G4)
 
 ## Assembly Instructions (For DIY)
 1. Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
