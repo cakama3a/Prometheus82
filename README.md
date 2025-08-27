@@ -117,7 +117,7 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 | 20 | PET Expandable Cable Sleeve 4mm (30/100cm) | $0.32 | Wrapping the cable to make it look good | [AliExpress](https://s.click.aliexpress.com/e/_opZIqHF) |
 | 21 | Brass Heat Insert Nut M3 (1/80pcs) | $3.59 | Required for secure fixation of the button at the end of the solenoid | [AliExpress](https://s.click.aliexpress.com/e/_oCiDrMZ) |
 | 22 | Screws M3 50Pcs, 8mm (7/50pcs) | $2.08 | To connect components printed on a 3D printer | [AliExpress](https://s.click.aliexpress.com/e/_olQ572m) |
-| 22 | Screws M3 50Pcs, 4mm (2/50pcs) | $1.08 | For Solenoid fix | [AliExpress](https://www.aliexpress.com/item/1005007593838226.html) |
+| 22a | Screws M3 50Pcs, 4mm (2/50pcs) | $1.08 | For Solenoid fix | [AliExpress](https://www.aliexpress.com/item/1005007593838226.html) |
 
 ## Required Tools
 
