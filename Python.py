@@ -31,7 +31,7 @@ except ImportError:
 
 
 # Global settings
-VERSION = "5.3.1.0"                 # Updated version with keyboard support and localization
+VERSION = "5.3.2.0"                 # Updated version with keyboard connection type
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
@@ -387,11 +387,13 @@ def generate_short_id(length=12):
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
 if __name__ == "__main__":
+    # The rest of the script remains the same until the final data submission part
+    
     if not check_cooling_period():
         print("\nClosing program...")
         sys.exit()
     
-    # --- New Main Menu ---
+    # --- Main Menu ---
     print("\nSelect what you want to test:\n1: Gamepad\n2: Keyboard\n3: Hardware (solenoid and sensor)")
     try:
         main_choice = int(input("Enter your choice (1-3): "))
@@ -541,11 +543,15 @@ if __name__ == "__main__":
                                         test_key = generate_short_id()
                                         device_prompt = "Enter gamepad name: " if main_choice == 1 else "Enter keyboard name: "
                                         user_device_name = input(device_prompt)
-                                        connection_type = "Keyboard"
-                                        if main_choice == 1:
-                                            connection_type = {"1": "Cable", "2": "Bluetooth", "3": "Dongle"}.get(
-                                                input("Current connection (1. Cable, 2. Bluetooth, 3. Dongle): "), "Unset")
                                         
+                                        # --- MODIFIED BLOCK ---
+                                        connection_type = "Unset"
+                                        # Ask for connection type for both Gamepad and Keyboard tests
+                                        if main_choice in [1, 2]:
+                                            connection_input = input("Current connection (1. Cable, 2. Bluetooth, 3. Dongle/Receiver): ")
+                                            connection_type = {"1": "Cable", "2": "Bluetooth", "3": "Dongle"}.get(connection_input, "Unset")
+                                        # --- END OF MODIFIED BLOCK ---
+
                                         data = {
                                             'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
                                             'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
