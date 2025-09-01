@@ -87,7 +87,7 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 ### Main Electronic Components
 | № | Component Name | Price | Why | Link |
 |---|----------------|-------|------|-------|
-| 1 | Solenoid TAU-0530T 12V | $1.58 | The main component for moving sticks and buttons | [AliExpress](https://s.click.aliexpress.com/e/_olUL07J) |
+| 1 | Solenoid TAU-0530T 12V | $1.58 | The main component for moving sticks and buttons | [AliExpress](https://s.click.aliexpress.com/e/_olUL07J), [Amazon](https://sovrn.co/tf717uc) |
 | 2 | Arduino Nano 3.0 ATMEGA328P TypeC | $2.79 | Sensor and solenoid control board | [AliExpress](https://s.click.aliexpress.com/e/_oDnDkCb) |
 | 3 | Transistor IRLB8721PBF (1/5pcs) | $1.81 | To activate the solenoid move | [AliExpress](https://s.click.aliexpress.com/e/_oEGL679) |
 | 4 | Kailh Mute Button 6*6*7.3mm | $2.00 | To record the moment you press a button or stick on the gamepad | [AliExpress](https://s.click.aliexpress.com/e/_om11hvf) |
