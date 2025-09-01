@@ -91,7 +91,7 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 | 2 | Arduino Nano 3.0 ATMEGA328P TypeC | $2.79 | Sensor and solenoid control board | [AliExpress](https://s.click.aliexpress.com/e/_oDnDkCb), [Amazon](https://sovrn.co/13xpdmr) |
 | 3 | Transistor IRLB8721PBF (1/5pcs) | $1.81 | To activate the solenoid move | [AliExpress](https://s.click.aliexpress.com/e/_oEGL679), [Amazon](https://sovrn.co/q3lxwld) |
 | 4 | Kailh Mute Button 6x6x7.3mm | $2.00 | To record the moment you press a button or stick on the gamepad | [AliExpress](https://s.click.aliexpress.com/e/_om11hvf), [Amazon](https://sovrn.co/aa2nj3s) |
-| 5 | Diode P6KE18A (1/20pcs) | $0.82 | To protect the board control circuitry | [AliExpress](https://s.click.aliexpress.com/e/_oFMCugb) |
+| 5 | Diode P6KE18A (1/20pcs) | $0.82 | To protect the board control circuitry | [AliExpress](https://s.click.aliexpress.com/e/_oFMCugb), [Amazon](https://sovrn.co/1ekve0l) |
 | 6 | Capacitor 25V 680uF 10x12 (1/5pcs) | $4.38 | To protect the board control circuitry | [AliExpress](https://www.aliexpress.com/item/1005003020234581.html) |
 | 7 | PCB Circuit Board 4x6 | $0.56 | To install all components of the control board | [AliExpress](https://s.click.aliexpress.com/e/_opZCvzR) |
 | 8 | Resistor Set (3/300psc) | $1.34 | To protect the board control circuitry | [AliExpress](https://s.click.aliexpress.com/e/_oBNMBNX) |
