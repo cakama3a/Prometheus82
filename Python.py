@@ -394,10 +394,10 @@ if __name__ == "__main__":
         sys.exit()
     
     # --- Main Menu ---
-    print("\nSelect what you want to test:\n1: Gamepad\n2: Keyboard\n3: Hardware (solenoid and sensor)")
+    print("\nSelect what you want to test:\n1: Gamepad\n2: Keyboard\n3: Mouse (Soon)\n4: Other")
     try:
-        main_choice = int(input("Enter your choice (1-3): "))
-        if main_choice not in [1, 2, 3]: raise ValueError
+        main_choice = int(input("Enter your choice (1-4): "))
+        if main_choice not in [1, 2, 3, 4]: raise ValueError
     except ValueError:
         print("Invalid input!")
         sys.exit()
@@ -454,8 +454,26 @@ if __name__ == "__main__":
     elif main_choice == 2: # Keyboard
         test_type = TEST_TYPE_KEYBOARD
         device_name_for_csv = "Keyboard"
-    elif main_choice == 3: # Hardware
-        test_type = TEST_TYPE_HARDWARE
+
+    elif main_choice == 3: # Mouse (Soon)
+        print("\nThis option will be available soon.")
+        print("For now, you can support the development at https://ko-fi.com/gamepadla")
+        sys.exit()
+
+    elif main_choice == 4: # Other
+        print("\nSelect an option:\n1: Hardware (solenoid and sensor)\n2: Stick Deflection (Coming Soon)")
+        try:
+            other_choice = int(input("Enter your choice (1-2): "))
+            if other_choice == 1:
+                test_type = TEST_TYPE_HARDWARE
+            elif other_choice == 2:
+                print("\nStick Deflection testing is coming soon.")
+                sys.exit()
+            else:
+                raise ValueError
+        except ValueError:
+            print("Invalid input!")
+            sys.exit()
 
     # Setup serial connection
     ports = list_ports.comports()
