@@ -99,8 +99,8 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 ### Power and Charging
 | № | Component Name | Price | Why | Link |
 |---|----------------|-------|------|------|
-| 9 | Decoy Trigger | $0.76 | To convert 5V from the power supply to the required voltage | [AliExpress](https://s.click.aliexpress.com/e/_oDIgTYG) |
-| 10 | 20W Charger (EU Socet) | $6.61 | It is important to use a powerful power supply, at least 20W | [AliExpress](https://s.click.aliexpress.com/e/_okS7gqX) |
+| 9 | Decoy Trigger | $0.76 | To convert 5V from the power supply to the required voltage | [AliExpress](https://s.click.aliexpress.com/e/_oDIgTYG), [Amazon](https://sovrn.co/27k7gdk) |
+| 10 | 20W Charger | $6.61 | It is important to use a powerful power supply, at least 20W | [EU socket](https://s.click.aliexpress.com/e/_okS7gqX), [US socket](https://sovrn.co/1lk0zoc) |
 
 ### Construction and Connection Materials
 | № | Component Name | Price | Why | Link |
