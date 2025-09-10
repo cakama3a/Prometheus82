@@ -500,10 +500,14 @@ if __name__ == "__main__":
             print("Invalid input!")
             sys.exit()
 
+    # --- Modified Code Block ---
     # Setup serial connection
-    ports = list_ports.comports()
+    all_ports = list_ports.comports()
+    # Filter out ports to exclude those with 'bluetooth' in the description (case-insensitive)
+    ports = [p for p in all_ports if 'bluetooth' not in p.description.lower()]
+    
     if not ports:
-        print("No COM ports found! Cannot continue.")
+        print("No non-Bluetooth COM ports found! Cannot continue.")
         if pygame_initialized: pygame.quit()
         sys.exit()
     
@@ -519,6 +523,7 @@ if __name__ == "__main__":
             print("Invalid selection!")
             if pygame_initialized: pygame.quit()
             sys.exit()
+    # --- End of Modified Code Block ---
 
     try:
         with serial.Serial(port_info.device, 115200, timeout=1) as ser:
