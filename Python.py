@@ -211,17 +211,23 @@ class LatencyTester:
         self.consecutive_same_latencies = 0  # Reset identical latencies counter
 
     def detect_active_stick(self):
-        """Detects active stick movement beyond threshold"""
+        """Detects active stick movement beyond threshold and dynamically determines the axis pair."""
         if not self.joystick:
             return False
         for event in pygame.event.get():
             if event.type == JOYAXISMOTION and event.joy == self.joystick.get_id():
-                if event.axis in [0, 1] and abs(self.joystick.get_axis(event.axis)) > STICK_THRESHOLD:
-                    self.stick_axes = [0, 1]
-                    return True
-                if event.axis in [2, 3] and abs(self.joystick.get_axis(event.axis)) > STICK_THRESHOLD:
-                    self.stick_axes = [2, 3]
-                    return True
+                if abs(self.joystick.get_axis(event.axis)) > STICK_THRESHOLD:
+                    activated_axis = event.axis
+                    partner_axis = -1
+
+                    if activated_axis % 2 == 0:
+                        partner_axis = activated_axis + 1
+                    else:
+                        partner_axis = activated_axis - 1
+
+                    if 0 <= partner_axis < self.joystick.get_numaxes():
+                        self.stick_axes = sorted([activated_axis, partner_axis])
+                        return True
         return False
 
     def detect_active_button(self):
