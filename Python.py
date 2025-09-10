@@ -425,27 +425,40 @@ if __name__ == "__main__":
         sys.exit()
 
     # Setup serial connection
-    ports = list_ports.comports()
+    # --- MODIFICATION START ---
+    all_ports = list_ports.comports()
+    # Filter out ports that have "Bluetooth" in their description (case-insensitive)
+    ports = [p for p in all_ports if "bluetooth" not in p.description.lower()]
+
     if not ports:
-        print("No COM ports found! Cannot continue with hardware test.")
+        print("No suitable COM ports found. All available ports were Bluetooth or no ports are connected.")
         pygame.quit()
         sys.exit()
     
-    port = ports[0]
-    if len(ports) > 1:
+    port = None
+    if len(ports) == 1:
+        port = ports[0]
+        print(f"\nAutoselected COM port: {port.device} - {port.description}")
+    else:
         print("\nAvailable COM ports:")
-        for i, port in enumerate(ports):
-            print(f"{i + 1}: {port.device} - {port.description}")
+        for i, p in enumerate(ports):
+            print(f"{i + 1}: {p.device} - {p.description}")
         try:
-            port = ports[int(input(f"Select COM port (1-{len(ports)}): ")) - 1]
+            selection = int(input(f"Select COM port (1-{len(ports)}): ")) - 1
+            if 0 <= selection < len(ports):
+                port = ports[selection]
+            else:
+                # Trigger the except block for out-of-range numbers
+                raise IndexError("Selection out of range")
         except (ValueError, IndexError):
             print("Invalid selection!")
             pygame.quit()
             sys.exit()
+    # --- MODIFICATION END ---
 
     try:
         with serial.Serial(port.device, 115200, timeout=1) as ser:
-            print(f"\nConnecting to {port.device} ({port.description})")
+            print(f"Connecting to {port.device} ({port.description})")
             ser.reset_input_buffer()
             ser.reset_output_buffer()
             
