@@ -13,22 +13,13 @@ from serial.tools import list_ports
 from datetime import datetime
 from colorama import Fore
 import pygame
+import keyboard
 from pygame.locals import *
 import statistics
 import random
 import string
 import sys
 import csv
-
-# Try to import the keyboard library and provide instructions if it's missing
-try:
-    import keyboard
-except ImportError:
-    print(f"{Fore.RED}Error: The 'keyboard' library is required for keyboard testing.{Fore.RESET}")
-    print("Please install it using: pip install keyboard")
-    print(f"{Fore.YELLOW}Note: On Linux, this library may require superuser (sudo) privileges to work.{Fore.RESET}")
-    sys.exit()
-
 
 # Global settings
 VERSION = "5.3.2.0"                 # Updated version with keyboard connection type
@@ -56,6 +47,7 @@ CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
 TEST_TYPE_STICK = "stick"
 TEST_TYPE_BUTTON = "button"
 TEST_TYPE_KEYBOARD = "keyboard"     # New test type for keyboard
+TEST_TYPE_MOUSE_BUTTON = "mouse_button" # New test type for mouse button
 TEST_TYPE_HARDWARE = "hardware"     # New test type for hardware check
 
 # File to store the last completed test time
@@ -157,6 +149,7 @@ class LatencyTester:
         self.stick_axes = None
         self.button_to_test = None
         self.key_to_test = None
+        self.mouse_button_to_test = None
         self.invalid_measurements = 0
         self.consecutive_same_latencies = 0
         self.last_latency = None
@@ -238,6 +231,13 @@ class LatencyTester:
                 return True
         return False
         
+    def detect_active_mouse_button(self):
+        for event in pygame.event.get():
+            if event.type == MOUSEBUTTONDOWN:
+                self.mouse_button_to_test = event.button
+                return True
+        return False
+
     def detect_active_key(self):
         """Detects the first key press to be used for testing."""
         print("\nPress any key on your keyboard that you want to test...")
@@ -253,6 +253,9 @@ class LatencyTester:
 
     def is_button_pressed(self):
         return self.button_to_test is not None and self.joystick and self.joystick.get_button(self.button_to_test)
+
+    def is_mouse_button_pressed(self):
+        return self.mouse_button_to_test is not None and pygame.mouse.get_pressed()[self.mouse_button_to_test - 1]
 
     def log_progress(self, latency):
         progress = len(self.latency_results)
@@ -293,7 +296,7 @@ class LatencyTester:
         return successful_tests == HARDWARE_TEST_ITERATIONS
 
     def check_input(self):
-        if self.test_type not in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD) or not self.measuring:
+        if self.test_type not in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD, TEST_TYPE_MOUSE_BUTTON) or not self.measuring:
             return False
         
         latency_ms = None
@@ -311,7 +314,12 @@ class LatencyTester:
         elif self.test_type == TEST_TYPE_KEYBOARD:
             if self.is_key_pressed():
                 latency_ms = (time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0
-        
+        elif self.test_type == TEST_TYPE_MOUSE_BUTTON:
+            pygame.event.pump()
+            if self.mouse_button_to_test is None and self.detect_active_mouse_button(): return False
+            if self.is_mouse_button_pressed():
+                latency_ms = (time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0
+
         if latency_ms is not None:
             if latency_ms <= self.max_latency_us / 1000.0:
                 self.latency_results.append(latency_ms)
@@ -394,7 +402,7 @@ if __name__ == "__main__":
         sys.exit()
     
     # --- Main Menu ---
-    print("\nSelect what you want to test:\n1: Gamepad\n2: Keyboard\n3: Mouse (Soon)\n4: Other")
+    print("\nSelect what you want to test:\n1: Gamepad\n2: Keyboard\n3: Mouse\n4: Other")
     try:
         main_choice = int(input("Enter your choice (1-4): "))
         if main_choice not in [1, 2, 3, 4]: raise ValueError
@@ -410,6 +418,7 @@ if __name__ == "__main__":
     if main_choice == 1: # Gamepad
         pygame.init()
         pygame.joystick.init()
+        pygame.display.set_mode((1, 1)) # Needed for pygame to handle events
         pygame_initialized = True
         
         joystick_count = pygame.joystick.get_count()
@@ -455,10 +464,26 @@ if __name__ == "__main__":
         test_type = TEST_TYPE_KEYBOARD
         device_name_for_csv = "Keyboard"
 
-    elif main_choice == 3: # Mouse (Soon)
-        print("\nThis option will be available soon.")
-        print("For now, you can support the development at https://ko-fi.com/gamepadla")
-        sys.exit()
+    elif main_choice == 3: # Mouse
+        pygame.init()
+        pygame.display.set_mode((1, 1))
+        pygame_initialized = True
+        device_name_for_csv = "Mouse"
+        print("\nSelect mouse test type:\n1: Test mouse button\n2: Test mouse sensor (Coming Soon)")
+        try:
+            mouse_choice = int(input("Enter your choice (1-2): "))
+            if mouse_choice == 1:
+                test_type = TEST_TYPE_MOUSE_BUTTON
+            elif mouse_choice == 2:
+                print("\nMouse sensor testing is coming soon.")
+                if pygame_initialized: pygame.quit()
+                sys.exit()
+            else:
+                raise ValueError
+        except ValueError:
+            print("Invalid input!")
+            if pygame_initialized: pygame.quit()
+            sys.exit()
 
     elif main_choice == 4: # Other
         print("\nSelect an option:\n1: Hardware (solenoid and sensor)\n2: Stick Deflection (Coming Soon)")
@@ -534,6 +559,10 @@ if __name__ == "__main__":
                         print(f"Selected analog stick axes: {tester.stick_axes}!")
                     elif test_type == TEST_TYPE_KEYBOARD:
                         tester.detect_active_key()
+                    elif test_type == TEST_TYPE_MOUSE_BUTTON:
+                        print("\nClick the mouse button that you want to test...")
+                        while not tester.detect_active_mouse_button(): time.sleep(0.01)
+                        print(f"Selected mouse button #{tester.mouse_button_to_test}!")
 
                     tester.test_loop()
                     stats = tester.get_statistics()
@@ -559,25 +588,40 @@ if __name__ == "__main__":
                                 if choice == 1:
                                     while True:
                                         test_key = generate_short_id()
-                                        device_prompt = "Enter gamepad name: " if main_choice == 1 else "Enter keyboard name: "
+                                        if main_choice == 1:
+                                            device_prompt = "Enter gamepad name: "
+                                            driver_name = joystick.get_name() if joystick else "N/A"
+                                        elif main_choice == 2:
+                                            device_prompt = "Enter keyboard name: "
+                                            driver_name = "Keyboard"
+                                        elif main_choice == 3:
+                                            device_prompt = "Enter mouse name: "
+                                            driver_name = "Mouse"
+                                        else:
+                                            device_prompt = "Enter device name: "
+                                            driver_name = "N/A"
+                                            
                                         user_device_name = input(device_prompt)
                                         
-                                        # --- MODIFIED BLOCK ---
                                         connection_type = "Unset"
-                                        # Ask for connection type for both Gamepad and Keyboard tests
-                                        if main_choice in [1, 2]:
+                                        if main_choice in [1, 2, 3]:
                                             connection_input = input("Current connection (1. Cable, 2. Bluetooth, 3. Dongle/Receiver): ")
                                             connection_type = {"1": "Cable", "2": "Bluetooth", "3": "Dongle"}.get(connection_input, "Unset")
-                                        # --- END OF MODIFIED BLOCK ---
+
+                                        if test_type == TEST_TYPE_STICK: mathod = 'PNCS'
+                                        elif test_type == TEST_TYPE_BUTTON: mathod = 'PNCB'
+                                        elif test_type == TEST_TYPE_KEYBOARD: mathod = 'PNCK'
+                                        elif test_type == TEST_TYPE_MOUSE_BUTTON: mathod = 'PNCMB'
+                                        else: mathod = 'N/A'
 
                                         data = {
                                             'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
                                             'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
-                                            'driver': joystick.get_name() if joystick else "Keyboard", 'connection': connection_type,
+                                            'driver': driver_name, 'connection': connection_type,
                                             'name': user_device_name, 'os_name': platform.system(), 'os_version': platform.uname().version,
                                             'min_latency': round(stats['min'], 2), 'max_latency': round(stats['max'], 2),
                                             'avg_latency': round(stats['avg'], 2), 'jitter': stats['jitter'],
-                                            'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else ('PNCB' if test_type == TEST_TYPE_BUTTON else 'PNCK'),
+                                            'mathod': mathod,
                                             'delay_list': ', '.join(str(round(x, 2)) for x in tester.latency_results),
                                             'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
                                             'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration']
