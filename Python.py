@@ -21,7 +21,7 @@ import sys
 import csv
 
 # Global settings
-VERSION = "5.2.3.1"                 # Updated version with microsecond support
+VERSION = "5.2.3.2"                 # Updated version with microsecond support
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
