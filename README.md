@@ -157,6 +157,32 @@ This project is licensed under the Prometheus 82 License.
 
 See the [LICENSE](LICENSE) file for details.
 
+## 🛡️ Official Licensee Registry
+
+To maintain transparency and build trust within the community, we publish a registry of all official commercial licensees. Companies listed here have purchased a **Prometheus 82 Commercial Kit** or an annual license, granting them the right to use the device for product development, quality assurance, and marketing.
+
+Each license is verified and has a specific validity period.
+
+| Licensee / Identifier                          | Plan         | Status      | Valid Until      |
+| ---------------------------------------------- | ------------ | ----------- | ---------------- |
+| **GuliKit** | `Enterprise` | ✅ Active   | `July 31, 2026`  |
+| `8a4b1c9e-7d2f-4b0a-8c1f-9e6a5b3d7c0f`         | `Professional` | ✅ Active   | `October 15, 2026` |
+
+---
+
+### How to Get Your License
+
+Interested in using Prometheus 82 for your business? The best way to get started is with our **Commercial Kit**, which includes:
+* A pre-built, calibrated, and ready-to-use Prometheus 82 device.
+* Your first year's **Professional License**.
+* Priority technical support.
+
+By purchasing a license, you not only ensure legal compliance but also support the continued development of this open-source project.
+
+**To purchase your kit or learn more, contact us at `john@gamepadla.com`.**
+
+*We respect our clients' privacy. Licensees can choose to be listed by their company name or a unique anonymous identifier (UUID).*
+
 ## Contact
 john@gamepadla.com
 
