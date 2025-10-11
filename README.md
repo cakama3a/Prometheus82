@@ -150,12 +150,13 @@ For successful assembly, you will need the following tools:
 - P82 device should be plugged directly into your PC's motherboard, as the ports on the front of the case can sometimes cause problems.
 
 ## License
-This project is licensed under the Prometheus 82 License. 
 
-- **For enthusiasts and bloggers**: You may use the Prometheus 82 Tester for non-commercial purposes (e.g., videos, posts, reviews) free of charge, provided you include a prominent notice crediting "Prometheus 82 by John Punch" and a link to https://gamepadla.com in your content.
-- **For commercial use**: Corporations or organizations wishing to use the tester for commercial purposes, such as testing gamepads and publishing results, must contact the author at john@gamepadla.com to negotiate a commercial license. Commercial use without a prior agreement is prohibited.
+This project operates under a dual-license model. Please choose the one that fits your use case.
 
-See the [LICENSE](LICENSE) file for details.
+-   **Personal & Non-Commercial Use:** You are free to build and use Prometheus 82 for personal projects, academic research, and non-monetized content. For the full terms, please see the **[Personal Use License](LICENSE)**.
+
+-   **Commercial Use:** A commercial license is **required** for any organization using the device for business purposes (e.g., product R&D, quality assurance, marketing). To review the terms and pricing, please see the full **[Commercial License Agreement](COMMERCIAL_LICENSE.md)**.
+
 
 ## 🛡️ Official Licensee Registry
 
@@ -169,8 +170,6 @@ Each license is verified and has a specific validity period.
 | `8a4b1c9e-7d2f-4b0a-8c1f-9e6a5b3d7c0f`         | `Professional` | ✅ Active   | `October 15, 2026` |
 
 ---
-You can review the full text of our Commercial License Agreement here:
-**[View Full Commercial License Terms](COMMERCIAL_LICENSE.md)**
 ### How to Get Your License
 
 Interested in using Prometheus 82 for your business? The best way to get started is with our **Commercial Kit**, which includes:
