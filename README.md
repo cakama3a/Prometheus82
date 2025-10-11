@@ -169,7 +169,8 @@ Each license is verified and has a specific validity period.
 | `8a4b1c9e-7d2f-4b0a-8c1f-9e6a5b3d7c0f`         | `Professional` | ✅ Active   | `October 15, 2026` |
 
 ---
-
+You can review the full text of our Commercial License Agreement here:
+**[View Full Commercial License Terms](COMMERCIAL_LICENSE.md)**
 ### How to Get Your License
 
 Interested in using Prometheus 82 for your business? The best way to get started is with our **Commercial Kit**, which includes:
