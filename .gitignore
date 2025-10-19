@@ -3,3 +3,10 @@ test.py
 latency_test_20250725-131915.csv
 latency_test_20250727-125330.csv
 data.txt
+build_log.txt
+PPrometheus82.exe
+NPrometheus82.exe
+buildNuitka.bat
+build.bat
+build.bat
+*.bat
