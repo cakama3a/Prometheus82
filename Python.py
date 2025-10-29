@@ -21,7 +21,7 @@ import sys
 import csv
 
 # Global settings
-VERSION = "5.2.3.3"                 # Updated version with microsecond support
+VERSION = "5.2.3.4"                 # Updated version with microsecond support
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
@@ -130,9 +130,9 @@ print("██╔═══╝ ██╔══██╗██║   ██║██
 print("██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║   " + Fore.LIGHTRED_EX + "╚█████╔╝███████╗" + Fore.RESET + "")
 print("╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝   " + Fore.LIGHTRED_EX + " ╚════╝ ╚══════╝" + Fore.RESET + "")                                                                                                 
 print(f"v.{VERSION} by John Punch (" + Fore.LIGHTRED_EX + "https://gamepadla.com" + Fore.RESET + ")")
-print(f"Support the project: " + Fore.LIGHTRED_EX + "https://ko-fi.com/gamepadla" + Fore.RESET)
-print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_tU-7VqA" + Fore.RESET)
-print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometheus82" + Fore.RESET)
+print(f"Support the project: " + Fore.LIGHTRED_EX + "https://ko-fi.com/gamepadla" + Fore.RESET + "")
+print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_tU-7VqA" + Fore.RESET + "")
+print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometheus82" + Fore.RESET + "")
 
 class LatencyTester:
     def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY):
@@ -264,6 +264,7 @@ class LatencyTester:
         """Tests the solenoid and sensor functionality"""
         print(f"\nStarting hardware test with {HARDWARE_TEST_ITERATIONS} iterations...\n")
         successful_tests = 0
+        sensor_press_times = []
         
         for i in range(HARDWARE_TEST_ITERATIONS):
             print(f"Test {i+1}/{HARDWARE_TEST_ITERATIONS}")
@@ -274,6 +275,7 @@ class LatencyTester:
             while time.time() - start < 1.0:  # 1 second timeout
                 if self.serial.in_waiting and self.serial.read() == b'S':
                     print(f"{Fore.GREEN}Test {i+1}: Solenoid activated, sensor detected contact successfully.{Fore.RESET}")
+                    sensor_press_times.append(time.perf_counter())
                     successful_tests += 1
                     break
             else:
@@ -282,6 +284,33 @@ class LatencyTester:
         
         print(f"\n{Fore.CYAN}Hardware Test Results:{Fore.RESET}\nTotal tests: {HARDWARE_TEST_ITERATIONS}\n"
               f"Successful: {successful_tests}\nFailed: {HARDWARE_TEST_ITERATIONS - successful_tests}")
+        
+        # --- NEW DRY REFACTORED BLOCK START ---
+        if len(sensor_press_times) > 2:  # Need at least 3 presses to get 2 intervals
+            press_intervals = [(sensor_press_times[i] - sensor_press_times[i-1]) * 1000 
+                               for i in range(1, len(sensor_press_times))]
+
+            print(f"\n{Fore.CYAN}Sensor Interval Results:{Fore.RESET}")
+            print(f"Total intervals measured: {len(press_intervals)}")
+
+            # Set defaults
+            filtered_intervals = press_intervals
+            filter_note = f"  {Fore.YELLOW}Note: Not enough intervals to filter, showing simple average.{Fore.RESET}"
+
+            if len(press_intervals) > 2: # Need at least 3 intervals to filter min/max
+                press_intervals.sort()
+                filtered_intervals = press_intervals[1:-1] # Re-assign with filtered list
+                filter_note = f"Filtered intervals (removed min/max): {len(filtered_intervals)}" # Re-assign note
+            
+            # Common logic
+            avg_interval = statistics.mean(filtered_intervals)
+            print(filter_note)
+            print(f"Average time between sensor presses: {avg_interval:.2f} ms")
+            print(f"{Fore.YELLOW}(Note: Normal values are around 250 ±2ms){Fore.RESET}\n")
+        else:
+            print(f"\n{Fore.YELLOW}Not enough sensor presses detected ({len(sensor_press_times)}) to calculate intervals.{Fore.RESET}")
+        # --- NEW DRY REFACTORED BLOCK END ---
+
         print(f"{Fore.GREEN if successful_tests == HARDWARE_TEST_ITERATIONS else Fore.RED}"
               f"Hardware test {'passed: Solenoid and sensor are functioning correctly.' if successful_tests == HARDWARE_TEST_ITERATIONS else 'failed: Check solenoid and sensor connections or hardware integrity.'}{Fore.RESET}")
         return successful_tests == HARDWARE_TEST_ITERATIONS
