@@ -69,7 +69,7 @@ All parts can be printed in 3 passes in about 10 hours and 250 grams of plastic.
 ## Assembly Diagram
 The diagrams show the schematic of the current Prometheus 82 tester assembly of revision 1.0.4 (not to be confused with the program revision). The blueprint also adds a solenoid and a sensor button, and the diagram exactly reflects the device on the photo. The solenoid and the sensor button are connected via a separate power cable, which can be made according to the video instructions below.  
 ![photo-collage png (2)](https://github.com/user-attachments/assets/727d81b4-aca1-4deb-8ebc-2ac8486cb9eb)
-- There is also an alternative build scheme (newer and more optimized) [for Ko-Fi supporters](https://ko-fi.com/i/IM4M61JQ8G4)
+- There is also an alternative build scheme (newer and more optimized) [for Ko-Fi supporters](https://ko-fi.com/i/IE1E31N5NMT)
 
 ## Assembly Instructions (For DIY)
 1. Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
