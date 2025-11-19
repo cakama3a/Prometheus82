@@ -595,13 +595,13 @@ if __name__ == "__main__":
 
                         # Action selection with retry on invalid input
                         while True:
-                            print("\nSelect action:\n1: Open on Gamepadla.com\n2: Export to CSV\n3: Exit")
+                            print("\nSelect action:\n1: Open on Gamepadla.com\n2: Export to CSV\n3: Upload to Gamepadla.com AND Export to CSV\n4: Exit")
                             try:
-                                choice = int(input("Enter your choice (1-3): "))
-                                if choice not in [1, 2, 3]:
-                                    print("Invalid selection! Please enter 1, 2, or 3.")
+                                choice = int(input("Enter your choice (1-4): "))
+                                if choice not in [1, 2, 3, 4]:
+                                    print("Invalid selection! Please enter 1, 2, 3, or 4.")
                                     continue
-                                if choice == 1:
+                                if choice == 1 or choice == 3:
                                     while True:
                                         test_key = generate_short_id()
                                         gamepad_name = input("Enter gamepad name: ")
@@ -625,19 +625,25 @@ if __name__ == "__main__":
                                             if response.status_code == 200:
                                                 print("Test results successfully sent to the server.")
                                                 webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
+                                                # If choice 3, also export to CSV
+                                                if choice == 3:
+                                                    export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
                                                 break
                                             print(f"\nServer error. Status code: {response.status_code}")
                                         except requests.exceptions.RequestException:
                                             print("\nNo internet connection or server is unreachable")
                                         if input("\nDo you want to try sending the data again? (Y/N): ").upper() != 'Y':
+                                            # If choice 3 and user doesn't want to retry, still save CSV
+                                            if choice == 3:
+                                                export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
                                             break
                                 elif choice == 2:
                                     export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
-                                elif choice == 3:
+                                elif choice == 4:
                                     break
                                 break
                             except ValueError:
-                                print("Invalid input! Please enter 1, 2, or 3.")
+                                print("Invalid input! Please enter 1, 2, 3, or 4.")
             except KeyboardInterrupt:
                 print("\nTest interrupted by user.")
     except serial.SerialException as e:
