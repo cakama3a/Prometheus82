@@ -21,7 +21,7 @@ import sys
 import csv
 
 # Global settings
-VERSION = "5.2.3.4"                 # Updated version with microsecond support
+VERSION = "5.2.3.5"                 # Updated version with microsecond support
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
@@ -406,6 +406,43 @@ class LatencyTester:
             self.check_input()
             pygame.event.pump()
 
+def detect_gamepad_mode(joystick):
+    """Detect gamepad mode (XInput, DInput, Sony, Switch) based on name and axes at rest"""
+    MODES = {
+        "Sony": {"right_axes": (2, 3), "code": "dualsense"},
+        "XInput": {"right_axes": (2, 3), "code": "xinput"},
+        "Switch": {"right_axes": (2, 3), "code": "switch"},
+        "DInput": {"right_axes": (3, 5), "code": "dinput"},
+    }
+    
+    # Additional delay after init (some controllers need this)
+    time.sleep(0.1)
+    
+    # Warmup joystick (longer for better detection)
+    warmup_until = time.perf_counter() + 0.50  # 0.50 seconds warmup
+    while time.perf_counter() < warmup_until:
+        pygame.event.pump()
+        for i in range(joystick.get_numaxes()):
+            joystick.get_axis(i)
+        time.sleep(0.01)
+    
+    # Get axes at rest after warmup
+    axes_at_rest = [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
+    name_lower = joystick.get_name().lower()
+    
+    # Detect mode based on name and axes
+    initial_mode = "DInput"
+    if any(s in name_lower for s in ("dualsense", "ps5", "edge")):
+        initial_mode = "Sony"
+    elif any(s in name_lower for s in ("switch", "joy-con", "pro controller")):
+        initial_mode = "Switch"
+    elif any(s in name_lower for s in ("dualshock", "ds4", "ps4", "playstation")):
+        initial_mode = "Sony"
+    elif any(abs(a + 1) < 0.1 for a in axes_at_rest):
+        initial_mode = "XInput"
+    
+    return initial_mode
+
 # Short ID Generation
 def generate_short_id(length=12):
     """Generates a random short ID"""
@@ -423,6 +460,7 @@ if __name__ == "__main__":
     
     # Select gamepad
     joystick = None
+    detected_mode = None
     joystick_count = pygame.joystick.get_count()
     if joystick_count:
         if joystick_count > 1:
@@ -440,6 +478,10 @@ if __name__ == "__main__":
             joystick = pygame.joystick.Joystick(0)
             print(f"\nAutoselected gamepad: {joystick.get_name()}")
         joystick.init()
+        
+        # Detect gamepad mode (XInput, DInput, Sony, Switch)
+        detected_mode = detect_gamepad_mode(joystick)
+        print(f"Detected protocol:  {Fore.GREEN}{detected_mode}{Fore.RESET}")
     else:
         print("\nNo gamepad found! Some features will be unavailable.")
 
@@ -569,6 +611,7 @@ if __name__ == "__main__":
                                             'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
                                             'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
                                             'driver': joystick.get_name() if joystick else "N/A", 'connection': connection,
+                                            'mode': detected_mode if detected_mode else "Unknown",
                                             'name': gamepad_name, 'os_name': platform.system(), 'os_version': platform.uname().version,
                                             'min_latency': round(stats['min'], 2), 'max_latency': round(stats['max'], 2),
                                             'avg_latency': round(stats['avg'], 2), 'jitter': stats['jitter'],
