@@ -11,7 +11,7 @@ import numpy as np
 import os
 from serial.tools import list_ports
 from datetime import datetime
-from colorama import Fore
+from colorama import Fore, Style
 import pygame
 from pygame.locals import *
 import statistics
@@ -133,6 +133,7 @@ print(f"v.{VERSION} by John Punch (" + Fore.LIGHTRED_EX + "https://gamepadla.com
 print(f"Support the project: " + Fore.LIGHTRED_EX + "https://ko-fi.com/gamepadla" + Fore.RESET + "")
 print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_tU-7VqA" + Fore.RESET + "")
 print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometheus82" + Fore.RESET + "")
+print(f"{Style.DIM}To open links, press CTRL+Click{Style.RESET_ALL}")
 
 class LatencyTester:
     def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY):
