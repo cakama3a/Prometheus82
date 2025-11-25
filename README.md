@@ -168,7 +168,7 @@ Each license is verified and has a specific validity period.
 | ---------------------------------------------- | ------------ | ----------- | ---------------- |
 | **GuliKit** | `Enterprise` | ✅ Active   | `July 31, 2026`  |
 | `8a4b1c9e-7d2f-4b0a-8c1f-9e6a5b3d7c0f`         | `Professional` | ✅ Active   | `October 15, 2026` |
-| `4e1a6a58-3d4a-4b0c-8f2e-1b9c7d6a5e1f`         | `Enterprise` | ✅ Active   | `December 15, 2026` |
+| `4e1a6a58-3d4a-4b0c-8f2e-1b9c7d6a5e1f`         | `Professional` | ✅ Active   | `December 15, 2026` |
 
 ---
 ### How to Get Your License
