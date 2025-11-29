@@ -15,7 +15,7 @@ This section outlines the testing process for the Prometheus82 device, designed 
 2. **Solenoid Movement**  
    The solenoid moves and, at a specific moment, strikes a button or stick on the gamepad.
 3. **Interaction Detection**  
-   The "Kalih Mute Button" sensor at the end of the solenoid registers the moment of contact.
+   The "Kailh Mute Button" sensor at the end of the solenoid registers the moment of contact.
 4. **Signal Transmission**  
    The "P82" device instantly sends a signal to the `Prometheus82.exe` program, confirming interaction with the gamepad's button or stick.
 5. **Latency Timer Start**  
