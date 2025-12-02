@@ -19,6 +19,7 @@ import random
 import string
 import sys
 import csv
+import argparse
 
 # Global settings
 VERSION = "5.2.3.6"                 # Updated version with microsecond support
@@ -414,6 +415,7 @@ class LatencyTester:
 def detect_gamepad_mode(joystick):
     """Detect gamepad mode (XInput, DInput, Sony, Switch) based on name and axes at rest"""
     MODES = {
+        "SteamInput": {"right_axes": (2, 3), "code": "steam_input"},
         "Sony": {"right_axes": (2, 3), "code": "dualsense"},
         "XInput": {"right_axes": (2, 3), "code": "xinput"},
         "Switch": {"right_axes": (2, 3), "code": "switch"},
@@ -437,7 +439,9 @@ def detect_gamepad_mode(joystick):
     
     # Detect mode based on name and axes
     initial_mode = "DInput"
-    if any(s in name_lower for s in ("dualsense", "ps5", "edge")):
+    if any(s in name_lower for s in ("steam", "steam controller", "steam deck", "virtual gamepad")):
+        initial_mode = "SteamInput"
+    elif any(s in name_lower for s in ("dualsense", "ps5", "edge")):
         initial_mode = "Sony"
     elif any(s in name_lower for s in ("switch", "joy-con", "pro controller")):
         initial_mode = "Switch"
@@ -454,8 +458,14 @@ def generate_short_id(length=12):
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--steam", action="store_true")
+    args = parser.parse_args()
+    force_steam = args.steam
     pygame.init()
     pygame.joystick.init()
+    pygame.display.set_mode((800, 600))
+    pygame.display.set_caption("Prometheus 82")
     
     # Check if program is started too soon after previous test
     if not check_cooling_period():
@@ -486,6 +496,8 @@ if __name__ == "__main__":
         
         # Detect gamepad mode (XInput, DInput, Sony, Switch)
         detected_mode = detect_gamepad_mode(joystick)
+        if force_steam:
+            detected_mode = "SteamInput"
         print(f"Detected protocol:  {Fore.GREEN}{detected_mode}{Fore.RESET}")
     else:
         print("\nNo gamepad found! Some features will be unavailable.")
