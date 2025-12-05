@@ -21,7 +21,7 @@ import sys
 import csv
 
 # Global settings
-VERSION = "5.2.3.6"                 # Updated version with microsecond support
+VERSION = "5.2.3.7"                 # Updated version with microsecond support
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
@@ -457,11 +457,7 @@ if __name__ == "__main__":
     pygame.init()
     pygame.joystick.init()
     
-    # Check if program is started too soon after previous test
-    if not check_cooling_period():
-        print("\nClosing program...")
-        pygame.quit()
-        sys.exit()
+    # Cooling period check will be performed after selecting test iterations
     
     # Select gamepad
     joystick = None
@@ -505,6 +501,35 @@ if __name__ == "__main__":
         print("Invalid input!")
         pygame.quit()
         sys.exit()
+
+    # Select iterations (affects cooling timeout)
+    if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON):
+        print("\nSelect number of iterations:\n1: 400\n2: 200\n3: 100\nOr enter a custom number between 10 and 400.")
+        try:
+            iter_input = input("Enter your choice (1/2/3 or custom 10-400): ").strip()
+            if iter_input == '1':
+                TEST_ITERATIONS = 400
+            elif iter_input == '2':
+                TEST_ITERATIONS = 200
+            elif iter_input == '3':
+                TEST_ITERATIONS = 100
+            else:
+                custom_iters = int(iter_input)
+                if custom_iters < 10 or custom_iters > 400:
+                    raise ValueError
+                TEST_ITERATIONS = custom_iters
+        except ValueError:
+            print("Invalid iterations input! Please enter 1, 2, 3, or a number between 10 and 400.")
+            pygame.quit()
+            sys.exit()
+
+        COOLING_PERIOD_MINUTES = (TEST_ITERATIONS / 400.0) * 10.0
+        COOLING_PERIOD_SECONDS = COOLING_PERIOD_MINUTES * 60
+
+        if not check_cooling_period():
+            print("\nClosing program...")
+            pygame.quit()
+            sys.exit()
 
     # Setup serial connection
     # --- MODIFICATION START ---
@@ -607,6 +632,9 @@ if __name__ == "__main__":
                                     print("Invalid selection! Please enter 1, 2, 3, or 4.")
                                     continue
                                 if choice == 1 or choice == 3:
+                                    if TEST_ITERATIONS < 200:
+                                        print(f"\n{Fore.YELLOW}Uploading is disabled: tests with fewer than 200 iterations cannot be sent to gamepadla.com.{Fore.RESET}")
+                                        continue
                                     while True:
                                         test_key = generate_short_id()
                                         gamepad_name = input("Enter gamepad name: ")
