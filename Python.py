@@ -53,29 +53,50 @@ LAST_TEST_TIME_FILE = os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 
 # Function to check time since last test
 def check_cooling_period():
     if not os.path.exists(LAST_TEST_TIME_FILE):
-        return True  # If file doesn't exist, no tests were run yet
-    
+        return True
     try:
         with open(LAST_TEST_TIME_FILE) as f:
-            elapsed = time.time() - float(f.read().strip())
-            if elapsed < COOLING_PERIOD_SECONDS:
-                print(f"\n{Fore.YELLOW}WARNING: Device needs {int(COOLING_PERIOD_SECONDS - elapsed)} more seconds to cool down!{Fore.RESET}")
-                while True:
-                    choice = input("Continue anyway? (Y/N): ").upper()
-                    if choice in ('Y', 'N'):
-                        return choice == 'Y'
-                    print("Invalid choice. Please enter Y or N.")
+            content = f.read().strip()
+            parts = content.split(',')
+            if len(parts) == 2:
+                last_time = float(parts[0])
+                cooling_seconds = float(parts[1])
+            else:
+                last_time = float(content)
+                cooling_seconds = COOLING_PERIOD_SECONDS
+            remaining = max(0, int(cooling_seconds - (time.time() - last_time)))
+            if remaining > 0:
+                print(f"\n{Fore.YELLOW}WARNING: Cooling required: {remaining} seconds remaining.{Fore.RESET}")
             return True
     except (ValueError, IOError):
-        return True  # If there's an error reading the file, allow the test to run
+        return True
+
+def get_cooling_remaining_seconds():
+    if not os.path.exists(LAST_TEST_TIME_FILE):
+        return 0
+    try:
+        with open(LAST_TEST_TIME_FILE) as f:
+            content = f.read().strip()
+            parts = content.split(',')
+            if len(parts) == 2:
+                last_time = float(parts[0])
+                cooling_seconds = float(parts[1])
+            else:
+                last_time = float(content)
+                cooling_seconds = COOLING_PERIOD_SECONDS
+            return max(0, int(cooling_seconds - (time.time() - last_time)))
+    except (ValueError, IOError):
+        return 0
 
 # Function to record the test completion time
-def save_test_completion_time():
+def save_test_completion_time(iterations):
     try:
+        cooling_minutes = (iterations / 400.0) * 10.0
+        cooling_seconds = int(cooling_minutes * 60)
         with open(LAST_TEST_TIME_FILE, 'w') as f:
-            f.write(str(time.time()))
+            f.write(f"{time.time()},{cooling_seconds}")
         print(f"{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
-        print(f"{Fore.YELLOW}Wait {COOLING_PERIOD_MINUTES} minutes before next test to prevent solenoid overheating.{Fore.RESET}")
+        print(f"{Fore.YELLOW}Cooling timer set to {cooling_minutes:.2f} minutes.{Fore.RESET}")
     except IOError as e:
         print(f"\n{Fore.RED}Error recording test completion time: {e}{Fore.RESET}")
 
@@ -486,6 +507,9 @@ if __name__ == "__main__":
     else:
         print("\nNo gamepad found! Some features will be unavailable.")
 
+    # Cooling status before selecting test type
+    check_cooling_period()
+
     # Select test type
     print("\nSelect test type:\n1: Test analog stick (99% threshold)\n2: Test button\n3: Test hardware (solenoid and sensor)")
     try:
@@ -495,16 +519,31 @@ if __name__ == "__main__":
             raise ValueError
         if test_type != TEST_TYPE_HARDWARE and not joystick:
             print(f"Error: No gamepad found! Can't run {test_type} test.")
+            input("Press Enter to close...")
             pygame.quit()
             sys.exit()
+        remaining = get_cooling_remaining_seconds()
+        if remaining > 0:
+            print(f"\n{Fore.YELLOW}WARNING: Device has not cooled yet. Running this test now may cause degradation. Remaining cooling time: {remaining} seconds.{Fore.RESET}")
+            while True:
+                choice = input("Continue anyway? (Y/N): ").upper()
+                if choice in ('Y', 'N'):
+                    break
+                print("Invalid choice. Please enter Y or N.")
+            if choice == 'N':
+                print("Test cancelled.")
+                input("Press Enter to close...")
+                pygame.quit()
+                sys.exit()
     except ValueError:
         print("Invalid input!")
+        input("Press Enter to close...")
         pygame.quit()
         sys.exit()
 
     # Select iterations (affects cooling timeout)
     if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON):
-        print("\nSelect number of iterations:\n1: 400\n2: 200\n3: 100\nOr enter a custom number between 10 and 400.")
+        print("\nSelect number of iterations:\n1: 400 (For Gamepadla.com validation)\n2: 200\n3: 100\nOr enter a custom number between 10 and 400.")
         try:
             iter_input = input("Enter your choice (1/2/3 or custom 10-400): ").strip()
             if iter_input == '1':
@@ -520,16 +559,11 @@ if __name__ == "__main__":
                 TEST_ITERATIONS = custom_iters
         except ValueError:
             print("Invalid iterations input! Please enter 1, 2, 3, or a number between 10 and 400.")
+            input("Press Enter to close...")
             pygame.quit()
             sys.exit()
 
-        COOLING_PERIOD_MINUTES = (TEST_ITERATIONS / 400.0) * 10.0
-        COOLING_PERIOD_SECONDS = COOLING_PERIOD_MINUTES * 60
-
-        if not check_cooling_period():
-            print("\nClosing program...")
-            pygame.quit()
-            sys.exit()
+        pass
 
     # Setup serial connection
     # --- MODIFICATION START ---
@@ -539,6 +573,7 @@ if __name__ == "__main__":
 
     if not ports:
         print("No suitable COM ports found. All available ports were Bluetooth or no ports are connected.")
+        input("Press Enter to close...")
         pygame.quit()
         sys.exit()
     
@@ -559,6 +594,7 @@ if __name__ == "__main__":
                 raise IndexError("Selection out of range")
         except (ValueError, IndexError):
             print("Invalid selection!")
+            input("Press Enter to close...")
             pygame.quit()
             sys.exit()
     # --- MODIFICATION END ---
@@ -577,6 +613,7 @@ if __name__ == "__main__":
                     break
             else:
                 print("Error: Prometheus did not send ready signal ('R'). Check connection or Prometheus code.")
+                input("Press Enter to close...")
                 pygame.quit()
                 sys.exit()
 
@@ -612,7 +649,7 @@ if __name__ == "__main__":
                     tester.test_loop()
                     stats = tester.get_statistics()
                     if stats:
-                        save_test_completion_time()
+                        save_test_completion_time(TEST_ITERATIONS)
                         print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}\n===============\n"
                               f"Total measurements: {stats['total_samples']}\nValid measurements: {stats['valid_samples']}\n"
                               f"Invalid measurements (>{stats['pulse_duration']*(RATIO-1):.1f}ms): {stats['invalid_samples']}\n"
