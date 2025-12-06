@@ -21,7 +21,7 @@ import sys
 import csv
 
 # Global settings
-VERSION = "5.2.3.8"                 # Updated version with microsecond support
+VERSION = "5.2.3.9"                 # Updated version with microsecond support
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
@@ -96,7 +96,7 @@ def save_test_completion_time(iterations):
         with open(LAST_TEST_TIME_FILE, 'w') as f:
             f.write(f"{time.time()},{cooling_seconds}")
         print(f"{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
-        print(f"{Fore.YELLOW}Cooling timer set to {cooling_minutes:.2f} minutes.{Fore.RESET}")
+        print(f"{Fore.YELLOW}Cooling timer set to {cooling_seconds} seconds.{Fore.RESET}")
     except IOError as e:
         print(f"\n{Fore.RED}Error recording test completion time: {e}{Fore.RESET}")
 
@@ -179,6 +179,7 @@ class LatencyTester:
         self.test_interval_us = self.pulse_duration_us * RATIO
         self.max_latency_us = self.test_interval_us - self.pulse_duration_us
         self.latency_results = []
+        self._skip_first_measurement = True
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
 
     def set_pulse_duration(self, duration_ms):
@@ -358,6 +359,10 @@ class LatencyTester:
                 latency_ms = (time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0
         
         if 'latency_ms' in locals():
+            if self._skip_first_measurement:
+                self._skip_first_measurement = False
+                self.measuring = False
+                return True
             if latency_ms <= self.max_latency_us / 1000.0:
                 self.latency_results.append(latency_ms)
                 self.log_progress(latency_ms)
@@ -651,12 +656,12 @@ if __name__ == "__main__":
                     if stats:
                         save_test_completion_time(TEST_ITERATIONS)
                         print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
-                        print(f"{Fore.CYAN}" + "="*46 + f"{Fore.RESET}")
-                        print(f"\n{Style.BRIGHT}{Fore.CYAN}Latency{Fore.RESET}{Style.RESET_ALL}")
+                        print(f"\n{Style.BRIGHT}{Fore.CYAN}" + "="*15 + f"LATENCY" + "="*15 + f"{Fore.RESET}{Style.RESET_ALL}")
                         print(f"{'Min latency:':<26}{stats['min']:>8.2f} ms")
                         print(f"{'Max latency:':<26}{stats['max']:>8.2f} ms")
-                        print(f"{Style.BRIGHT}" + f"{'Average latency:':<26}{Fore.CYAN}{stats['avg']:>8.2f} ms{Fore.RESET}" + f"{Style.RESET_ALL}")
+                        print(f"{Style.BRIGHT}{Fore.CYAN}" + f"{'Average latency:':<26}{stats['avg']:>8.2f} ms{Fore.RESET}" + f"{Style.RESET_ALL}")
                         print(f"{'Jitter:':<26}{stats['jitter']:>8.2f} ms")
+                        print(f"{Style.BRIGHT}{Fore.CYAN}" + "="*37 + f"{Fore.RESET}{Style.RESET_ALL}")
                         print(f"\n{Style.BRIGHT}Measurement Results{Style.RESET_ALL}")
                         print(f"{'Iterations:':<26}{TEST_ITERATIONS:>8}")
                         print(f"{'Total measurements:':<26}{stats['total_samples']:>8}")
@@ -665,7 +670,7 @@ if __name__ == "__main__":
                         print(f"{'Filtered count:':<26}{stats['filtered_samples']:>8}")
                         print(f"{'Pulse duration:':<26}{stats['pulse_duration']:>8.1f} ms")
                         print(f"{'Contact delay:':<26}{stats['contact_delay']:>8.3f} ms")
-                        print(f"\n{Fore.CYAN}" + "="*46 + f"{Fore.RESET}")
+        
                         if stats['contact_delay'] > 1.2:
                             print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
 
