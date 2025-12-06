@@ -21,7 +21,7 @@ import sys
 import csv
 
 # Global settings
-VERSION = "5.2.3.7"                 # Updated version with microsecond support
+VERSION = "5.2.3.8"                 # Updated version with microsecond support
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
@@ -650,15 +650,24 @@ if __name__ == "__main__":
                     stats = tester.get_statistics()
                     if stats:
                         save_test_completion_time(TEST_ITERATIONS)
-                        print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}\n===============\n"
-                              f"Total measurements: {stats['total_samples']}\nValid measurements: {stats['valid_samples']}\n"
-                              f"Invalid measurements (>{stats['pulse_duration']*(RATIO-1):.1f}ms): {stats['invalid_samples']}\n"
-                              f"Measurements after filtering: {stats['filtered_samples']}\n"
-                              f"Minimum latency: {stats['min']:.2f} ms\nMaximum latency: {stats['max']:.2f} ms\n"
-                              f"Average latency: {stats['avg']:.2f} ms\nJitter: {stats['jitter']:.2f} ms")
+                        print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
+                        print(f"{Fore.CYAN}" + "="*46 + f"{Fore.RESET}")
+                        print(f"\n{Style.BRIGHT}{Fore.CYAN}Latency{Fore.RESET}{Style.RESET_ALL}")
+                        print(f"{'Min latency:':<26}{stats['min']:>8.2f} ms")
+                        print(f"{'Max latency:':<26}{stats['max']:>8.2f} ms")
+                        print(f"{Style.BRIGHT}" + f"{'Average latency:':<26}{Fore.CYAN}{stats['avg']:>8.2f} ms{Fore.RESET}" + f"{Style.RESET_ALL}")
+                        print(f"{'Jitter:':<26}{stats['jitter']:>8.2f} ms")
+                        print(f"\n{Style.BRIGHT}Measurement Results{Style.RESET_ALL}")
+                        print(f"{'Iterations:':<26}{TEST_ITERATIONS:>8}")
+                        print(f"{'Total measurements:':<26}{stats['total_samples']:>8}")
+                        print(f"{'Valid measurements:':<26}{stats['valid_samples']:>8}")
+                        print(f"{'Invalid measurements:':<26}{stats['invalid_samples']:>8} (>{stats['pulse_duration']*(RATIO-1):.1f} ms)")
+                        print(f"{'Filtered count:':<26}{stats['filtered_samples']:>8}")
+                        print(f"{'Pulse duration:':<26}{stats['pulse_duration']:>8.1f} ms")
+                        print(f"{'Contact delay:':<26}{stats['contact_delay']:>8.3f} ms")
+                        print(f"\n{Fore.CYAN}" + "="*46 + f"{Fore.RESET}")
                         if stats['contact_delay'] > 1.2:
                             print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
-                        print(f"===============")
 
                         # Action selection with retry on invalid input
                         while True:
