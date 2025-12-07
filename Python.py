@@ -46,6 +46,7 @@ CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
 TEST_TYPE_STICK = "stick"
 TEST_TYPE_BUTTON = "button"
 TEST_TYPE_HARDWARE = "hardware"     # New test type for hardware check
+TEST_TYPE_KEYBOARD = "keyboard"
 
 # File to store the last completed test time
 LAST_TEST_TIME_FILE = os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 'Temp', 'last_test_time.txt') if platform.system() == 'Windows' else os.path.join('/tmp', 'last_test_time.txt')
@@ -171,6 +172,7 @@ class LatencyTester:
         self.last_trigger_time_us = 0  # Last trigger time in microseconds
         self.stick_axes = None
         self.button_to_test = None
+        self.key_to_test = None
         self.invalid_measurements = 0
         self.consecutive_same_latencies = 0
         self.last_latency = None
@@ -267,9 +269,24 @@ class LatencyTester:
                 return True
         return False
 
+    def detect_active_key(self):
+        """Detects keyboard key press events"""
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                self.key_to_test = event.key
+                return True
+        return False
+
     def is_button_pressed(self):
         """Checks if the selected button is pressed"""
         return self.button_to_test is not None and self.joystick and self.joystick.get_button(self.button_to_test)
+
+    def is_key_pressed(self):
+        """Checks if the selected keyboard key is pressed"""
+        if self.key_to_test is None:
+            return False
+        keys = pygame.key.get_pressed()
+        return keys[self.key_to_test]
 
     def log_progress(self, latency):
         """Logs test progress with percentage"""
@@ -343,8 +360,8 @@ class LatencyTester:
         return successful_tests == HARDWARE_TEST_ITERATIONS
 
     def check_input(self):
-        """Processes gamepad input for stick or button tests"""
-        if self.test_type not in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) or not self.measuring:
+        """Processes input for stick, button, or keyboard tests"""
+        if self.test_type not in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD) or not self.measuring:
             return False
         
         if self.test_type == TEST_TYPE_STICK:
@@ -352,10 +369,15 @@ class LatencyTester:
                 return False
             if self.is_stick_at_extreme():
                 latency_ms = ((time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0) - STICK_MOVEMENT_COMPENSATION
-        else:  # TEST_TYPE_BUTTON
+        elif self.test_type == TEST_TYPE_BUTTON:
             if self.button_to_test is None and self.detect_active_button():
                 return False
             if self.is_button_pressed():
+                latency_ms = (time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0
+        else:  # TEST_TYPE_KEYBOARD
+            if self.key_to_test is None and self.detect_active_key():
+                return False
+            if self.is_key_pressed():
                 latency_ms = (time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0
         
         if 'latency_ms' in locals():
@@ -482,6 +504,8 @@ def generate_short_id(length=12):
 if __name__ == "__main__":
     pygame.init()
     pygame.joystick.init()
+    pygame.display.set_mode((800, 600))
+    pygame.display.set_caption("Prometheus 82")
     
     # Cooling period check will be performed after selecting test iterations
     
@@ -516,14 +540,14 @@ if __name__ == "__main__":
     check_cooling_period()
 
     # Select test type
-    print("\nSelect test type:\n1: Test analog stick (99% threshold)\n2: Test button\n3: Test hardware (solenoid and sensor)")
+    print("\nSelect test type:\n1: Gamepad - Test analog stick (99% threshold)\n2: Gamepad - Test button\n3: Keyboard - Test key\n4: Test hardware (solenoid and sensor)")
     try:
-        test_choice = int(input("Enter your choice (1-3): "))
-        test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_HARDWARE}.get(test_choice)
+        test_choice = int(input("Enter your choice (1-4): "))
+        test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE}.get(test_choice)
         if not test_type:
             raise ValueError
-        if test_type != TEST_TYPE_HARDWARE and not joystick:
-            print(f"Error: No gamepad found! Can't run {test_type} test.")
+        if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) and not joystick:
+            print(f"\n{Fore.YELLOW}Error: No gamepad found! Can't run {test_type} test.{Fore.RESET}")
             input("Press Enter to close...")
             pygame.quit()
             sys.exit()
@@ -547,7 +571,7 @@ if __name__ == "__main__":
         sys.exit()
 
     # Select iterations (affects cooling timeout)
-    if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON):
+    if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
         print("\nSelect number of iterations:\n1: 400 (For Gamepadla.com validation)\n2: 200\n3: 100\nOr enter a custom number between 10 and 400.")
         try:
             iter_input = input("Enter your choice (1/2/3 or custom 10-400): ").strip()
@@ -650,6 +674,12 @@ if __name__ == "__main__":
                             pygame.event.pump()
                             time.sleep(0.01)
                         print(f"Selected analog stick axes: {tester.stick_axes}!")
+                    elif test_type == TEST_TYPE_KEYBOARD:
+                        print("\nPress the keyboard key that you want to test...")
+                        while not tester.detect_active_key():
+                            pygame.event.pump()
+                            time.sleep(0.01)
+                        print(f"Selected key: {pygame.key.name(tester.key_to_test)}!")
                     
                     tester.test_loop()
                     stats = tester.get_statistics()
