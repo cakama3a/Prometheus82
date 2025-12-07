@@ -184,6 +184,34 @@ class LatencyTester:
         self._skip_first_measurement = True
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
 
+    def open_test_window(self):
+        pygame.display.set_mode((800, 600))
+        pygame.display.set_caption("Prometheus 82 - Testing")
+        pygame.font.init()
+        self._screen = pygame.display.get_surface()
+        self._font = pygame.font.Font(None, 22)
+
+    def close_test_window(self):
+        try:
+            pygame.display.quit()
+        except Exception:
+            pass
+
+    def render_test_window(self, last_latency=None):
+        if not hasattr(self, "_screen") or self._screen is None:
+            return
+        self._screen.fill((0, 0, 0))
+        header = "Keep this window on top during testing"
+        surf = self._font.render(header, True, (255, 255, 0))
+        self._screen.blit(surf, (10, 10))
+        progress_text = f"Progress: {len(self.latency_results)}/{TEST_ITERATIONS}"
+        surf2 = self._font.render(progress_text, True, (200, 200, 200))
+        self._screen.blit(surf2, (10, 40))
+        if last_latency is not None:
+            surf3 = self._font.render(f"Last latency: {last_latency:.2f} ms", True, (150, 200, 255))
+            self._screen.blit(surf3, (10, 70))
+        pygame.display.flip()
+
     def set_pulse_duration(self, duration_ms):
         """Sets the solenoid pulse duration"""
         duration_ms = max(10, min(500, duration_ms))  # Limit the value
@@ -306,6 +334,7 @@ class LatencyTester:
 
     def test_hardware(self):
         """Tests the solenoid and sensor functionality"""
+        self.open_test_window()
         print(f"\nStarting hardware test with {HARDWARE_TEST_ITERATIONS} iterations...\n")
         successful_tests = 0
         sensor_press_times = []
@@ -325,6 +354,10 @@ class LatencyTester:
             else:
                 print(f"{Fore.RED}Test {i+1}: Failed - No sensor response detected.{Fore.RESET}")
             time.sleep(self.pulse_duration_us / 1000000 + 0.2)  # Wait for solenoid pulse and small delay
+            try:
+                self.render_test_window(None)
+            except Exception:
+                pass
         
         print(f"\n{Fore.CYAN}Hardware Test Results:{Fore.RESET}\nTotal tests: {HARDWARE_TEST_ITERATIONS}\n"
               f"Successful: {successful_tests}\nFailed: {HARDWARE_TEST_ITERATIONS - successful_tests}")
@@ -357,6 +390,7 @@ class LatencyTester:
 
         print(f"{Fore.GREEN if successful_tests == HARDWARE_TEST_ITERATIONS else Fore.RED}"
               f"Hardware test {'passed: Solenoid and sensor are functioning correctly.' if successful_tests == HARDWARE_TEST_ITERATIONS else 'failed: Check solenoid and sensor connections or hardware integrity.'}{Fore.RESET}")
+        self.close_test_window()
         return successful_tests == HARDWARE_TEST_ITERATIONS
 
     def check_input(self):
@@ -447,6 +481,7 @@ class LatencyTester:
 
     def test_loop(self):
         """Main test loop for stick or button tests"""
+        self.open_test_window()
         print(f"\nStarting {TEST_ITERATIONS} measurements with microsecond precision...\n")
         self.trigger_solenoid()
         while len(self.latency_results) < TEST_ITERATIONS:
@@ -458,6 +493,11 @@ class LatencyTester:
                 self.measuring = True
             self.check_input()
             pygame.event.pump()
+            try:
+                self.render_test_window(self.latency_results[-1] if self.latency_results else None)
+            except Exception:
+                pass
+        self.close_test_window()
 
 def detect_gamepad_mode(joystick):
     """Detect gamepad mode (XInput, DInput, Sony, Switch) based on name and axes at rest"""
@@ -504,8 +544,6 @@ def generate_short_id(length=12):
 if __name__ == "__main__":
     pygame.init()
     pygame.joystick.init()
-    pygame.display.set_mode((800, 600))
-    pygame.display.set_caption("Prometheus 82")
     
     # Cooling period check will be performed after selecting test iterations
     
@@ -675,11 +713,7 @@ if __name__ == "__main__":
                             time.sleep(0.01)
                         print(f"Selected analog stick axes: {tester.stick_axes}!")
                     elif test_type == TEST_TYPE_KEYBOARD:
-                        print("\nPress the keyboard key that you want to test...")
-                        while not tester.detect_active_key():
-                            pygame.event.pump()
-                            time.sleep(0.01)
-                        print(f"Selected key: {pygame.key.name(tester.key_to_test)}!")
+                        print("\nKeyboard key will be selected when the test window opens. Press your key at the prompt.")
                     
                     tester.test_loop()
                     stats = tester.get_statistics()
