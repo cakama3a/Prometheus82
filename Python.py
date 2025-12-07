@@ -182,6 +182,7 @@ class LatencyTester:
         self.max_latency_us = self.test_interval_us - self.pulse_duration_us
         self.latency_results = []
         self._skip_first_measurement = True
+        self._started = False
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
 
     def open_test_window(self):
@@ -189,7 +190,47 @@ class LatencyTester:
         pygame.display.set_caption("Prometheus 82 - Testing")
         pygame.font.init()
         self._screen = pygame.display.get_surface()
-        self._font = pygame.font.Font(None, 22)
+        self._font = pygame.font.Font(None, 28)
+
+    def wait_for_start(self):
+        if not hasattr(self, "_screen") or self._screen is None:
+            return
+        self._started = False
+        start_rect = pygame.Rect(0, 0, 220, 64)
+        start_rect.center = (self._screen.get_width() // 2, self._screen.get_height() // 2)
+        info_font = pygame.font.Font(None, 32)
+        clock = pygame.time.Clock()
+        while not self._started:
+            for event in pygame.event.get():
+                if event.type == QUIT:
+                    pygame.quit()
+                    sys.exit()
+                if event.type == KEYDOWN:
+                    if self.test_type == TEST_TYPE_KEYBOARD and self.key_to_test is None and event.key not in (K_RETURN, K_SPACE):
+                        self.key_to_test = event.key
+                    if event.key in (K_RETURN, K_SPACE):
+                        self._started = True
+                if event.type == MOUSEBUTTONDOWN:
+                    if start_rect.collidepoint(event.pos):
+                        self._started = True
+            self._screen.fill((0, 0, 0))
+            banner = info_font.render("Keep this window on top during testing", True, (255, 255, 0))
+            self._screen.blit(banner, (20, 20))
+            if self.test_type == TEST_TYPE_KEYBOARD:
+                msg = "Press the key to test, then press Start"
+                if self.key_to_test is not None:
+                    try:
+                        key_name = pygame.key.name(self.key_to_test)
+                    except Exception:
+                        key_name = str(self.key_to_test)
+                    msg = f"Selected key: {key_name}. Press Start to begin"
+                self._screen.blit(info_font.render(msg, True, (200, 200, 200)), (20, 60))
+            pygame.draw.rect(self._screen, (50, 150, 50), start_rect, border_radius=12)
+            label = info_font.render("Start", True, (255, 255, 255))
+            label_pos = label.get_rect(center=start_rect.center)
+            self._screen.blit(label, label_pos)
+            pygame.display.flip()
+            clock.tick(60)
 
     def close_test_window(self):
         try:
@@ -335,6 +376,7 @@ class LatencyTester:
     def test_hardware(self):
         """Tests the solenoid and sensor functionality"""
         self.open_test_window()
+        self.wait_for_start()
         print(f"\nStarting hardware test with {HARDWARE_TEST_ITERATIONS} iterations...\n")
         successful_tests = 0
         sensor_press_times = []
@@ -482,6 +524,7 @@ class LatencyTester:
     def test_loop(self):
         """Main test loop for stick or button tests"""
         self.open_test_window()
+        self.wait_for_start()
         print(f"\nStarting {TEST_ITERATIONS} measurements with microsecond precision...\n")
         self.trigger_solenoid()
         while len(self.latency_results) < TEST_ITERATIONS:
