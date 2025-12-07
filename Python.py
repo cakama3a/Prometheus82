@@ -202,18 +202,19 @@ class LatencyTester:
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
 
     def open_test_window(self):
-        try:
-            if not pygame.display.get_init():
-                pygame.display.init()
-            if pygame.display.get_surface() is None:
-                pygame.display.set_mode((800, 600))
-                pygame.display.set_caption("Prometheus 82 - Testing")
-                pygame.font.init()
-            self._screen = pygame.display.get_surface()
-            self._font = pygame.font.Font(None, 28)
-        except Exception as e:
-            print_error(f"Couldn't create window: {e}")
-            raise
+        while True:
+            try:
+                if not pygame.display.get_init():
+                    pygame.display.init()
+                if pygame.display.get_surface() is None:
+                    pygame.display.set_mode((800, 600))
+                    pygame.display.set_caption("Prometheus 82 - Testing")
+                    pygame.font.init()
+                self._screen = pygame.display.get_surface()
+                self._font = pygame.font.Font(None, 28)
+                break
+            except Exception:
+                time.sleep(0.5)
 
     def wait_for_start(self):
         if not hasattr(self, "_screen") or self._screen is None:
