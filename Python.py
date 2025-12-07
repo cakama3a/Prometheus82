@@ -99,7 +99,7 @@ def save_test_completion_time(iterations):
         print(f"{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
         print(f"{Fore.YELLOW}Cooling timer set to {cooling_seconds} seconds.{Fore.RESET}")
     except IOError as e:
-        print(f"\n{Fore.RED}Error recording test completion time: {e}{Fore.RESET}")
+        print_error(f"Recording test completion time: {e}")
 
 # Function to test Arduino communication latency
 def test_arduino_latency(ser):
@@ -115,8 +115,9 @@ def test_arduino_latency(ser):
         ser.flush()
         if ser.read() == b'R':
             latencies.append((time.perf_counter() - start) * 1000)  # Convert to ms
+            
         else:
-            print(f"\n{Fore.RED}Error testing Arduino latency: No response at measurement {i+1}{Fore.RESET}")
+            print_error(f"Testing Arduino latency: No response at measurement {i+1}")
             return None
     
     if latencies:
@@ -125,7 +126,7 @@ def test_arduino_latency(ser):
               f"Minimum latency:    {min(latencies):.3f} ms\nMaximum latency:    {max(latencies):.3f} ms\n"
               f"Average latency:    {avg_latency:.3f} ms\nJitter deviation:   {statistics.stdev(latencies):.3f} ms")
         return avg_latency
-    print(f"\n{Fore.RED}Error testing Arduino latency: No valid measurements{Fore.RESET}")
+        print_error("Testing Arduino latency: No valid measurements")
     return None
 
 # Function to export statistics to CSV
@@ -141,6 +142,8 @@ def export_to_csv(stats, gamepad_name, raw_results):
         writer.writeheader()
         writer.writerow(stats_copy)
     print(f"Data saved to file {filename}")
+def print_error(message):
+    print(f"\n{Fore.YELLOW}Error: {message}{Fore.RESET}")
 
 # ASCII Logo
 print(f" ")
@@ -261,7 +264,7 @@ class LatencyTester:
         self.max_latency_us = self.test_interval_us - self.pulse_duration_us
         
         if not self.serial:
-            print("Error: No serial connection available.")
+            print_error("No serial connection available.")
             return False
         
         for _ in range(3):  # Send command and value (high byte, low byte)
@@ -276,7 +279,7 @@ class LatencyTester:
                     print(f"Pulse duration successfully set to {duration_ms} ms ({self.pulse_duration_us} µs)")
                     return True
                 time.sleep(0.001)
-        print(f"Error: Failed to set pulse duration after 3 attempts. Continuing with default value.")
+        print_error("Failed to set pulse duration after 3 attempts. Continuing with default value.")
         return False
 
     def update_pulse_parameters(self):
@@ -628,7 +631,7 @@ if __name__ == "__main__":
         if not test_type:
             raise ValueError
         if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) and not joystick:
-            print(f"\n{Fore.YELLOW}Error: No gamepad found! Can't run {test_type} test.{Fore.RESET}")
+            print_error(f"No gamepad found! Can't run {test_type} test.")
             input("Press Enter to close...")
             pygame.quit()
             sys.exit()
@@ -722,7 +725,7 @@ if __name__ == "__main__":
                     print(f"Prometheus 82 ready on {port.device}")
                     break
             else:
-                print("Error: Prometheus did not send ready signal ('R'). Check connection or Prometheus code.")
+                print_error("Prometheus did not send ready signal ('R'). Check connection or Prometheus code.")
                 input("Press Enter to close...")
                 pygame.quit()
                 sys.exit()
@@ -730,7 +733,8 @@ if __name__ == "__main__":
             # Test Arduino latency and update CONTACT_DELAY
             avg_latency = test_arduino_latency(ser)
             if avg_latency is None:
-                print(f"\n{Fore.RED}Error calibrating Arduino latency: Test failed. Using default CONTACT_DELAY ({CONTACT_DELAY} ms).{Fore.RESET}")
+                print_error(f"Calibrating Arduino latency failed. Using default CONTACT_DELAY ({CONTACT_DELAY} ms).")
+                
             else:
                 CONTACT_DELAY = avg_latency
                 print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
@@ -838,9 +842,9 @@ if __name__ == "__main__":
             except KeyboardInterrupt:
                 print("\nTest interrupted by user.")
     except serial.SerialException as e:
-        print(f"Error opening port: {e}")
+        print_error(f"Opening port failed: {e}")
     except Exception as e:
-        print(f"Error while setting up COM port: {e}")
+        print_error(f"While setting up COM port: {e}")
     finally:
         pygame.quit()
         input("Press Enter to exit...")
