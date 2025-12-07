@@ -19,6 +19,19 @@ import random
 import string
 import sys
 import csv
+import ctypes
+
+# Enable DPI awareness for Windows to ensure sharp window rendering
+if platform.system() == 'Windows':
+    try:
+        # Try to set DPI awareness (Windows 8.1+)
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except Exception:
+        try:
+            # Fallback for older Windows versions
+            ctypes.windll.user32.SetProcessDPIAware()
+        except Exception:
+            pass  # If both fail, continue without DPI awareness
 
 # Global settings
 VERSION = "5.2.3.9"                 # Updated version with microsecond support
