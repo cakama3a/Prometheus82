@@ -202,11 +202,18 @@ class LatencyTester:
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
 
     def open_test_window(self):
-        pygame.display.set_mode((800, 600))
-        pygame.display.set_caption("Prometheus 82 - Testing")
-        pygame.font.init()
-        self._screen = pygame.display.get_surface()
-        self._font = pygame.font.Font(None, 28)
+        try:
+            if not pygame.display.get_init():
+                pygame.display.init()
+            if pygame.display.get_surface() is None:
+                pygame.display.set_mode((800, 600))
+                pygame.display.set_caption("Prometheus 82 - Testing")
+                pygame.font.init()
+            self._screen = pygame.display.get_surface()
+            self._font = pygame.font.Font(None, 28)
+        except Exception as e:
+            print_error(f"Couldn't create window: {e}")
+            raise
 
     def wait_for_start(self):
         if not hasattr(self, "_screen") or self._screen is None:
@@ -249,10 +256,7 @@ class LatencyTester:
             clock.tick(60)
 
     def close_test_window(self):
-        try:
-            pygame.display.quit()
-        except Exception:
-            pass
+        return
 
     def render_test_window(self, last_latency=None):
         if not hasattr(self, "_screen") or self._screen is None:
@@ -603,6 +607,15 @@ def generate_short_id(length=12):
 if __name__ == "__main__":
     pygame.init()
     pygame.joystick.init()
+    try:
+        if not pygame.display.get_init():
+            pygame.display.init()
+        if pygame.display.get_surface() is None:
+            pygame.display.set_mode((800, 600))
+            pygame.display.set_caption("Prometheus 82 - Testing")
+            pygame.font.init()
+    except Exception as e:
+        print_error(f"Couldn't create window at startup: {e}")
     
     # Cooling period check will be performed after selecting test iterations
     
@@ -698,7 +711,7 @@ if __name__ == "__main__":
     ports = [p for p in all_ports if "bluetooth" not in p.description.lower()]
 
     if not ports:
-        print("No suitable COM ports found. All available ports were Bluetooth or no ports are connected.")
+        print_error("No suitable COM ports found. All available ports were Bluetooth or no ports are connected.")
         input("Press Enter to close...")
         pygame.quit()
         sys.exit()
@@ -767,11 +780,7 @@ if __name__ == "__main__":
                             time.sleep(0.01)
                         print(f"Selected button #{tester.button_to_test}!")
                     elif test_type == TEST_TYPE_STICK:
-                        print("\nMove the analog stick that you want to test to its extreme position...")
-                        while not tester.detect_active_stick():
-                            pygame.event.pump()
-                            time.sleep(0.01)
-                        print(f"Selected analog stick axes: {tester.stick_axes}!")
+                        pass
                     elif test_type == TEST_TYPE_KEYBOARD:
                         print("\nKeyboard key will be selected when the test window opens. Press your key at the prompt.")
                     
