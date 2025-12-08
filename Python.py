@@ -732,7 +732,6 @@ if __name__ == "__main__":
     port = None
     if len(ports) == 1:
         port = ports[0]
-        print(f"\nAutoselected COM port: {port.device} - {port.description}")
     else:
         print("\nAvailable COM ports:")
         for i, p in enumerate(ports):
@@ -753,7 +752,6 @@ if __name__ == "__main__":
 
     try:
         with serial.Serial(port.device, 115200, timeout=1) as ser:
-            print(f"Connecting to {port.device} ({port.description})")
             ser.reset_input_buffer()
             ser.reset_output_buffer()
             
@@ -761,7 +759,7 @@ if __name__ == "__main__":
             start_time = time.time()
             while time.time() - start_time < 5:  # 5 second timeout
                 if ser.in_waiting and ser.read() == b'R':
-                    print(f"Prometheus 82 ready on {port.device}")
+                    print(f"\nPrometheus 82 connected on {port.device} ({port.description})")
                     break
             else:
                 print_error("Prometheus did not send ready signal ('R'). Check connection or Prometheus code.")
