@@ -615,6 +615,16 @@ if __name__ == "__main__":
             pygame.display.set_mode((800, 600))
             pygame.display.set_caption("Prometheus 82 - Testing")
             pygame.font.init()
+        screen = pygame.display.get_surface()
+        font = pygame.font.Font(None, 28)
+        screen.fill((0, 0, 0))
+        msg1 = "This program uses the console for control."
+        msg2 = "Do not close this window; keep it open for Steam Input."
+        surf1 = font.render(msg1, True, (255, 255, 0))
+        surf2 = font.render(msg2, True, (200, 200, 200))
+        screen.blit(surf1, (20, 20))
+        screen.blit(surf2, (20, 60))
+        pygame.display.flip()
     except Exception as e:
         print_error(f"Couldn't create window at startup: {e}")
     
@@ -767,6 +777,8 @@ if __name__ == "__main__":
                 print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
 
             tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY)
+            if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
+                print("\nTo start the test, switch to the program window and press Start.")
             
             try:
                 if test_type == TEST_TYPE_HARDWARE:
