@@ -201,6 +201,7 @@ class LatencyTester:
         self.latency_results = []
         self._skip_first_measurement = True
         self._started = False
+        self._last_render_time = 0.0
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
 
     def open_test_window(self):
@@ -383,7 +384,9 @@ class LatencyTester:
     def log_progress(self, latency):
         """Logs test progress with percentage"""
         progress = len(self.latency_results)
-        print(f"[{progress / TEST_ITERATIONS * 100:3.0f}%] {latency:.2f} ms")
+        step = max(1, TEST_ITERATIONS // 20)
+        if progress % step == 0 or progress == 1 or progress == TEST_ITERATIONS:
+            print(f"[{progress / TEST_ITERATIONS * 100:3.0f}%] {latency:.2f} ms")
 
     def is_stick_at_extreme(self):
         """Checks if stick is at extreme position"""
@@ -546,7 +549,9 @@ class LatencyTester:
 
     def test_loop(self):
         """Main test loop for stick or button tests"""
+        print("\nPreparing test window...")
         self.open_test_window()
+        print("Test window ready. Press Start to begin.")
         self.wait_for_start()
         print(f"\nStarting {TEST_ITERATIONS} measurements with microsecond precision...\n")
         self.trigger_solenoid()
@@ -560,7 +565,10 @@ class LatencyTester:
             self.check_input()
             pygame.event.pump()
             try:
-                self.render_test_window(self.latency_results[-1] if self.latency_results else None)
+                now = time.perf_counter()
+                if now - self._last_render_time >= 1.0 / 30.0:
+                    self.render_test_window(self.latency_results[-1] if self.latency_results else None)
+                    self._last_render_time = now
             except Exception:
                 pass
         self.close_test_window()
