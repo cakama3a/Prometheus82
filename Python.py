@@ -785,6 +785,11 @@ if __name__ == "__main__":
             try:
                 if test_type == TEST_TYPE_HARDWARE:
                     test_passed = tester.test_hardware()
+                    
+                    # Close test window after hardware test completes
+                    if pygame.display.get_init() and pygame.display.get_surface() is not None:
+                        pygame.display.quit()
+                    
                     print(f"{Fore.GREEN if test_passed else Fore.RED}"
                           f"Hardware is {'fully functional. Ready for stick or button testing.' if test_passed else 'issues detected. Please check connections and try again.'}{Fore.RESET}")
                 else:
@@ -800,6 +805,11 @@ if __name__ == "__main__":
                         print("\nKeyboard key will be selected when the test window opens. Press your key at the prompt.")
                     
                     tester.test_loop()
+                    
+                    # Close test window after test completes
+                    if pygame.display.get_init() and pygame.display.get_surface() is not None:
+                        pygame.display.quit()
+                    
                     stats = tester.get_statistics()
                     if stats:
                         save_test_completion_time(TEST_ITERATIONS)
