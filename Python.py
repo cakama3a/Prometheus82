@@ -19,19 +19,6 @@ import random
 import string
 import sys
 import csv
-import ctypes
-
-# Enable DPI awareness for Windows to ensure sharp window rendering
-if platform.system() == 'Windows':
-    try:
-        # Try to set DPI awareness (Windows 8.1+)
-        ctypes.windll.shcore.SetProcessDpiAwareness(1)
-    except Exception:
-        try:
-            # Fallback for older Windows versions
-            ctypes.windll.user32.SetProcessDPIAware()
-        except Exception:
-            pass  # If both fail, continue without DPI awareness
 
 # Global settings
 VERSION = "5.2.3.9"                 # Updated version with microsecond support
@@ -59,7 +46,6 @@ CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
 TEST_TYPE_STICK = "stick"
 TEST_TYPE_BUTTON = "button"
 TEST_TYPE_HARDWARE = "hardware"     # New test type for hardware check
-TEST_TYPE_KEYBOARD = "keyboard"
 
 # File to store the last completed test time
 LAST_TEST_TIME_FILE = os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 'Temp', 'last_test_time.txt') if platform.system() == 'Windows' else os.path.join('/tmp', 'last_test_time.txt')
@@ -112,7 +98,7 @@ def save_test_completion_time(iterations):
         print(f"{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
         print(f"{Fore.YELLOW}Cooling timer set to {cooling_seconds} seconds.{Fore.RESET}")
     except IOError as e:
-        print_error(f"Recording test completion time: {e}")
+        print(f"\n{Fore.RED}Error recording test completion time: {e}{Fore.RESET}")
 
 # Function to test Arduino communication latency
 def test_arduino_latency(ser):
@@ -128,9 +114,8 @@ def test_arduino_latency(ser):
         ser.flush()
         if ser.read() == b'R':
             latencies.append((time.perf_counter() - start) * 1000)  # Convert to ms
-            
         else:
-            print_error(f"Testing Arduino latency: No response at measurement {i+1}")
+            print(f"\n{Fore.RED}Error testing Arduino latency: No response at measurement {i+1}{Fore.RESET}")
             return None
     
     if latencies:
@@ -139,7 +124,7 @@ def test_arduino_latency(ser):
               f"Minimum latency:    {min(latencies):.3f} ms\nMaximum latency:    {max(latencies):.3f} ms\n"
               f"Average latency:    {avg_latency:.3f} ms\nJitter deviation:   {statistics.stdev(latencies):.3f} ms")
         return avg_latency
-        print_error("Testing Arduino latency: No valid measurements")
+    print(f"\n{Fore.RED}Error testing Arduino latency: No valid measurements{Fore.RESET}")
     return None
 
 # Function to export statistics to CSV
@@ -155,8 +140,6 @@ def export_to_csv(stats, gamepad_name, raw_results):
         writer.writeheader()
         writer.writerow(stats_copy)
     print(f"Data saved to file {filename}")
-def print_error(message):
-    print(f"\n{Fore.YELLOW}Error: {message}{Fore.RESET}")
 
 # ASCII Logo
 print(f" ")
@@ -188,7 +171,6 @@ class LatencyTester:
         self.last_trigger_time_us = 0  # Last trigger time in microseconds
         self.stick_axes = None
         self.button_to_test = None
-        self.key_to_test = None
         self.invalid_measurements = 0
         self.consecutive_same_latencies = 0
         self.last_latency = None
@@ -198,76 +180,7 @@ class LatencyTester:
         self.max_latency_us = self.test_interval_us - self.pulse_duration_us
         self.latency_results = []
         self._skip_first_measurement = True
-        self._started = False
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
-
-    def open_test_window(self):
-        pygame.display.set_mode((800, 600))
-        pygame.display.set_caption("Prometheus 82 - Testing")
-        pygame.font.init()
-        self._screen = pygame.display.get_surface()
-        self._font = pygame.font.Font(None, 28)
-
-    def wait_for_start(self):
-        if not hasattr(self, "_screen") or self._screen is None:
-            return
-        self._started = False
-        start_rect = pygame.Rect(0, 0, 220, 64)
-        start_rect.center = (self._screen.get_width() // 2, self._screen.get_height() // 2)
-        info_font = pygame.font.Font(None, 32)
-        clock = pygame.time.Clock()
-        while not self._started:
-            for event in pygame.event.get():
-                if event.type == QUIT:
-                    pygame.quit()
-                    sys.exit()
-                if event.type == KEYDOWN:
-                    if self.test_type == TEST_TYPE_KEYBOARD and self.key_to_test is None and event.key not in (K_RETURN, K_SPACE):
-                        self.key_to_test = event.key
-                    if event.key in (K_RETURN, K_SPACE):
-                        self._started = True
-                if event.type == MOUSEBUTTONDOWN:
-                    if start_rect.collidepoint(event.pos):
-                        self._started = True
-            self._screen.fill((0, 0, 0))
-            banner = info_font.render("Keep this window on top during testing", True, (255, 255, 0))
-            self._screen.blit(banner, (20, 20))
-            if self.test_type == TEST_TYPE_KEYBOARD:
-                msg = "Press the key to test, then press Start"
-                if self.key_to_test is not None:
-                    try:
-                        key_name = pygame.key.name(self.key_to_test)
-                    except Exception:
-                        key_name = str(self.key_to_test)
-                    msg = f"Selected key: {key_name}. Press Start to begin"
-                self._screen.blit(info_font.render(msg, True, (200, 200, 200)), (20, 60))
-            pygame.draw.rect(self._screen, (50, 150, 50), start_rect, border_radius=12)
-            label = info_font.render("Start", True, (255, 255, 255))
-            label_pos = label.get_rect(center=start_rect.center)
-            self._screen.blit(label, label_pos)
-            pygame.display.flip()
-            clock.tick(60)
-
-    def close_test_window(self):
-        try:
-            pygame.display.quit()
-        except Exception:
-            pass
-
-    def render_test_window(self, last_latency=None):
-        if not hasattr(self, "_screen") or self._screen is None:
-            return
-        self._screen.fill((0, 0, 0))
-        header = "Keep this window on top during testing"
-        surf = self._font.render(header, True, (255, 255, 0))
-        self._screen.blit(surf, (10, 10))
-        progress_text = f"Progress: {len(self.latency_results)}/{TEST_ITERATIONS}"
-        surf2 = self._font.render(progress_text, True, (200, 200, 200))
-        self._screen.blit(surf2, (10, 40))
-        if last_latency is not None:
-            surf3 = self._font.render(f"Last latency: {last_latency:.2f} ms", True, (150, 200, 255))
-            self._screen.blit(surf3, (10, 70))
-        pygame.display.flip()
 
     def set_pulse_duration(self, duration_ms):
         """Sets the solenoid pulse duration"""
@@ -277,7 +190,7 @@ class LatencyTester:
         self.max_latency_us = self.test_interval_us - self.pulse_duration_us
         
         if not self.serial:
-            print_error("No serial connection available.")
+            print("Error: No serial connection available.")
             return False
         
         for _ in range(3):  # Send command and value (high byte, low byte)
@@ -292,7 +205,7 @@ class LatencyTester:
                     print(f"Pulse duration successfully set to {duration_ms} ms ({self.pulse_duration_us} µs)")
                     return True
                 time.sleep(0.001)
-        print_error("Failed to set pulse duration after 3 attempts. Continuing with default value.")
+        print(f"Error: Failed to set pulse duration after 3 attempts. Continuing with default value.")
         return False
 
     def update_pulse_parameters(self):
@@ -354,24 +267,9 @@ class LatencyTester:
                 return True
         return False
 
-    def detect_active_key(self):
-        """Detects keyboard key press events"""
-        for event in pygame.event.get():
-            if event.type == KEYDOWN:
-                self.key_to_test = event.key
-                return True
-        return False
-
     def is_button_pressed(self):
         """Checks if the selected button is pressed"""
         return self.button_to_test is not None and self.joystick and self.joystick.get_button(self.button_to_test)
-
-    def is_key_pressed(self):
-        """Checks if the selected keyboard key is pressed"""
-        if self.key_to_test is None:
-            return False
-        keys = pygame.key.get_pressed()
-        return keys[self.key_to_test]
 
     def log_progress(self, latency):
         """Logs test progress with percentage"""
@@ -391,8 +289,6 @@ class LatencyTester:
 
     def test_hardware(self):
         """Tests the solenoid and sensor functionality"""
-        self.open_test_window()
-        self.wait_for_start()
         print(f"\nStarting hardware test with {HARDWARE_TEST_ITERATIONS} iterations...\n")
         successful_tests = 0
         sensor_press_times = []
@@ -412,10 +308,6 @@ class LatencyTester:
             else:
                 print(f"{Fore.RED}Test {i+1}: Failed - No sensor response detected.{Fore.RESET}")
             time.sleep(self.pulse_duration_us / 1000000 + 0.2)  # Wait for solenoid pulse and small delay
-            try:
-                self.render_test_window(None)
-            except Exception:
-                pass
         
         print(f"\n{Fore.CYAN}Hardware Test Results:{Fore.RESET}\nTotal tests: {HARDWARE_TEST_ITERATIONS}\n"
               f"Successful: {successful_tests}\nFailed: {HARDWARE_TEST_ITERATIONS - successful_tests}")
@@ -448,12 +340,11 @@ class LatencyTester:
 
         print(f"{Fore.GREEN if successful_tests == HARDWARE_TEST_ITERATIONS else Fore.RED}"
               f"Hardware test {'passed: Solenoid and sensor are functioning correctly.' if successful_tests == HARDWARE_TEST_ITERATIONS else 'failed: Check solenoid and sensor connections or hardware integrity.'}{Fore.RESET}")
-        self.close_test_window()
         return successful_tests == HARDWARE_TEST_ITERATIONS
 
     def check_input(self):
-        """Processes input for stick, button, or keyboard tests"""
-        if self.test_type not in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD) or not self.measuring:
+        """Processes gamepad input for stick or button tests"""
+        if self.test_type not in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) or not self.measuring:
             return False
         
         if self.test_type == TEST_TYPE_STICK:
@@ -461,15 +352,10 @@ class LatencyTester:
                 return False
             if self.is_stick_at_extreme():
                 latency_ms = ((time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0) - STICK_MOVEMENT_COMPENSATION
-        elif self.test_type == TEST_TYPE_BUTTON:
+        else:  # TEST_TYPE_BUTTON
             if self.button_to_test is None and self.detect_active_button():
                 return False
             if self.is_button_pressed():
-                latency_ms = (time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0
-        else:  # TEST_TYPE_KEYBOARD
-            if self.key_to_test is None and self.detect_active_key():
-                return False
-            if self.is_key_pressed():
                 latency_ms = (time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0
         
         if 'latency_ms' in locals():
@@ -539,8 +425,6 @@ class LatencyTester:
 
     def test_loop(self):
         """Main test loop for stick or button tests"""
-        self.open_test_window()
-        self.wait_for_start()
         print(f"\nStarting {TEST_ITERATIONS} measurements with microsecond precision...\n")
         self.trigger_solenoid()
         while len(self.latency_results) < TEST_ITERATIONS:
@@ -552,11 +436,6 @@ class LatencyTester:
                 self.measuring = True
             self.check_input()
             pygame.event.pump()
-            try:
-                self.render_test_window(self.latency_results[-1] if self.latency_results else None)
-            except Exception:
-                pass
-        self.close_test_window()
 
 def detect_gamepad_mode(joystick):
     """Detect gamepad mode (XInput, DInput, Sony, Switch) based on name and axes at rest"""
@@ -637,14 +516,14 @@ if __name__ == "__main__":
     check_cooling_period()
 
     # Select test type
-    print("\nSelect test type:\n1: Gamepad - Test analog stick (99% threshold)\n2: Gamepad - Test button\n3: Keyboard - Test key\n4: Test hardware (solenoid and sensor)")
+    print("\nSelect test type:\n1: Test analog stick (99% threshold)\n2: Test button\n3: Test hardware (solenoid and sensor)")
     try:
-        test_choice = int(input("Enter your choice (1-4): "))
-        test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE}.get(test_choice)
+        test_choice = int(input("Enter your choice (1-3): "))
+        test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_HARDWARE}.get(test_choice)
         if not test_type:
             raise ValueError
-        if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) and not joystick:
-            print_error(f"No gamepad found! Can't run {test_type} test.")
+        if test_type != TEST_TYPE_HARDWARE and not joystick:
+            print(f"Error: No gamepad found! Can't run {test_type} test.")
             input("Press Enter to close...")
             pygame.quit()
             sys.exit()
@@ -668,7 +547,7 @@ if __name__ == "__main__":
         sys.exit()
 
     # Select iterations (affects cooling timeout)
-    if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
+    if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON):
         print("\nSelect number of iterations:\n1: 400 (For Gamepadla.com validation)\n2: 200\n3: 100\nOr enter a custom number between 10 and 400.")
         try:
             iter_input = input("Enter your choice (1/2/3 or custom 10-400): ").strip()
@@ -738,7 +617,7 @@ if __name__ == "__main__":
                     print(f"Prometheus 82 ready on {port.device}")
                     break
             else:
-                print_error("Prometheus did not send ready signal ('R'). Check connection or Prometheus code.")
+                print("Error: Prometheus did not send ready signal ('R'). Check connection or Prometheus code.")
                 input("Press Enter to close...")
                 pygame.quit()
                 sys.exit()
@@ -746,8 +625,7 @@ if __name__ == "__main__":
             # Test Arduino latency and update CONTACT_DELAY
             avg_latency = test_arduino_latency(ser)
             if avg_latency is None:
-                print_error(f"Calibrating Arduino latency failed. Using default CONTACT_DELAY ({CONTACT_DELAY} ms).")
-                
+                print(f"\n{Fore.RED}Error calibrating Arduino latency: Test failed. Using default CONTACT_DELAY ({CONTACT_DELAY} ms).{Fore.RESET}")
             else:
                 CONTACT_DELAY = avg_latency
                 print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
@@ -772,8 +650,6 @@ if __name__ == "__main__":
                             pygame.event.pump()
                             time.sleep(0.01)
                         print(f"Selected analog stick axes: {tester.stick_axes}!")
-                    elif test_type == TEST_TYPE_KEYBOARD:
-                        print("\nKeyboard key will be selected when the test window opens. Press your key at the prompt.")
                     
                     tester.test_loop()
                     stats = tester.get_statistics()
@@ -855,9 +731,9 @@ if __name__ == "__main__":
             except KeyboardInterrupt:
                 print("\nTest interrupted by user.")
     except serial.SerialException as e:
-        print_error(f"Opening port failed: {e}")
+        print(f"Error opening port: {e}")
     except Exception as e:
-        print_error(f"While setting up COM port: {e}")
+        print(f"Error while setting up COM port: {e}")
     finally:
         pygame.quit()
         input("Press Enter to exit...")
