@@ -27,6 +27,18 @@ This section outlines the testing process for the Prometheus82 device, designed 
 8. **Test Repetition**  
    The program repeats this process 500 times to calculate minimum, average, and maximum latency, as well as jitter.
 
+### Joystick Latency Algorithm
+Prometheus 82 uses a standardized **Center-to-Edge** measurement method for analog sticks to ensure consistent comparisons between different controllers.
+
+1.  **T0 (Start):** The solenoid is activated to strike the stick.
+2.  **Physical Travel:** The solenoid arm pushes the stick from the center (0%) towards the edge.
+3.  **T1 (Stop):** The timer stops the precise moment the gamepad reports a logical value of **≥99%** deviation.
+4.  **Calculation:** `Total Time - 3.5ms = Input Latency`.
+
+**The "3.5ms" Compensation** The software automatically subtracts a fixed value of **3.5 ms** from the total time. This constant represents the standard **physical travel time** of the solenoid arm and joystick mechanism, which has been verified using 1000 FPS high-speed camera analysis across multiple standard controllers.
+
+> **Note:** Variations in a controller's physical range of motion (shorter/longer throw) or aggressive software response curves can naturally affect the result by ±1ms, as the stick may reach the logical "99%" threshold physically sooner or later. This is a characteristic of the controller's design, not a testing error.
+
 ### Summary
 The testing process ensures accurate measurement of the Prometheus82 device's input latency. Running the test 500 times provides comprehensive data to evaluate the device's stability and performance under real-world conditions.
 
