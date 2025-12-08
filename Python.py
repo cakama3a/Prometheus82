@@ -157,6 +157,8 @@ def export_to_csv(stats, gamepad_name, raw_results):
     print(f"Data saved to file {filename}")
 def print_error(message):
     print(f"\n{Fore.YELLOW}Error: {message}{Fore.RESET}")
+def print_info(message):
+    print(f"\n{Fore.GREEN}Info: {message}{Fore.RESET}")
 
 # ASCII Logo
 print(f" ")
@@ -618,8 +620,8 @@ if __name__ == "__main__":
         screen = pygame.display.get_surface()
         font = pygame.font.Font(None, 28)
         screen.fill((0, 0, 0))
-        msg1 = "This program uses the console for control."
-        msg2 = "Do not close this window; keep it open for Steam Input."
+        msg1 = "Do not close this window."
+        msg2 = "Go to the console to manage the test."
         surf1 = font.render(msg1, True, (255, 255, 0))
         surf2 = font.render(msg2, True, (200, 200, 200))
         screen.blit(surf1, (20, 20))
@@ -778,7 +780,7 @@ if __name__ == "__main__":
 
             tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY)
             if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
-                print("\nTo start the test, switch to the program window and press Start.")
+                print_info("To start the test, switch to the program window and press Start.")
             
             try:
                 if test_type == TEST_TYPE_HARDWARE:
