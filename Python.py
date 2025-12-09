@@ -254,6 +254,7 @@ class LatencyTester:
         self._started = False
         self._last_render_time = 0.0
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
+        self.stick_movement_compensation_ms = STICK_MOVEMENT_COMPENSATION
 
     def open_test_window(self):
         while True:
@@ -329,6 +330,63 @@ class LatencyTester:
             surf3 = self._font.render(f"Last latency: {last_latency:.2f} ms", True, (150, 200, 255))
             self._screen.blit(surf3, (10, 70))
         pygame.display.flip()
+
+    def calibrate_stick_movement_compensation(self, iterations=10, blind_ms=1.5):
+        if self.test_type != TEST_TYPE_STICK:
+            return None
+        if not self.serial:
+            return None
+        print(f"\nStarting stick movement calibration: {iterations} hits, blind {blind_ms} ms")
+        results = []
+        for i in range(iterations):
+            try:
+                self.serial.reset_input_buffer()
+                self.serial.reset_output_buffer()
+            except Exception:
+                pass
+            self.trigger_solenoid()
+            contact_time_us = None
+            t0 = time.perf_counter()
+            while time.perf_counter() - t0 < 1.0:
+                if self.serial and self.serial.in_waiting and self.serial.read() == b'S':
+                    contact_time_us = time.perf_counter() * 1000000
+                    break
+                pygame.event.pump()
+            if not contact_time_us:
+                print_error("Calibration: no contact signal received")
+                time.sleep(self.pulse_duration_us / 1000000 + 0.1)
+                continue
+            blind_end_us = contact_time_us + int(blind_ms * 1000)
+            while time.perf_counter() * 1000000 < blind_end_us:
+                pygame.event.pump()
+            finish_time_us = None
+            t1 = time.perf_counter()
+            while time.perf_counter() - t1 < 0.050:
+                if self.serial and self.serial.in_waiting:
+                    if self.serial.read() == b'F':
+                        finish_time_us = time.perf_counter() * 1000000
+                        break
+                pygame.event.pump()
+            if finish_time_us:
+                dt_ms = (finish_time_us - contact_time_us) / 1000.0
+                results.append(dt_ms)
+                print(f"Calibration {i+1}/{iterations}: {dt_ms:.3f} ms")
+            else:
+                print_error("Calibration: no second contact detected in time")
+            now_us = time.perf_counter() * 1000000
+            wait_s = max(0.0, (self.last_trigger_time_us + self.test_interval_us - now_us) / 1000000.0)
+            time.sleep(wait_s)
+            try:
+                self.render_test_window(None)
+            except Exception:
+                pass
+        if results:
+            avg = statistics.mean(results)
+            self.stick_movement_compensation_ms = avg
+            print(f"\nCalculated STICK_MOVEMENT_COMPENSATION: {avg:.3f} ms (was {STICK_MOVEMENT_COMPENSATION:.3f} ms)")
+            return avg
+        print_error("Calibration: no valid results, keeping default compensation")
+        return None
 
     def set_pulse_duration(self, duration_ms):
         """Sets the solenoid pulse duration"""
@@ -521,7 +579,7 @@ class LatencyTester:
             if not self.stick_axes and self.detect_active_stick():
                 return False
             if self.is_stick_at_extreme():
-                latency_ms = ((time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0) - STICK_MOVEMENT_COMPENSATION
+                latency_ms = ((time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0) - self.stick_movement_compensation_ms
         elif self.test_type == TEST_TYPE_BUTTON:
             if self.button_to_test is None and self.detect_active_button():
                 return False
@@ -604,6 +662,8 @@ class LatencyTester:
         self.open_test_window()
         print("Test window ready. Press Start to begin.")
         self.wait_for_start()
+        if self.test_type == TEST_TYPE_STICK:
+            self.calibrate_stick_movement_compensation(iterations=10, blind_ms=1.5)
         print(f"\nStarting {TEST_ITERATIONS} measurements with microsecond precision...\n")
         self.trigger_solenoid()
         while len(self.latency_results) < TEST_ITERATIONS:
