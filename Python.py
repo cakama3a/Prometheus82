@@ -192,8 +192,9 @@ def test_arduino_latency(ser):
               f"Minimum latency:    {min(latencies):.3f} ms\nMaximum latency:    {max(latencies):.3f} ms\n"
               f"Average latency:    {avg_latency:.3f} ms\nJitter deviation:   {statistics.stdev(latencies):.3f} ms")
         return avg_latency
+    else:
         print_error("Testing Arduino latency: No valid measurements")
-    return None
+        return None
 
 # Function to export statistics to CSV
 def export_to_csv(stats, gamepad_name, raw_results):
@@ -954,53 +955,4 @@ if __name__ == "__main__":
         stop_async_logger()
         pygame.quit()
         input("Press Enter to exit...")
-ASYNC_LOG_QUEUE = None
-ASYNC_LOG_STOP = None
-ASYNC_LOG_THREAD = None
-
-def _printer_loop():
-    last_flush = time.perf_counter()
-    while ASYNC_LOG_STOP and not ASYNC_LOG_STOP.is_set():
-        try:
-            line = ASYNC_LOG_QUEUE.get(timeout=0.1)
-            try:
-                sys.stdout.write(line + "\n")
-            except Exception:
-                pass
-            if time.perf_counter() - last_flush > 0.25:
-                try:
-                    sys.stdout.flush()
-                except Exception:
-                    pass
-                last_flush = time.perf_counter()
-        except Exception:
-            pass
-
-def start_async_logger():
-    global ASYNC_LOG_QUEUE, ASYNC_LOG_STOP, ASYNC_LOG_THREAD
-    try:
-        ASYNC_LOG_QUEUE = queue.SimpleQueue()
-    except Exception:
-        ASYNC_LOG_QUEUE = queue.Queue()
-    ASYNC_LOG_STOP = threading.Event()
-    ASYNC_LOG_THREAD = threading.Thread(target=_printer_loop, daemon=True)
-    ASYNC_LOG_THREAD.start()
-
-def stop_async_logger():
-    try:
-        if ASYNC_LOG_STOP:
-            ASYNC_LOG_STOP.set()
-    except Exception:
-        pass
-
-def async_log(message):
-    try:
-        if ASYNC_LOG_QUEUE:
-            ASYNC_LOG_QUEUE.put(str(message))
-        else:
-            print(str(message))
-    except Exception:
-        try:
-            print(str(message))
-        except Exception:
-            pass
+ 
