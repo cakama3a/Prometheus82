@@ -1,6 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
+VERSION = "5.2.3.9"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -86,7 +87,6 @@ if platform.system() == 'Windows':
             pass  # If both fail, continue without DPI awareness
 
 # Global settings
-VERSION = "5.2.3.9"                 # Updated version with microsecond support
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
@@ -272,6 +272,8 @@ class LatencyTester:
 
     def wait_for_start(self):
         if not hasattr(self, "_screen") or self._screen is None:
+            self.open_test_window()
+        if getattr(self, "_started", False):
             return
         self._started = False
         start_rect = pygame.Rect(0, 0, 220, 64)
@@ -850,11 +852,7 @@ if __name__ == "__main__":
                           f"Hardware is {'fully functional. Ready for stick or button testing.' if test_passed else 'issues detected. Please check connections and try again.'}{Fore.RESET}")
                 else:
                     if test_type == TEST_TYPE_BUTTON:
-                        print("\nPress the button on your gamepad that you want to test (A, B, X, Y)...")
-                        while not tester.detect_active_button():
-                            pygame.event.pump()
-                            time.sleep(0.01)
-                        print(f"Selected button #{tester.button_to_test}!")
+                        print("\nIn the test window, press Start, then press the gamepad button you want to measure.")
                     elif test_type == TEST_TYPE_STICK:
                         pass
                     elif test_type == TEST_TYPE_KEYBOARD:
