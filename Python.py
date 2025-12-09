@@ -381,8 +381,17 @@ class LatencyTester:
             except Exception:
                 pass
         if results:
-            avg = statistics.mean(results)
+            med = statistics.median(results)
+            abs_dev = [abs(x - med) for x in results]
+            mad = statistics.median(abs_dev) if abs_dev else 0.0
+            thr = 3.0 * mad if mad > 0 else 0.2
+            filtered = [x for x in results if abs(x - med) <= thr]
+            if len(filtered) < max(3, int(len(results) * 0.6)):
+                sorted_vals = sorted(results)
+                filtered = sorted_vals[1:-1] if len(sorted_vals) > 2 else sorted_vals
+            avg = statistics.mean(filtered)
             self.stick_movement_compensation_ms = avg
+            print(f"Calibration filter: kept {len(filtered)}/{len(results)}, median {med:.3f} ms, MAD {mad:.3f} ms")
             print(f"\nCalculated STICK_MOVEMENT_COMPENSATION: {avg:.3f} ms (was {STICK_MOVEMENT_COMPENSATION:.3f} ms)")
             return avg
         print_error("Calibration: no valid results, keeping default compensation")
