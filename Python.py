@@ -679,9 +679,15 @@ class LatencyTester:
             current_time_us = time.perf_counter() * 1000000
             if self.check_for_stall_and_adjust() or (not self.measuring and current_time_us - self.last_trigger_time_us >= self.test_interval_us):
                 self.trigger_solenoid()
-            if self.serial and self.serial.in_waiting and self.serial.read() == b'S':
-                self.start_time_us = time.perf_counter() * 1000000
-                self.measuring = True
+            if self.serial and self.serial.in_waiting:
+                found = False
+                while self.serial.in_waiting:
+                    if self.serial.read() == b'S':
+                        found = True
+                        break
+                if found:
+                    self.start_time_us = time.perf_counter() * 1000000
+                    self.measuring = True
             self.check_input()
             pygame.event.pump()
             try:
