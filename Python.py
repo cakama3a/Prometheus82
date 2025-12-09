@@ -20,7 +20,60 @@ import string
 import sys
 import csv
 import ctypes
+import threading
+import queue
 
+# Async logging helpers placed before main so they exist at startup
+ASYNC_LOG_QUEUE = None
+ASYNC_LOG_STOP = None
+ASYNC_LOG_THREAD = None
+
+def _printer_loop():
+    last_flush = time.perf_counter()
+    while ASYNC_LOG_STOP and not ASYNC_LOG_STOP.is_set():
+        try:
+            line = ASYNC_LOG_QUEUE.get(timeout=0.1)
+            try:
+                sys.stdout.write(line + "\n")
+            except Exception:
+                pass
+            if time.perf_counter() - last_flush > 0.25:
+                try:
+                    sys.stdout.flush()
+                except Exception:
+                    pass
+                last_flush = time.perf_counter()
+        except Exception:
+            pass
+
+def start_async_logger():
+    global ASYNC_LOG_QUEUE, ASYNC_LOG_STOP, ASYNC_LOG_THREAD
+    try:
+        ASYNC_LOG_QUEUE = queue.SimpleQueue()
+    except Exception:
+        ASYNC_LOG_QUEUE = queue.Queue()
+    ASYNC_LOG_STOP = threading.Event()
+    ASYNC_LOG_THREAD = threading.Thread(target=_printer_loop, daemon=True)
+    ASYNC_LOG_THREAD.start()
+
+def stop_async_logger():
+    try:
+        if ASYNC_LOG_STOP:
+            ASYNC_LOG_STOP.set()
+    except Exception:
+        pass
+
+def async_log(message):
+    try:
+        if ASYNC_LOG_QUEUE:
+            ASYNC_LOG_QUEUE.put(str(message))
+        else:
+            print(str(message))
+    except Exception:
+        try:
+            print(str(message))
+        except Exception:
+            pass
 # Enable DPI awareness for Windows to ensure sharp window rendering
 if platform.system() == 'Windows':
     try:
@@ -384,9 +437,7 @@ class LatencyTester:
     def log_progress(self, latency):
         """Logs test progress with percentage"""
         progress = len(self.latency_results)
-        step = max(1, TEST_ITERATIONS // 20)
-        if progress % step == 0 or progress == 1 or progress == TEST_ITERATIONS:
-            print(f"[{progress / TEST_ITERATIONS * 100:3.0f}%] {latency:.2f} ms")
+        async_log(f"[{progress / TEST_ITERATIONS * 100:3.0f}%] {latency:.2f} ms")
 
     def is_stick_at_extreme(self):
         """Checks if stick is at extreme position"""
@@ -618,6 +669,7 @@ def generate_short_id(length=12):
 if __name__ == "__main__":
     pygame.init()
     pygame.joystick.init()
+    start_async_logger()
     try:
         if not pygame.display.get_init():
             pygame.display.init()
@@ -899,5 +951,56 @@ if __name__ == "__main__":
     except Exception as e:
         print_error(f"While setting up COM port: {e}")
     finally:
+        stop_async_logger()
         pygame.quit()
         input("Press Enter to exit...")
+ASYNC_LOG_QUEUE = None
+ASYNC_LOG_STOP = None
+ASYNC_LOG_THREAD = None
+
+def _printer_loop():
+    last_flush = time.perf_counter()
+    while ASYNC_LOG_STOP and not ASYNC_LOG_STOP.is_set():
+        try:
+            line = ASYNC_LOG_QUEUE.get(timeout=0.1)
+            try:
+                sys.stdout.write(line + "\n")
+            except Exception:
+                pass
+            if time.perf_counter() - last_flush > 0.25:
+                try:
+                    sys.stdout.flush()
+                except Exception:
+                    pass
+                last_flush = time.perf_counter()
+        except Exception:
+            pass
+
+def start_async_logger():
+    global ASYNC_LOG_QUEUE, ASYNC_LOG_STOP, ASYNC_LOG_THREAD
+    try:
+        ASYNC_LOG_QUEUE = queue.SimpleQueue()
+    except Exception:
+        ASYNC_LOG_QUEUE = queue.Queue()
+    ASYNC_LOG_STOP = threading.Event()
+    ASYNC_LOG_THREAD = threading.Thread(target=_printer_loop, daemon=True)
+    ASYNC_LOG_THREAD.start()
+
+def stop_async_logger():
+    try:
+        if ASYNC_LOG_STOP:
+            ASYNC_LOG_STOP.set()
+    except Exception:
+        pass
+
+def async_log(message):
+    try:
+        if ASYNC_LOG_QUEUE:
+            ASYNC_LOG_QUEUE.put(str(message))
+        else:
+            print(str(message))
+    except Exception:
+        try:
+            print(str(message))
+        except Exception:
+            pass
