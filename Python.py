@@ -10,7 +10,6 @@ import webbrowser
 import numpy as np
 import os
 from serial.tools import list_ports
-from datetime import datetime
 from colorama import Fore, Style
 import pygame
 from pygame.locals import *
@@ -101,8 +100,6 @@ LOWER_QUANTILE = 0.02               # Lower quantile for filtering
 UPPER_QUANTILE = 0.98               # Upper quantile for filtering
 STICK_THRESHOLD = 0.99              # Stick activation threshold
 RATIO = 5                           # Delay to pulse duration ratio
-TEST_INTERVAL = PULSE_DURATION * RATIO  # Delay time before next pulse
-MAX_LATENCY = TEST_INTERVAL - PULSE_DURATION  # Maximum possible gamepad latency
 CONTACT_DELAY = 0.2                 # Contact sensor delay (ms) for correction (will be updated after calibration)
 INCREASE_DURATION = 10              # Pulse duration increase increment (ms)
 LATENCY_EQUALITY_THRESHOLD = 0.001  # Threshold for comparing latencies (ms)
@@ -361,7 +358,7 @@ class LatencyTester:
         """Updates PULSE_DURATION, TEST_INTERVAL and MAX_LATENCY"""
         duration_ms = int(self.pulse_duration_us / 1000) + INCREASE_DURATION
         self.set_pulse_duration(duration_ms)
-        print(f"Updated parameters: PULSE_DURATION={duration_ms} ms, TEST_INTERVAL={int(self.test_interval_us/1000)} ms, MAX_LATENCY={int(self.max_latency_us/1000)} ms")
+        print(f"Updated parameters: PULSE_DURATION={int(self.pulse_duration_us/1000)} ms, TEST_INTERVAL={int(self.test_interval_us/1000)} ms, MAX_LATENCY={int(self.max_latency_us/1000)} ms")
 
     def _check_consecutive_latencies(self, latency):
         """Checks for consecutive identical latencies and updates pulse parameters if needed."""
@@ -955,4 +952,3 @@ if __name__ == "__main__":
         stop_async_logger()
         pygame.quit()
         input("Press Enter to exit...")
- 
