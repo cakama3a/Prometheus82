@@ -159,7 +159,7 @@ def save_test_completion_time(iterations):
         cooling_seconds = int(cooling_minutes * 60)
         with open(LAST_TEST_TIME_FILE, 'w') as f:
             f.write(f"{time.time()},{cooling_seconds}")
-        print(f"{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
+        print(f"\n{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
         print(f"{Fore.YELLOW}Cooling timer set to {cooling_seconds} seconds.{Fore.RESET}")
     except IOError as e:
         print_error(f"Recording test completion time: {e}")
