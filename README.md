@@ -65,10 +65,12 @@ You have two options to obtain a Prometheus 82 device:
 3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
 4. Place the gamepad in the test stand and secure it (not too tightly).
 5. Adjust the solenoid for testing the gamepad's buttons or sticks [as shown](https://www.youtube.com/watch?v=NBS_tU-7VqA).
-6. Launch the testing program: https://github.com/cakama3a/Prometheus82/releases/
-7. Select the testing option for the gamepad's sticks or buttons in the program menu.
-8. Start the test and wait for it to complete.
-9. Submit the test to Gamepadla.com for detailed analysis or exit the program.
+> [!IMPORTANT]
+> **Attention:** If the gamepad has stick tension adjustment, select the medium tension.
+7. Launch the testing program: https://github.com/cakama3a/Prometheus82/releases/
+8. Select the testing option for the gamepad's sticks or buttons in the program menu.
+9. Start the test and wait for it to complete.
+10. Submit the test to Gamepadla.com for detailed analysis or exit the program.
 
 ![image](https://github.com/user-attachments/assets/0900068d-f3f0-4ae1-958f-e919bea8ca53)
 Test results on a temporary personalized Gamepadla.com page
