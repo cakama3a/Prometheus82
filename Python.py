@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.3.9"                 # Updated version with microsecond support
+VERSION = "5.2.4.0"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -104,6 +104,7 @@ CONTACT_DELAY = 0.2                 # Contact sensor delay (ms) for correction (
 INCREASE_DURATION = 10              # Pulse duration increase increment (ms)
 LATENCY_EQUALITY_THRESHOLD = 0.001  # Threshold for comparing latencies (ms)
 CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
+BLIND_CALIBRATION_DURATION = 0.2      # Duration for blind calibration (ms)
 
 # Constants for test types
 TEST_TYPE_STICK = "stick"
@@ -672,7 +673,7 @@ class LatencyTester:
         print("Test window ready. Press Start to begin.")
         self.wait_for_start()
         if self.test_type == TEST_TYPE_STICK:
-            self.calibrate_stick_movement_compensation(iterations=10, blind_ms=1.5)
+            self.calibrate_stick_movement_compensation(iterations=10, blind_ms=BLIND_CALIBRATION_DURATION)
         print(f"\nStarting {TEST_ITERATIONS} measurements with microsecond precision...\n")
         self.trigger_solenoid()
         while len(self.latency_results) < TEST_ITERATIONS:
