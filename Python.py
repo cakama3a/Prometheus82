@@ -104,7 +104,7 @@ CONTACT_DELAY = 0.2                 # Contact sensor delay (ms) for correction (
 INCREASE_DURATION = 10              # Pulse duration increase increment (ms)
 LATENCY_EQUALITY_THRESHOLD = 0.001  # Threshold for comparing latencies (ms)
 CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
-BLIND_CALIBRATION_DURATION = 0.2      # Duration for blind calibration (ms)
+BLIND_CALIBRATION_DURATION = 0.0
 
 # Constants for test types
 TEST_TYPE_STICK = "stick"
@@ -332,12 +332,12 @@ class LatencyTester:
             self._screen.blit(surf3, (10, 70))
         pygame.display.flip()
 
-    def calibrate_stick_movement_compensation(self, iterations=10, blind_ms=1.5):
+    def calibrate_stick_movement_compensation(self, iterations=10, blind_ms=0.0):
         if self.test_type != TEST_TYPE_STICK:
             return None
         if not self.serial:
             return None
-        print(f"\nStarting stick movement calibration: {iterations} hits, blind {blind_ms} ms")
+        print(f"\nStarting stick movement calibration: {iterations} hits")
         results = []
         for i in range(iterations):
             try:
@@ -345,7 +345,15 @@ class LatencyTester:
                 self.serial.reset_output_buffer()
             except Exception:
                 pass
-            self.trigger_solenoid()
+            start_time_us = time.perf_counter() * 1000000
+            if self.serial:
+                self.serial.write(b'C')
+                try:
+                    self.serial.flush()
+                except Exception:
+                    pass
+            self.measuring = False
+            self.last_trigger_time_us = start_time_us
             contact_time_us = None
             t0 = time.perf_counter()
             while time.perf_counter() - t0 < 1.0:
@@ -357,23 +365,9 @@ class LatencyTester:
                 print_error("Calibration: no contact signal received")
                 time.sleep(self.pulse_duration_us / 1000000 + 0.1)
                 continue
-            blind_end_us = contact_time_us + int(blind_ms * 1000)
-            while time.perf_counter() * 1000000 < blind_end_us:
-                pygame.event.pump()
-            finish_time_us = None
-            t1 = time.perf_counter()
-            while time.perf_counter() - t1 < 0.050:
-                if self.serial and self.serial.in_waiting:
-                    if self.serial.read() == b'F':
-                        finish_time_us = time.perf_counter() * 1000000
-                        break
-                pygame.event.pump()
-            if finish_time_us:
-                dt_ms = (finish_time_us - contact_time_us) / 1000.0
-                results.append(dt_ms)
-                print(f"Calibration {i+1}/{iterations}: {dt_ms:.3f} ms")
-            else:
-                print_error("Calibration: no second contact detected in time")
+            dt_ms = (contact_time_us - start_time_us) / 1000.0
+            results.append(dt_ms)
+            print(f"Calibration {i+1}/{iterations}: {dt_ms:.3f} ms")
             now_us = time.perf_counter() * 1000000
             wait_s = max(0.0, (self.last_trigger_time_us + self.test_interval_us - now_us) / 1000000.0)
             time.sleep(wait_s)
@@ -390,11 +384,14 @@ class LatencyTester:
             if len(filtered) < max(3, int(len(results) * 0.6)):
                 sorted_vals = sorted(results)
                 filtered = sorted_vals[1:-1] if len(sorted_vals) > 2 else sorted_vals
-            avg = statistics.mean(filtered)
-            self.stick_movement_compensation_ms = avg
+            avg_dt = statistics.mean(filtered)
+            base_ms = 12.0
+            comp = max(0.0, base_ms - avg_dt)
+            self.stick_movement_compensation_ms = comp
             print(f"Calibration filter: kept {len(filtered)}/{len(results)}, median {med:.3f} ms, MAD {mad:.3f} ms")
-            print(f"\nCalculated STICK_MOVEMENT_COMPENSATION: {avg:.3f} ms (was {STICK_MOVEMENT_COMPENSATION:.3f} ms)")
-            return avg
+            print(f"Average start→contact: {avg_dt:.3f} ms; Base {base_ms:.3f} ms → compensation {comp:.3f} ms")
+            print(f"\nCalculated STICK_MOVEMENT_COMPENSATION: {comp:.3f} ms (was {STICK_MOVEMENT_COMPENSATION:.3f} ms)")
+            return comp
         print_error("Calibration: no valid results, keeping default compensation")
         return None
 
