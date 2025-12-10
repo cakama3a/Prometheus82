@@ -3,18 +3,13 @@ const int SOLENOID_PIN = 2;
 unsigned long PULSE_DURATION_US = 40000;
 
 volatile bool windowActive = false, contactDetected = false, solenoidActive = false;
-volatile bool calibrationActive = false;
-volatile unsigned long solenoidStartTime_us = 0, firstContactTime_us = 0;
-const unsigned long BLIND_WINDOW_US = 1500;
-const unsigned long CAPTURE_WINDOW_US = 6000;
+volatile unsigned long solenoidStartTime_us = 0;
 
 void handleContact() {
     if (!windowActive) return;
-    unsigned long now = micros();
     if (!contactDetected) {
         Serial.write('S');
         contactDetected = true;
-        firstContactTime_us = now;
         return;
     }
 }
@@ -49,7 +44,6 @@ void loop() {
         // Other commands are processed as before
         if (cmd == 'T') {
             contactDetected = false;
-            calibrationActive = false;
             digitalWrite(SOLENOID_PIN, HIGH);
             solenoidStartTime_us = micros();
             solenoidActive = true;
@@ -57,7 +51,6 @@ void loop() {
         }
         else if (cmd == 'C') {
             contactDetected = false;
-            calibrationActive = true;
             digitalWrite(SOLENOID_PIN, HIGH);
             solenoidStartTime_us = micros();
             solenoidActive = true;
