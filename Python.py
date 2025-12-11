@@ -628,7 +628,8 @@ class LatencyTester:
             'jitter': round(np.std(filtered_results), 2),
             'filtered_results': filtered_results,
             'pulse_duration': self.pulse_duration_us / 1000,
-            'contact_delay': self.contact_delay
+            'contact_delay': self.contact_delay,
+            'stick_movement_compensation': self.stick_movement_compensation_ms
         }
 
     def check_for_stall_and_adjust(self):
@@ -954,6 +955,8 @@ if __name__ == "__main__":
                         print(f"{'Filtered count:':<26}{stats['filtered_samples']:>8}")
                         print(f"{'Pulse duration:':<26}{stats['pulse_duration']:>8.1f} ms")
                         print(f"{'Contact delay:':<26}{stats['contact_delay']:>8.3f} ms")
+                        if test_type == TEST_TYPE_STICK:
+                            print(f"{'Stick movement comp.:':<26}{stats['stick_movement_compensation']:>8.3f} ms")
         
                         if stats['contact_delay'] > 1.2:
                             print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
@@ -986,7 +989,8 @@ if __name__ == "__main__":
                                             'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB', # mathod name is not a mistake!
                                             'delay_list': ', '.join(str(round(x, 2)) for x in tester.latency_results),
                                             'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
-                                            'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration']
+                                            'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration'],
+                                            'stick_movement_compensation': tester.stick_movement_compensation_ms if test_type == TEST_TYPE_STICK else None
                                         }
                                         try:
                                             response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
