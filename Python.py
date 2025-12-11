@@ -789,7 +789,7 @@ if __name__ == "__main__":
         detected_mode = detect_gamepad_mode(joystick)
         print(f"Detected protocol:  {Fore.GREEN}{detected_mode}{Fore.RESET}")
     else:
-        print("\nNo gamepad found! Some features will be unavailable.")
+        print_error("No gamepad found! Some features will be unavailable.")
 
     # Cooling status before selecting test type
     check_cooling_period()
@@ -820,7 +820,7 @@ if __name__ == "__main__":
                 pygame.quit()
                 sys.exit()
     except ValueError:
-        print("Invalid input!")
+        print_error("Invalid input!")
         input("Press Enter to close...")
         pygame.quit()
         sys.exit()
@@ -856,7 +856,7 @@ if __name__ == "__main__":
     ports = [p for p in all_ports if "bluetooth" not in p.description.lower()]
 
     if not ports:
-        print_error("No suitable COM ports found. All available ports were Bluetooth or no ports are connected.")
+        print_error("No suitable COM ports found. Perhaps you have not connected Prometheus 82 to your computer.")
         input("Press Enter to close...")
         pygame.quit()
         sys.exit()
@@ -1011,7 +1011,7 @@ if __name__ == "__main__":
                                     break
                                 break
                             except ValueError:
-                                print("Invalid input! Please enter 1, 2, 3, or 4.")
+                                print_error("Invalid input! Please enter 1, 2, 3, or 4.")
             except KeyboardInterrupt:
                 print("\nTest interrupted by user.")
     except serial.SerialException as e:
