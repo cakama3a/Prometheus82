@@ -371,8 +371,28 @@ class LatencyTester:
                 continue
             next_start_us = start_time_us + cal_interval_us
             slack_ms = max(0.0, (next_start_us - contact_time_us) / 1000.0)
-            slack_to_next_start.append(slack_ms)
-            print(f"Calibration {i+1}/{iterations}: button→next start {slack_ms:.3f} ms")
+            # 20 ms hold-check: ensure button still pressed (stick fully deflected)
+            hold_ok = None
+            try:
+                time.sleep(0.020)
+                if self.serial:
+                    self.serial.write(b'Q')
+                    self.serial.flush()
+                    tQ = time.perf_counter()
+                    while time.perf_counter() - tQ < 0.200:
+                        if self.serial.in_waiting:
+                            resp = self.serial.read()
+                            if resp in (b'H', b'U'):
+                                hold_ok = (resp == b'H')
+                                break
+                        time.sleep(0.001)
+            except Exception:
+                pass
+            if hold_ok is False:
+                print_error("Calibration: invalid hit — stick not fully deflected after 20 ms. Move gamepad closer to the sensor and repeat.")
+            else:
+                slack_to_next_start.append(slack_ms)
+                print(f"Calibration {i+1}/{iterations}: button→next start {slack_ms:.3f} ms")
             now_us = time.perf_counter() * 1000000
             wait_s = max(0.0, (start_time_us + cal_interval_us - now_us) / 1000000.0)
             time.sleep(wait_s)

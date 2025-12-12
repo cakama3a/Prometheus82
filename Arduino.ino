@@ -70,6 +70,10 @@ void loop() {
                 Serial.read();
             }
         }
+        else if (cmd == 'Q') {
+            int state = digitalRead(CONTACT_PIN);
+            Serial.write(state == LOW ? 'H' : 'U');
+        }
     }
 
     if (solenoidActive && (micros() - solenoidStartTime_us >= PULSE_DURATION_US)) {
