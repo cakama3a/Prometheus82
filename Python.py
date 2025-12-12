@@ -256,6 +256,8 @@ class LatencyTester:
         self._last_render_time = 0.0
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
         self.stick_movement_compensation_ms = STICK_MOVEMENT_COMPENSATION
+        self._current_compensation_ms = None
+        self._comp_history = []
 
     def open_test_window(self):
         while True:
@@ -435,12 +437,7 @@ class LatencyTester:
             comp_from_intervals = max(0.0, base_ms - median_move_all)
             self.stick_movement_compensation_ms = comp_from_intervals
             used_count = len(stable_items)
-            print(f"Stick movement (net) from intervals: min {min(it['net'] for it in filtered_items):.3f} ms, median {median_move_all:.3f} ms, max {max(it['net'] for it in filtered_items):.3f} ms")
-            print(f"Medians by halves: first {med_first:.3f} ms, second {med_second:.3f} ms")
-            print(f"Stability filter: used {used_count}/{len(filtered_items)} most stable (from {len(items)} total)")
-            print(f"STICK_MOVEMENT_COMPENSATION = Base({base_ms:.3f} ms) − median_net_move({median_move_all:.3f} ms)")
-            print(f"Where median_net_move = cal_interval({cal_interval_ms:.3f} ms) − median_slack({median_slack_all:.3f} ms) − contact_delay({self.contact_delay:.3f} ms)")
-            print(f"Calculated STICK_MOVEMENT_COMPENSATION: {comp_from_intervals:.3f} ms")
+            pass
         except Exception:
             pass
         if invalid_hold_count > 0:
@@ -641,7 +638,8 @@ class LatencyTester:
             if not self.stick_axes and self.detect_active_stick():
                 return False
             if self.is_stick_at_extreme():
-                latency_ms = ((time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0) - self.stick_movement_compensation_ms
+                comp = self._current_compensation_ms if self._current_compensation_ms is not None else self.stick_movement_compensation_ms
+                latency_ms = ((time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0) - comp
         elif self.test_type == TEST_TYPE_BUTTON:
             if self.button_to_test is None and self.detect_active_button():
                 return False
@@ -726,11 +724,7 @@ class LatencyTester:
         print("Test window ready. Press Start to begin.")
         self.wait_for_start()
         if self.test_type == TEST_TYPE_STICK:
-            ok = self.calibrate_stick_movement_compensation(iterations=20)
-            if not ok:
-                if pygame.display.get_init() and pygame.display.get_surface() is not None:
-                    pygame.display.quit()
-                return
+            pass
         print(f"\nStarting {TEST_ITERATIONS} measurements with microsecond precision...\n")
         self.trigger_solenoid()
         while len(self.latency_results) < TEST_ITERATIONS:
@@ -746,6 +740,15 @@ class LatencyTester:
                 if found:
                     self.start_time_us = time.perf_counter() * 1000000
                     self.measuring = True
+                    next_start_us = self.last_trigger_time_us + self.test_interval_us
+                    slack_ms = max(0.0, (next_start_us - self.start_time_us) / 1000.0)
+                    net_move = max(0.0, (self.test_interval_us / 1000.0) - slack_ms - self.contact_delay)
+                    base_ms = 12.0
+                    self._current_compensation_ms = max(0.0, base_ms - net_move)
+                    try:
+                        self._comp_history.append(self._current_compensation_ms)
+                    except Exception:
+                        pass
             self.check_input()
             pygame.event.pump()
             try:
@@ -753,6 +756,21 @@ class LatencyTester:
                 if now - self._last_render_time >= 1.0 / 30.0:
                     self.render_test_window(self.latency_results[-1] if self.latency_results else None)
                     self._last_render_time = now
+            except Exception:
+                pass
+        if self.test_type == TEST_TYPE_STICK:
+            try:
+                if self._comp_history:
+                    med = statistics.median(self._comp_history)
+                    abs_dev = [abs(x - med) for x in self._comp_history]
+                    mad = statistics.median(abs_dev) if abs_dev else 0.0
+                    thr = 3.0 * mad if mad > 0 else 0.2
+                    filtered = [x for x in self._comp_history if abs(x - med) <= thr]
+                    if len(filtered) < max(3, int(len(self._comp_history) * 0.6)):
+                        sv = sorted(self._comp_history)
+                        filtered = sv[1:-1] if len(sv) > 2 else sv
+                    med2 = statistics.median(filtered) if filtered else med
+                    self.stick_movement_compensation_ms = med2
             except Exception:
                 pass
         self.close_test_window()
