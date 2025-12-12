@@ -323,9 +323,13 @@ class LatencyTester:
         header = "Keep this window on top during testing"
         surf = self._font.render(header, True, (255, 255, 0))
         self._screen.blit(surf, (10, 10))
-        progress_text = f"Progress: {len(self.latency_results)}/{TEST_ITERATIONS}"
-        surf2 = self._font.render(progress_text, True, (200, 200, 200))
-        self._screen.blit(surf2, (10, 40))
+        if self.test_type == TEST_TYPE_STICK and getattr(self, "_started", False) and len(self.latency_results) == 0:
+            surf2 = self._font.render("Calibrating...", True, (255, 255, 255))
+            self._screen.blit(surf2, (10, 40))
+        else:
+            progress_text = f"Progress: {len(self.latency_results)}/{TEST_ITERATIONS}"
+            surf2 = self._font.render(progress_text, True, (200, 200, 200))
+            self._screen.blit(surf2, (10, 40))
         if last_latency is not None:
             surf3 = self._font.render(f"Last latency: {last_latency:.2f} ms", True, (150, 200, 255))
             self._screen.blit(surf3, (10, 70))
@@ -391,7 +395,7 @@ class LatencyTester:
             print(f"Average start→contact: {avg_dt:.3f} ms; Base {base_ms:.3f} ms → compensation {comp:.3f} ms")
             print(f"\nCalculated STICK_MOVEMENT_COMPENSATION: {comp:.3f} ms (was {STICK_MOVEMENT_COMPENSATION:.3f} ms)")
             return comp
-        print_error("Calibration: no valid results, keeping default compensation")
+        print_error("Calibration: no valid results, keeping default compensation. Make sure you have updated the Arduino firmware.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
         return None
 
     def set_pulse_duration(self, duration_ms):
