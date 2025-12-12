@@ -341,7 +341,8 @@ class LatencyTester:
         if not self.serial:
             return None
         print(f"\nStarting stick movement calibration: {iterations} hits")
-        results = []
+        slack_to_next_start = []
+        cal_interval_us = self.pulse_duration_us * (RATIO + 1)
         for i in range(iterations):
             try:
                 self.serial.reset_input_buffer()
@@ -368,35 +369,44 @@ class LatencyTester:
                 print_error("Calibration: no contact signal received")
                 time.sleep(self.pulse_duration_us / 1000000 + 0.1)
                 continue
-            dt_ms = (contact_time_us - start_time_us) / 1000.0
-            results.append(dt_ms)
-            print(f"Calibration {i+1}/{iterations}: {dt_ms:.3f} ms")
+            next_start_us = start_time_us + cal_interval_us
+            slack_ms = max(0.0, (next_start_us - contact_time_us) / 1000.0)
+            slack_to_next_start.append(slack_ms)
+            print(f"Calibration {i+1}/{iterations}: button→next start {slack_ms:.3f} ms")
             now_us = time.perf_counter() * 1000000
-            wait_s = max(0.0, (self.last_trigger_time_us + self.test_interval_us - now_us) / 1000000.0)
+            wait_s = max(0.0, (start_time_us + cal_interval_us - now_us) / 1000000.0)
             time.sleep(wait_s)
             try:
                 self.render_test_window(None)
             except Exception:
                 pass
-        if results:
-            med = statistics.median(results)
-            abs_dev = [abs(x - med) for x in results]
-            mad = statistics.median(abs_dev) if abs_dev else 0.0
-            thr = 3.0 * mad if mad > 0 else 0.2
-            filtered = [x for x in results if abs(x - med) <= thr]
-            if len(filtered) < max(3, int(len(results) * 0.6)):
-                sorted_vals = sorted(results)
-                filtered = sorted_vals[1:-1] if len(sorted_vals) > 2 else sorted_vals
-            avg_dt = statistics.mean(filtered)
-            base_ms = 12.0
-            net_dt = max(0.0, avg_dt - self.contact_delay)
-            comp = max(0.0, base_ms - net_dt)
-            self.stick_movement_compensation_ms = comp
-            print(f"Calibration filter: kept {len(filtered)}/{len(results)}, median {med:.3f} ms, MAD {mad:.3f} ms")
-            print(f"Average start→contact: {avg_dt:.3f} ms; contact delay: {self.contact_delay:.3f} ms → net {net_dt:.3f} ms")
-            print(f"Base {base_ms:.3f} ms → compensation {comp:.3f} ms")
-            print(f"\nCalculated STICK_MOVEMENT_COMPENSATION: {comp:.3f} ms (was {STICK_MOVEMENT_COMPENSATION:.3f} ms)")
-            return comp
+        base_ms = 12.0
+        if slack_to_next_start:
+            print(f"Button→Next Start intervals: min {min(slack_to_next_start):.3f} ms, avg {statistics.mean(slack_to_next_start):.3f} ms, max {max(slack_to_next_start):.3f} ms")
+            try:
+                cal_interval_ms = (self.pulse_duration_us * (RATIO + 1)) / 1000.0
+                move_times = [cal_interval_ms - s for s in slack_to_next_start]
+                net_move_times = [max(0.0, m - self.contact_delay) for m in move_times]
+                # Robust filter for movement times
+                med_move = statistics.median(net_move_times)
+                abs_dev_move = [abs(x - med_move) for x in net_move_times]
+                mad_move = statistics.median(abs_dev_move) if abs_dev_move else 0.0
+                thr_move = 3.0 * mad_move if mad_move > 0 else 0.2
+                filtered_move = [x for x in net_move_times if abs(x - med_move) <= thr_move]
+                if len(filtered_move) < max(3, int(len(net_move_times) * 0.6)):
+                    sorted_moves = sorted(net_move_times)
+                    filtered_move = sorted_moves[1:-1] if len(sorted_moves) > 2 else sorted_moves
+                avg_slack = statistics.mean(slack_to_next_start)
+                avg_move = statistics.mean(filtered_move)
+                comp_from_intervals = max(0.0, base_ms - avg_move)
+                self.stick_movement_compensation_ms = comp_from_intervals
+                print(f"Stick movement (net) from intervals: min {min(filtered_move):.3f} ms, avg {avg_move:.3f} ms, max {max(filtered_move):.3f} ms")
+                print(f"STICK_MOVEMENT_COMPENSATION = Base({base_ms:.3f} ms) − avg_net_move({avg_move:.3f} ms)")
+                print(f"Where avg_net_move = cal_interval({cal_interval_ms:.3f} ms) − avg_slack({avg_slack:.3f} ms) − contact_delay({self.contact_delay:.3f} ms)")
+                print(f"Calculated STICK_MOVEMENT_COMPENSATION: {comp_from_intervals:.3f} ms")
+            except Exception:
+                pass
+        return None
         print_error("Calibration: no valid results, keeping default compensation. Make sure you have updated the Arduino firmware.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
         return None
 
