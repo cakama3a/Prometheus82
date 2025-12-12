@@ -28,7 +28,6 @@ void setup() {
         digitalWrite(SOLENOID_PIN, LOW);
         delay(200);
     }
-    
     Serial.write('R');
     Serial.write('V');
     for (int i = 0; FWV[i] != 0; i++) {
@@ -48,14 +47,7 @@ void loop() {
         }
         
         // Other commands are processed as before
-        if (cmd == 'T') {
-            contactDetected = false;
-            digitalWrite(SOLENOID_PIN, HIGH);
-            solenoidStartTime_us = micros();
-            solenoidActive = true;
-            windowActive = true;
-        }
-        else if (cmd == 'C') {
+        if (cmd == 'T' || cmd == 'C') {
             contactDetected = false;
             digitalWrite(SOLENOID_PIN, HIGH);
             solenoidStartTime_us = micros();

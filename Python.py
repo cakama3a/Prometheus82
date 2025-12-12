@@ -424,15 +424,15 @@ class LatencyTester:
                 filtered_items = sorted_by_net[1:-1] if len(sorted_by_net) > 2 else sorted_by_net
             med_net2 = statistics.median([it['net'] for it in filtered_items])
             stable_items = sorted(filtered_items, key=lambda it: abs(it['net'] - med_net2))[:min(10, len(filtered_items))]
-            avg_move = statistics.mean([it['net'] for it in stable_items])
-            avg_slack = statistics.mean([it['slack'] for it in stable_items])
-            comp_from_intervals = max(0.0, base_ms - avg_move)
+            median_move_all = statistics.median([it['net'] for it in filtered_items])
+            median_slack_all = statistics.median([it['slack'] for it in filtered_items])
+            comp_from_intervals = max(0.0, base_ms - median_move_all)
             self.stick_movement_compensation_ms = comp_from_intervals
             used_count = len(stable_items)
-            print(f"Stick movement (net) from intervals: min {min(it['net'] for it in stable_items):.3f} ms, avg {avg_move:.3f} ms, max {max(it['net'] for it in stable_items):.3f} ms")
+            print(f"Stick movement (net) from intervals: min {min(it['net'] for it in filtered_items):.3f} ms, median {median_move_all:.3f} ms, max {max(it['net'] for it in filtered_items):.3f} ms")
             print(f"Stability filter: used {used_count}/{len(filtered_items)} most stable (from {len(items)} total)")
-            print(f"STICK_MOVEMENT_COMPENSATION = Base({base_ms:.3f} ms) − avg_net_move({avg_move:.3f} ms)")
-            print(f"Where avg_net_move = cal_interval({cal_interval_ms:.3f} ms) − avg_slack({avg_slack:.3f} ms) − contact_delay({self.contact_delay:.3f} ms)")
+            print(f"STICK_MOVEMENT_COMPENSATION = Base({base_ms:.3f} ms) − median_net_move({median_move_all:.3f} ms)")
+            print(f"Where median_net_move = cal_interval({cal_interval_ms:.3f} ms) − median_slack({median_slack_all:.3f} ms) − contact_delay({self.contact_delay:.3f} ms)")
             print(f"Calculated STICK_MOVEMENT_COMPENSATION: {comp_from_intervals:.3f} ms")
         except Exception:
             pass
