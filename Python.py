@@ -344,6 +344,7 @@ class LatencyTester:
         print(f"\nStarting stick movement calibration: {iterations} hits")
         slack_to_next_start = []
         cal_interval_us = self.pulse_duration_us * (RATIO + 1)
+        invalid_hold_count = 0
         for i in range(iterations):
             try:
                 self.serial.reset_input_buffer()
@@ -390,7 +391,8 @@ class LatencyTester:
             except Exception:
                 pass
             if hold_ok is False:
-                print_error("Calibration: invalid hit — stick not fully deflected after 20 ms. Move gamepad closer to the sensor and repeat.")
+                invalid_hold_count += 1
+                print(f"Calibration {i+1}/{iterations}: button→next start {Fore.YELLOW}{slack_ms:.3f} ms{Fore.RESET}")
             else:
                 slack_to_next_start.append(slack_ms)
                 print(f"Calibration {i+1}/{iterations}: button→next start {slack_ms:.3f} ms")
@@ -402,32 +404,36 @@ class LatencyTester:
             except Exception:
                 pass
         base_ms = 12.0
-        if slack_to_next_start:
-            print(f"Button→Next Start intervals: min {min(slack_to_next_start):.3f} ms, avg {statistics.mean(slack_to_next_start):.3f} ms, max {max(slack_to_next_start):.3f} ms")
-            try:
-                cal_interval_ms = (self.pulse_duration_us * (RATIO + 1)) / 1000.0
-                move_times = [cal_interval_ms - s for s in slack_to_next_start]
-                net_move_times = [max(0.0, m - self.contact_delay) for m in move_times]
-                # Robust filter for movement times
-                med_move = statistics.median(net_move_times)
-                abs_dev_move = [abs(x - med_move) for x in net_move_times]
-                mad_move = statistics.median(abs_dev_move) if abs_dev_move else 0.0
-                thr_move = 3.0 * mad_move if mad_move > 0 else 0.2
-                filtered_move = [x for x in net_move_times if abs(x - med_move) <= thr_move]
-                if len(filtered_move) < max(3, int(len(net_move_times) * 0.6)):
-                    sorted_moves = sorted(net_move_times)
-                    filtered_move = sorted_moves[1:-1] if len(sorted_moves) > 2 else sorted_moves
-                avg_slack = statistics.mean(slack_to_next_start)
-                avg_move = statistics.mean(filtered_move)
-                comp_from_intervals = max(0.0, base_ms - avg_move)
-                self.stick_movement_compensation_ms = comp_from_intervals
-                print(f"Stick movement (net) from intervals: min {min(filtered_move):.3f} ms, avg {avg_move:.3f} ms, max {max(filtered_move):.3f} ms")
-                print(f"STICK_MOVEMENT_COMPENSATION = Base({base_ms:.3f} ms) − avg_net_move({avg_move:.3f} ms)")
-                print(f"Where avg_net_move = cal_interval({cal_interval_ms:.3f} ms) − avg_slack({avg_slack:.3f} ms) − contact_delay({self.contact_delay:.3f} ms)")
-                print(f"Calculated STICK_MOVEMENT_COMPENSATION: {comp_from_intervals:.3f} ms")
-            except Exception:
-                pass
-        return None
+        if not slack_to_next_start:
+            print_error("Calibration: no valid hits. Please move the gamepad closer to the sensor and repeat.")
+            return False
+        print(f"Button→Next Start intervals: min {min(slack_to_next_start):.3f} ms, avg {statistics.mean(slack_to_next_start):.3f} ms, max {max(slack_to_next_start):.3f} ms")
+        try:
+            cal_interval_ms = (self.pulse_duration_us * (RATIO + 1)) / 1000.0
+            move_times = [cal_interval_ms - s for s in slack_to_next_start]
+            net_move_times = [max(0.0, m - self.contact_delay) for m in move_times]
+            med_move = statistics.median(net_move_times)
+            abs_dev_move = [abs(x - med_move) for x in net_move_times]
+            mad_move = statistics.median(abs_dev_move) if abs_dev_move else 0.0
+            thr_move = 3.0 * mad_move if mad_move > 0 else 0.2
+            filtered_move = [x for x in net_move_times if abs(x - med_move) <= thr_move]
+            if len(filtered_move) < max(3, int(len(net_move_times) * 0.6)):
+                sorted_moves = sorted(net_move_times)
+                filtered_move = sorted_moves[1:-1] if len(sorted_moves) > 2 else sorted_moves
+            avg_slack = statistics.mean(slack_to_next_start)
+            avg_move = statistics.mean(filtered_move)
+            comp_from_intervals = max(0.0, base_ms - avg_move)
+            self.stick_movement_compensation_ms = comp_from_intervals
+            print(f"Stick movement (net) from intervals: min {min(filtered_move):.3f} ms, avg {avg_move:.3f} ms, max {max(filtered_move):.3f} ms")
+            print(f"STICK_MOVEMENT_COMPENSATION = Base({base_ms:.3f} ms) − avg_net_move({avg_move:.3f} ms)")
+            print(f"Where avg_net_move = cal_interval({cal_interval_ms:.3f} ms) − avg_slack({avg_slack:.3f} ms) − contact_delay({self.contact_delay:.3f} ms)")
+            print(f"Calculated STICK_MOVEMENT_COMPENSATION: {comp_from_intervals:.3f} ms")
+        except Exception:
+            pass
+        if invalid_hold_count > 0:
+            print_error(f"Calibration: {invalid_hold_count} invalid hit(s) detected — stick was not fully deflected after 20 ms.\nMove gamepad closer to the sensor and repeat. Test will not start.")
+            return False
+        return True
         print_error("Calibration: no valid results, keeping default compensation. Make sure you have updated the Arduino firmware.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
         return None
 
@@ -707,7 +713,11 @@ class LatencyTester:
         print("Test window ready. Press Start to begin.")
         self.wait_for_start()
         if self.test_type == TEST_TYPE_STICK:
-            self.calibrate_stick_movement_compensation(iterations=10)
+            ok = self.calibrate_stick_movement_compensation(iterations=10)
+            if not ok:
+                if pygame.display.get_init() and pygame.display.get_surface() is not None:
+                    pygame.display.quit()
+                return
         print(f"\nStarting {TEST_ITERATIONS} measurements with microsecond precision...\n")
         self.trigger_solenoid()
         while len(self.latency_results) < TEST_ITERATIONS:
