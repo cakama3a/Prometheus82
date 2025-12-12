@@ -15,7 +15,6 @@ from colorama import Fore, Style
 import pygame
 from pygame.locals import *
 import statistics
-import math
 import random
 import string
 import sys
@@ -343,10 +342,6 @@ class LatencyTester:
             return None
         print(f"\nStarting stick movement calibration: {iterations} hits")
         results = []
-        intervals = []
-        residuals = []
-        expected_interval_ms = self.test_interval_us / 1000.0
-        prev_contact_time_us = None
         for i in range(iterations):
             try:
                 self.serial.reset_input_buffer()
@@ -375,15 +370,7 @@ class LatencyTester:
                 continue
             dt_ms = (contact_time_us - start_time_us) / 1000.0
             results.append(dt_ms)
-            if prev_contact_time_us is not None:
-                interval_ms = (contact_time_us - prev_contact_time_us) / 1000.0
-                intervals.append(interval_ms)
-                residual = interval_ms - expected_interval_ms
-                residuals.append(residual)
-                print(f"Calibration {i+1}/{iterations}: {dt_ms:.3f} ms, interval since previous: {interval_ms:.3f} ms (residual {residual:+.3f} ms)")
-            else:
-                print(f"Calibration {i+1}/{iterations}: {dt_ms:.3f} ms")
-            prev_contact_time_us = contact_time_us
+            print(f"Calibration {i+1}/{iterations}: {dt_ms:.3f} ms")
             now_us = time.perf_counter() * 1000000
             wait_s = max(0.0, (self.last_trigger_time_us + self.test_interval_us - now_us) / 1000000.0)
             time.sleep(wait_s)
@@ -396,17 +383,7 @@ class LatencyTester:
             abs_dev = [abs(x - med) for x in results]
             mad = statistics.median(abs_dev) if abs_dev else 0.0
             thr = 3.0 * mad if mad > 0 else 0.2
-            indices_by_value = [i for i, x in enumerate(results) if abs(x - med) <= thr]
-            filtered = [results[i] for i in indices_by_value]
-            if residuals:
-                med_res = statistics.median(residuals)
-                abs_dev_res = [abs(r - med_res) for r in residuals]
-                mad_res = statistics.median(abs_dev_res) if abs_dev_res else 0.0
-                thr_res = max(1.0, 3.0 * mad_res) if mad_res > 0 else 1.0
-                indices_by_residual = [i for i in range(len(results)) if i == 0 or abs(residuals[i-1]) <= thr_res]
-                indices = [i for i in indices_by_value if i in indices_by_residual]
-                filtered = [results[i] for i in indices]
-                print(f"Residual filter: kept {len(filtered)}/{len(results)} with threshold {thr_res:.3f} ms")
+            filtered = [x for x in results if abs(x - med) <= thr]
             if len(filtered) < max(3, int(len(results) * 0.6)):
                 sorted_vals = sorted(results)
                 filtered = sorted_vals[1:-1] if len(sorted_vals) > 2 else sorted_vals
@@ -418,23 +395,6 @@ class LatencyTester:
             print(f"Calibration filter: kept {len(filtered)}/{len(results)}, median {med:.3f} ms, MAD {mad:.3f} ms")
             print(f"Average start→contact: {avg_dt:.3f} ms; contact delay: {self.contact_delay:.3f} ms → net {net_dt:.3f} ms")
             print(f"Base {base_ms:.3f} ms → compensation {comp:.3f} ms")
-            if intervals:
-                print(f"Inter-contact intervals: min {min(intervals):.3f} ms, avg {statistics.mean(intervals):.3f} ms, max {max(intervals):.3f} ms")
-                print(f"Expected interval: {expected_interval_ms:.3f} ms")
-                if residuals:
-                    avg_res = statistics.mean(residuals)
-                    min_res = min(residuals)
-                    max_res = max(residuals)
-                    print(f"Interval residuals vs expected: min {min_res:+.3f} ms, avg {avg_res:+.3f} ms, max {max_res:+.3f} ms")
-                    if len(residuals) >= 3:
-                        dt_series = results[1:]  # align with intervals/residuals length
-                        dt_mean = statistics.mean(dt_series)
-                        res_mean = avg_res
-                        cov = sum((x - dt_mean) * (y - res_mean) for x, y in zip(dt_series, residuals))
-                        var_dt = sum((x - dt_mean) ** 2 for x in dt_series)
-                        var_res = sum((y - res_mean) ** 2 for y in residuals)
-                        corr = cov / (math.sqrt(var_dt) * math.sqrt(var_res)) if var_dt > 0 and var_res > 0 else 0.0
-                        print(f"Correlation(dt, residual): {corr:+.3f}")
             print(f"\nCalculated STICK_MOVEMENT_COMPENSATION: {comp:.3f} ms (was {STICK_MOVEMENT_COMPENSATION:.3f} ms)")
             return comp
         print_error("Calibration: no valid results, keeping default compensation. Make sure you have updated the Arduino firmware.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
