@@ -410,7 +410,7 @@ class LatencyTester:
         print(f"Button→Next Start intervals: min {min(slack_to_next_start):.3f} ms, avg {statistics.mean(slack_to_next_start):.3f} ms, max {max(slack_to_next_start):.3f} ms")
         try:
             cal_interval_ms = (self.pulse_duration_us * (RATIO + 1)) / 1000.0
-            items = [{'slack': s, 'net': max(0.0, (cal_interval_ms - s) - self.contact_delay)} for s in slack_to_next_start]
+            items = [{'idx': i, 'slack': s, 'net': max(0.0, (cal_interval_ms - s) - self.contact_delay)} for i, s in enumerate(slack_to_next_start)]
             if not items:
                 print_error("Calibration: no valid hits. Please move the gamepad closer to the sensor and repeat.")
                 return False
@@ -424,12 +424,19 @@ class LatencyTester:
                 filtered_items = sorted_by_net[1:-1] if len(sorted_by_net) > 2 else sorted_by_net
             med_net2 = statistics.median([it['net'] for it in filtered_items])
             stable_items = sorted(filtered_items, key=lambda it: abs(it['net'] - med_net2))[:min(10, len(filtered_items))]
-            median_move_all = statistics.median([it['net'] for it in filtered_items])
+            ordered = sorted(filtered_items, key=lambda it: it['idx'])
+            half = max(1, len(ordered) // 2)
+            first_half = ordered[:half]
+            second_half = ordered[half:]
+            med_first = statistics.median([it['net'] for it in first_half]) if first_half else med_net2
+            med_second = statistics.median([it['net'] for it in second_half]) if second_half else med_net2
+            median_move_all = statistics.median([med_first, med_second])
             median_slack_all = statistics.median([it['slack'] for it in filtered_items])
             comp_from_intervals = max(0.0, base_ms - median_move_all)
             self.stick_movement_compensation_ms = comp_from_intervals
             used_count = len(stable_items)
             print(f"Stick movement (net) from intervals: min {min(it['net'] for it in filtered_items):.3f} ms, median {median_move_all:.3f} ms, max {max(it['net'] for it in filtered_items):.3f} ms")
+            print(f"Medians by halves: first {med_first:.3f} ms, second {med_second:.3f} ms")
             print(f"Stability filter: used {used_count}/{len(filtered_items)} most stable (from {len(items)} total)")
             print(f"STICK_MOVEMENT_COMPENSATION = Base({base_ms:.3f} ms) − median_net_move({median_move_all:.3f} ms)")
             print(f"Where median_net_move = cal_interval({cal_interval_ms:.3f} ms) − median_slack({median_slack_all:.3f} ms) − contact_delay({self.contact_delay:.3f} ms)")
