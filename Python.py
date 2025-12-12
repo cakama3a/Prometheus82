@@ -336,7 +336,7 @@ class LatencyTester:
             self._screen.blit(surf3, (10, 70))
         pygame.display.flip()
 
-    def calibrate_stick_movement_compensation(self, iterations=10):
+    def calibrate_stick_movement_compensation(self, iterations=20):
         if self.test_type != TEST_TYPE_STICK:
             return None
         if not self.serial:
@@ -410,21 +410,27 @@ class LatencyTester:
         print(f"Button→Next Start intervals: min {min(slack_to_next_start):.3f} ms, avg {statistics.mean(slack_to_next_start):.3f} ms, max {max(slack_to_next_start):.3f} ms")
         try:
             cal_interval_ms = (self.pulse_duration_us * (RATIO + 1)) / 1000.0
-            move_times = [cal_interval_ms - s for s in slack_to_next_start]
-            net_move_times = [max(0.0, m - self.contact_delay) for m in move_times]
-            med_move = statistics.median(net_move_times)
-            abs_dev_move = [abs(x - med_move) for x in net_move_times]
-            mad_move = statistics.median(abs_dev_move) if abs_dev_move else 0.0
-            thr_move = 3.0 * mad_move if mad_move > 0 else 0.2
-            filtered_move = [x for x in net_move_times if abs(x - med_move) <= thr_move]
-            if len(filtered_move) < max(3, int(len(net_move_times) * 0.6)):
-                sorted_moves = sorted(net_move_times)
-                filtered_move = sorted_moves[1:-1] if len(sorted_moves) > 2 else sorted_moves
-            avg_slack = statistics.mean(slack_to_next_start)
-            avg_move = statistics.mean(filtered_move)
+            items = [{'slack': s, 'net': max(0.0, (cal_interval_ms - s) - self.contact_delay)} for s in slack_to_next_start]
+            if not items:
+                print_error("Calibration: no valid hits. Please move the gamepad closer to the sensor and repeat.")
+                return False
+            med_net = statistics.median([it['net'] for it in items])
+            abs_dev_net = [abs(it['net'] - med_net) for it in items]
+            mad_net = statistics.median(abs_dev_net) if abs_dev_net else 0.0
+            thr_net = 3.0 * mad_net if mad_net > 0 else 0.2
+            filtered_items = [it for it in items if abs(it['net'] - med_net) <= thr_net]
+            if len(filtered_items) < max(3, int(len(items) * 0.6)):
+                sorted_by_net = sorted(items, key=lambda it: it['net'])
+                filtered_items = sorted_by_net[1:-1] if len(sorted_by_net) > 2 else sorted_by_net
+            med_net2 = statistics.median([it['net'] for it in filtered_items])
+            stable_items = sorted(filtered_items, key=lambda it: abs(it['net'] - med_net2))[:min(10, len(filtered_items))]
+            avg_move = statistics.mean([it['net'] for it in stable_items])
+            avg_slack = statistics.mean([it['slack'] for it in stable_items])
             comp_from_intervals = max(0.0, base_ms - avg_move)
             self.stick_movement_compensation_ms = comp_from_intervals
-            print(f"Stick movement (net) from intervals: min {min(filtered_move):.3f} ms, avg {avg_move:.3f} ms, max {max(filtered_move):.3f} ms")
+            used_count = len(stable_items)
+            print(f"Stick movement (net) from intervals: min {min(it['net'] for it in stable_items):.3f} ms, avg {avg_move:.3f} ms, max {max(it['net'] for it in stable_items):.3f} ms")
+            print(f"Stability filter: used {used_count}/{len(filtered_items)} most stable (from {len(items)} total)")
             print(f"STICK_MOVEMENT_COMPENSATION = Base({base_ms:.3f} ms) − avg_net_move({avg_move:.3f} ms)")
             print(f"Where avg_net_move = cal_interval({cal_interval_ms:.3f} ms) − avg_slack({avg_slack:.3f} ms) − contact_delay({self.contact_delay:.3f} ms)")
             print(f"Calculated STICK_MOVEMENT_COMPENSATION: {comp_from_intervals:.3f} ms")
@@ -713,7 +719,7 @@ class LatencyTester:
         print("Test window ready. Press Start to begin.")
         self.wait_for_start()
         if self.test_type == TEST_TYPE_STICK:
-            ok = self.calibrate_stick_movement_compensation(iterations=10)
+            ok = self.calibrate_stick_movement_compensation(iterations=20)
             if not ok:
                 if pygame.display.get_init() and pygame.display.get_surface() is not None:
                     pygame.display.quit()
