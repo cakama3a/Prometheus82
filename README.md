@@ -35,12 +35,30 @@ Prometheus 82 uses a standardized **Center-to-Edge** measurement method for anal
 3.  **T1 (Stop):** The timer stops the precise moment the gamepad reports a logical value of **≥99%** deviation.
 4.  **Calculation:** `Total Time - 3.5ms = Input Latency`.
 
-**The "3.5ms" Compensation** The software automatically subtracts a fixed value of **3.5 ms** from the total time. This constant represents the standard **physical travel time** of the solenoid arm and joystick mechanism, which has been verified using 1000 FPS high-speed camera analysis across multiple standard controllers.
 
-> **Note:** Variations in a controller's physical range of motion (shorter/longer throw) or aggressive software response curves can naturally affect the result by ±1ms, as the stick may reach the logical "99%" threshold physically sooner or later. This is a characteristic of the controller's design, not a testing error.
+### Permissible Errors and Accuracy
+This section describes potential measurement deviations caused by the physical properties of controllers and the testing methodology.
+
+#### Device Consistency
+The variation between different Prometheus 82 units is minimal (approximately **0.012 ms**), which ensures consistent results across different testers. This was verified in a comprehensive [test with 5 devices](https://www.reddit.com/r/GPDL/comments/1mdwp2c/testing_the_accuracy_of_5_prometheus_82_devices/) combined in various configurations.
+
+#### Measurement Tolerances
+
+* **Analog Sticks:** Permissible error **±2 ms**.
+    * **Reason:** Variations in spring stiffness, physical travel distance to the actuation point, and specific software response curves (deadzones) of the controller.
+    * **Algorithm:** The software currently applies a fixed compensation for physical travel time (3.5 ms).
+    * > **Note:** Active work is currently underway to further improve and refine the stick testing algorithm for greater precision.
+
+* **Buttons:** Permissible error **±1 ms**.
+    * **Reason:** Mechanical button play (pre-travel) and design differences in switches from various manufacturers.
+
+#### Recommendations
+To minimize errors, it is recommended to:
+1.  Use a fast Arduino board (with self-delay ≤ 0.5 ms).
+2.  Connect the P82 device directly to your PC motherboard's USB port (avoid front panel hubs).
 
 ### Summary
-The testing process ensures accurate measurement of the Prometheus82 device's input latency. Running the test 500 times provides comprehensive data to evaluate the device's stability and performance under real-world conditions.
+The testing process ensures accurate measurement of the Prometheus82 device's input latency. Running the test 400 times provides comprehensive data to evaluate the device's stability and performance under real-world conditions.
 
 ## How to Get Prometheus 82
 You have two options to obtain a Prometheus 82 device:  
@@ -150,9 +168,6 @@ For successful assembly, you will need the following tools:
 - Video comparison of [6V solenoid with 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) filmed at 1000 FPS and tips on power supply
 - For a 6V solenoid, you should set the power supply to 9V, for a 12V solenoid, you should set the power supply to 15V, this guarantees stable results when testing
 - Video about the [solenoid's own delays](https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/) and how it is reflected in the measurements at 1000 FPS
-- The permissible error between different gamepad devices with various solenoids can be up to 0.012 ms, which was verified in a test with 5 devices in different combinations ([11 measurements](https://www.reddit.com/r/GPDL/comments/1mdwp2c/testing_the_accuracy_of_5_prometheus_82_devices/)).
-- The error from the actual result of the input delay provided by the gamepad under ideal conditions can be up to ±0.69 ms.
-- To reduce the error, you need to use a new solenoid, a fast Arduino device with its own delay of no more than 0.5 ms, and connect the device directly to the PC motherboard.
 - Both ports of the control board use Type-C interfaces, so do not confuse them, remember that the lower port is used for power, and the upper port is used to connect to a PC.
 - The movement of the solenoid should be easy, it should not cling to the inner hole. Make sure that its leg is smooth and free of snags, as this can cause friction, which increases heat, wear and tear on the component and introduces an error in the measurement.
 - Distance matters. When positioning the gamepad during tests, you need to install the stick and button as far away from the sensor as possible so that the solenoid has time to accelerate sufficiently. If you install the solenoid too close, it will give incorrect measurement results.
