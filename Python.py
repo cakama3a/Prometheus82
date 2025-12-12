@@ -389,10 +389,12 @@ class LatencyTester:
                 filtered = sorted_vals[1:-1] if len(sorted_vals) > 2 else sorted_vals
             avg_dt = statistics.mean(filtered)
             base_ms = 12.0
-            comp = max(0.0, base_ms - avg_dt)
+            net_dt = max(0.0, avg_dt - self.contact_delay)
+            comp = max(0.0, base_ms - net_dt)
             self.stick_movement_compensation_ms = comp
             print(f"Calibration filter: kept {len(filtered)}/{len(results)}, median {med:.3f} ms, MAD {mad:.3f} ms")
-            print(f"Average start→contact: {avg_dt:.3f} ms; Base {base_ms:.3f} ms → compensation {comp:.3f} ms")
+            print(f"Average start→contact: {avg_dt:.3f} ms; contact delay: {self.contact_delay:.3f} ms → net {net_dt:.3f} ms")
+            print(f"Base {base_ms:.3f} ms → compensation {comp:.3f} ms")
             print(f"\nCalculated STICK_MOVEMENT_COMPENSATION: {comp:.3f} ms (was {STICK_MOVEMENT_COMPENSATION:.3f} ms)")
             return comp
         print_error("Calibration: no valid results, keeping default compensation. Make sure you have updated the Arduino firmware.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
