@@ -101,6 +101,7 @@ UPPER_QUANTILE = 0.98               # Upper quantile for filtering
 STICK_THRESHOLD = 0.99              # Stick activation threshold
 RATIO = 5                           # Delay to pulse duration ratio
 CONTACT_DELAY = 0.2                 # Contact sensor delay (ms) for correction (will be updated after calibration)
+REQUIRED_ARDUINO_VERSION = "1.1.0"
 INCREASE_DURATION = 10              # Pulse duration increase increment (ms)
 LATENCY_EQUALITY_THRESHOLD = 0.001  # Threshold for comparing latencies (ms)
 CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
@@ -924,17 +925,53 @@ if __name__ == "__main__":
             ser.reset_input_buffer()
             ser.reset_output_buffer()
             
-            # Wait for ready signal from Arduino
             start_time = time.time()
-            while time.time() - start_time < 5:  # 5 second timeout
-                if ser.in_waiting and ser.read() == b'R':
-                    print(f"\nPrometheus 82 connected on {port.device} ({port.description})")
-                    break
-            else:
+            ready = False
+            fw_version = None
+            while time.time() - start_time < 5:
+                if ser.in_waiting:
+                    b = ser.read()
+                    if b == b'R':
+                        ready = True
+                    elif b == b'V':
+                        buf = b""
+                        t0 = time.time()
+                        while time.time() - t0 < 1.0:
+                            if ser.in_waiting:
+                                c = ser.read()
+                                if c in (b'\n', b'\r'):
+                                    break
+                                buf += c
+                            else:
+                                time.sleep(0.001)
+                        try:
+                            fw_version = buf.decode("ascii").strip()
+                        except Exception:
+                            fw_version = None
+                        break
+                else:
+                    time.sleep(0.001)
+            if not ready:
                 print_error("Prometheus did not send ready signal ('R'). Check connection or Prometheus code.")
                 input("Press Enter to close...")
                 pygame.quit()
                 sys.exit()
+            if not fw_version:
+                print_error("Arduino firmware version not reported. Please update Arduino.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
+                input("Press Enter to close...")
+                pygame.quit()
+                sys.exit()
+            def _ver_tuple(s):
+                try:
+                    return tuple(int(x) for x in s.split("."))
+                except Exception:
+                    return (0,)
+            if _ver_tuple(fw_version) < _ver_tuple(REQUIRED_ARDUINO_VERSION):
+                print_error(f"Arduino firmware v{fw_version} is outdated. Please update to at least v{REQUIRED_ARDUINO_VERSION}.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
+                input("Press Enter to close...")
+                pygame.quit()
+                sys.exit()
+            print(f"\nPrometheus 82 connected on {port.device} ({port.description}), Arduino FW v{fw_version}")
 
             # Test Arduino latency and update CONTACT_DELAY
             avg_latency = test_arduino_latency(ser)
