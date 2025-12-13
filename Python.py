@@ -755,6 +755,23 @@ class LatencyTester:
                     self._last_render_time = now
             except Exception:
                 pass
+        if self.test_type == TEST_TYPE_STICK:
+            try:
+                if self._comp_history:
+                    med = statistics.median(self._comp_history)
+                    abs_dev = [abs(x - med) for x in self._comp_history]
+                    mad = statistics.median(abs_dev) if abs_dev else 0.0
+                    thr = 3.0 * mad if mad > 0 else 0.2
+                    filtered = [x for x in self._comp_history if abs(x - med) <= thr]
+                    if len(filtered) < max(3, int(len(self._comp_history) * 0.6)):
+                        sv = sorted(self._comp_history)
+                        filtered = sv[1:-1] if len(sv) > 2 else sv
+                    sv2 = sorted(filtered, reverse=True) if filtered else []
+                    topn = min(10, max(3, int((len(sv2) if sv2 else 0) * 0.25)))
+                    top_vals = sv2[:topn] if sv2 else []
+                    self.stick_movement_compensation_ms = statistics.median(top_vals) if top_vals else med
+            except Exception:
+                pass
         self.close_test_window()
 
 def detect_gamepad_mode(joystick):
