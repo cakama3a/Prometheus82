@@ -429,15 +429,12 @@ class LatencyTester:
             median_top = statistics.median(top_nets) if top_nets else med_net2
             comp_from_intervals = max(0.0, base_ms - median_top)
             self.stick_movement_compensation_ms = comp_from_intervals
-            pass
         except Exception:
             pass
         if invalid_hold_count > 0:
             print_error(f"Calibration: {invalid_hold_count} invalid hit(s) detected — stick was not fully deflected after 20 ms.\nMove gamepad closer to the sensor and repeat. Test will not start.")
             return False
         return True
-        print_error("Calibration: no valid results, keeping default compensation. Make sure you have updated the Arduino firmware.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
-        return None
 
     def set_pulse_duration(self, duration_ms):
         """Sets the solenoid pulse duration"""
