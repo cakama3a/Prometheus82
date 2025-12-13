@@ -423,24 +423,13 @@ class LatencyTester:
                 sorted_by_net = sorted(items, key=lambda it: it['net'])
                 filtered_items = sorted_by_net[1:-1] if len(sorted_by_net) > 2 else sorted_by_net
             med_net2 = statistics.median([it['net'] for it in filtered_items])
-            stable_items = sorted(filtered_items, key=lambda it: abs(it['net'] - med_net2))[:min(10, len(filtered_items))]
-            ordered = sorted(filtered_items, key=lambda it: it['idx'])
-            half = max(1, len(ordered) // 2)
-            first_half = ordered[:half]
-            second_half = ordered[half:]
-            med_first = statistics.median([it['net'] for it in first_half]) if first_half else med_net2
-            med_second = statistics.median([it['net'] for it in second_half]) if second_half else med_net2
-            median_move_all = statistics.median([med_first, med_second])
-            median_slack_all = statistics.median([it['slack'] for it in filtered_items])
-            comp_from_intervals = max(0.0, base_ms - median_move_all)
+            sorted_desc = sorted(filtered_items, key=lambda it: it['slack'], reverse=True)
+            topn = min(10, max(3, int(len(sorted_desc) * 0.25)))
+            top_nets = [it['net'] for it in sorted_desc[:topn]]
+            median_top = statistics.median(top_nets) if top_nets else med_net2
+            comp_from_intervals = max(0.0, base_ms - median_top)
             self.stick_movement_compensation_ms = comp_from_intervals
-            used_count = len(stable_items)
-            print(f"Stick movement (net) from intervals: min {min(it['net'] for it in filtered_items):.3f} ms, median {median_move_all:.3f} ms, max {max(it['net'] for it in filtered_items):.3f} ms")
-            print(f"Medians by halves: first {med_first:.3f} ms, second {med_second:.3f} ms")
-            print(f"Stability filter: used {used_count}/{len(filtered_items)} most stable (from {len(items)} total)")
-            print(f"STICK_MOVEMENT_COMPENSATION = Base({base_ms:.3f} ms) − median_net_move({median_move_all:.3f} ms)")
-            print(f"Where median_net_move = cal_interval({cal_interval_ms:.3f} ms) − median_slack({median_slack_all:.3f} ms) − contact_delay({self.contact_delay:.3f} ms)")
-            print(f"Calculated STICK_MOVEMENT_COMPENSATION: {comp_from_intervals:.3f} ms")
+            pass
         except Exception:
             pass
         if invalid_hold_count > 0:
