@@ -348,7 +348,7 @@ class LatencyTester:
             return None
         print(f"\nStarting stick movement calibration: {iterations} hits")
         slack_to_next_start = []
-        cal_interval_us = self.pulse_duration_us * (RATIO + 1)
+        cal_interval_us = self.pulse_duration_us * RATIO
         invalid_hold_count = 0
         for i in range(iterations):
             try:
@@ -414,7 +414,7 @@ class LatencyTester:
             return False
         print(f"Button→Next Start intervals: min {min(slack_to_next_start):.3f} ms, avg {statistics.mean(slack_to_next_start):.3f} ms, max {max(slack_to_next_start):.3f} ms")
         try:
-            cal_interval_ms = (self.pulse_duration_us * (RATIO + 1)) / 1000.0
+            cal_interval_ms = (self.pulse_duration_us * RATIO) / 1000.0
             items = [{'idx': i, 'slack': s, 'net': max(0.0, (cal_interval_ms - s) - self.contact_delay)} for i, s in enumerate(slack_to_next_start)]
             if not items:
                 print_error("Calibration: no valid hits. Please move the gamepad closer to the sensor and repeat.")
