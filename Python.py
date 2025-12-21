@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.0"                 # Updated version with microsecond support
+VERSION = "5.2.4.1"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -324,13 +324,18 @@ class LatencyTester:
         header = "Keep this window on top during testing"
         surf = self._font.render(header, True, (255, 255, 0))
         self._screen.blit(surf, (10, 10))
-        if self.test_type == TEST_TYPE_STICK and getattr(self, "_started", False) and len(self.latency_results) == 0:
+        
+        if self.test_type == TEST_TYPE_HARDWARE:
+            surf2 = self._font.render("Calculating...", True, (255, 255, 255))
+            self._screen.blit(surf2, (10, 40))
+        elif self.test_type == TEST_TYPE_STICK and getattr(self, "_started", False) and len(self.latency_results) == 0:
             surf2 = self._font.render("Calibrating...", True, (255, 255, 255))
             self._screen.blit(surf2, (10, 40))
         else:
             progress_text = f"Progress: {len(self.latency_results)}/{TEST_ITERATIONS}"
             surf2 = self._font.render(progress_text, True, (200, 200, 200))
             self._screen.blit(surf2, (10, 40))
+            
         if last_latency is not None:
             surf3 = self._font.render(f"Last latency: {last_latency:.2f} ms", True, (150, 200, 255))
             self._screen.blit(surf3, (10, 70))
