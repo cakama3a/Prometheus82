@@ -350,12 +350,12 @@ class LatencyTester:
         slack_to_next_start = []
         cal_interval_us = self.pulse_duration_us * RATIO
         invalid_hold_count = 0
+        try:
+            self.serial.reset_input_buffer()
+            self.serial.reset_output_buffer()
+        except Exception:
+            pass
         for i in range(iterations):
-            try:
-                self.serial.reset_input_buffer()
-                self.serial.reset_output_buffer()
-            except Exception:
-                pass
             start_time_us = time.perf_counter() * 1000000
             if self.serial:
                 self.serial.write(b'C')
