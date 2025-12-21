@@ -212,6 +212,34 @@ def print_error(message):
 def print_info(message):
     print(f"\n{Fore.GREEN}Info: {message}{Fore.RESET}")
 
+def load_window_icon():
+    """Load window icon from various possible locations"""
+    icon_paths = [
+        "icon.png",  # Current directory
+        os.path.join(os.path.dirname(__file__), "icon.png"),  # Script directory
+        os.path.join(os.path.dirname(sys.executable), "icon.png"),  # EXE directory
+    ]
+    
+    # Try regular paths first
+    for icon_path in icon_paths:
+        if icon_path and os.path.exists(icon_path):
+            try:
+                return pygame.image.load(icon_path)
+            except Exception:
+                pass
+    
+    # Try PyInstaller bundle if frozen
+    if getattr(sys, 'frozen', False):
+        try:
+            bundle_dir = sys._MEIPASS
+            icon_path = os.path.join(bundle_dir, "icon.png")
+            if os.path.exists(icon_path):
+                return pygame.image.load(icon_path)
+        except Exception:
+            pass
+    
+    return None
+
 # ASCII Logo
 print(f" ")
 print("██████╗ ██████╗  ██████╗ ███╗   ███╗███████╗████████╗██╗  ██╗███████╗██╗   ██╗███████╗   " + Fore.LIGHTRED_EX + " █████╗ ██████╗ " + Fore.RESET + "")
@@ -263,39 +291,10 @@ class LatencyTester:
                 if not pygame.display.get_init():
                     pygame.display.init()
                 if pygame.display.get_surface() is None:
-                    # Try to load icon from different possible paths
-                    icon_loaded = False
-                    icon_paths = [
-                        "icon.png",  # Current directory
-                        os.path.join(os.path.dirname(__file__), "icon.png"),  # Script directory
-                        os.path.join(os.path.dirname(sys.executable), "icon.png"),  # EXE directory
-                        "icon.png" if getattr(sys, 'frozen', False) else None  # PyInstaller bundle
-                    ]
-                    
-                    for icon_path in icon_paths:
-                        if icon_path and os.path.exists(icon_path):
-                            try:
-                                icon = pygame.image.load(icon_path)
-                                pygame.display.set_icon(icon)
-                                icon_loaded = True
-                                break
-                            except Exception:
-                                pass
-                    
-                    if not icon_loaded:
-                        # Try to load from PyInstaller bundle if frozen
-                        if getattr(sys, 'frozen', False):
-                            try:
-                                import pyi_splash
-                                bundle_dir = sys._MEIPASS
-                                icon_path = os.path.join(bundle_dir, "icon.png")
-                                if os.path.exists(icon_path):
-                                    icon = pygame.image.load(icon_path)
-                                    pygame.display.set_icon(icon)
-                                    icon_loaded = True
-                            except Exception:
-                                pass
-                    
+                    # Load and set window icon
+                    icon = load_window_icon()
+                    if icon:
+                        pygame.display.set_icon(icon)
                     pygame.display.set_mode((800, 600))
                     pygame.display.set_caption("Prometheus 82 - Testing")
                     pygame.font.init()
@@ -848,39 +847,10 @@ if __name__ == "__main__":
         if not pygame.display.get_init():
             pygame.display.init()
         if pygame.display.get_surface() is None:
-            # Try to load icon from different possible paths
-            icon_loaded = False
-            icon_paths = [
-                "icon.png",  # Current directory
-                os.path.join(os.path.dirname(__file__), "icon.png"),  # Script directory
-                os.path.join(os.path.dirname(sys.executable), "icon.png"),  # EXE directory
-                "icon.png" if getattr(sys, 'frozen', False) else None  # PyInstaller bundle
-            ]
-            
-            for icon_path in icon_paths:
-                if icon_path and os.path.exists(icon_path):
-                    try:
-                        icon = pygame.image.load(icon_path)
-                        pygame.display.set_icon(icon)
-                        icon_loaded = True
-                        break
-                    except Exception:
-                        pass
-            
-            if not icon_loaded:
-                # Try to load from PyInstaller bundle if frozen
-                if getattr(sys, 'frozen', False):
-                    try:
-                        import pyi_splash
-                        bundle_dir = sys._MEIPASS
-                        icon_path = os.path.join(bundle_dir, "icon.png")
-                        if os.path.exists(icon_path):
-                            icon = pygame.image.load(icon_path)
-                            pygame.display.set_icon(icon)
-                            icon_loaded = True
-                    except Exception:
-                        pass
-            
+            # Load and set window icon
+            icon = load_window_icon()
+            if icon:
+                pygame.display.set_icon(icon)
             pygame.display.set_mode((800, 600))
             pygame.display.set_caption("Prometheus 82 - Testing")
             pygame.font.init()
