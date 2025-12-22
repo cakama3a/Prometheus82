@@ -4,13 +4,23 @@ unsigned long PULSE_DURATION_US = 40000;
 
 volatile bool windowActive = false, contactDetected = false, solenoidActive = false;
 volatile unsigned long solenoidStartTime_us = 0;
+volatile unsigned long lastContactTime_us = 0;
+volatile int contactCount = 0;
 
 void handleContact() {
     if (!windowActive) return;
-    if (!contactDetected) {
+    
+    unsigned long currentTime_us = micros();
+    
+    // Always send 'S' for each contact, but with debouncing
+    if (currentTime_us - lastContactTime_us > 500) {  // 500us debounce
         Serial.write('S');
-        contactDetected = true;
-        return;
+        contactCount++;
+        lastContactTime_us = currentTime_us;
+        
+        // For calibration, we want to detect multiple contacts
+        // Reset contactDetected to allow detecting subsequent contacts
+        contactDetected = false;  // This allows detecting the "second contact"
     }
 }
 
@@ -49,6 +59,8 @@ void loop() {
         // Other commands are processed as before
         if (cmd == 'T' || cmd == 'C') {
             contactDetected = false;
+            contactCount = 0;
+            lastContactTime_us = 0;
             digitalWrite(SOLENOID_PIN, HIGH);
             solenoidStartTime_us = micros();
             solenoidActive = true;
@@ -77,5 +89,15 @@ void loop() {
     if (solenoidActive && (micros() - solenoidStartTime_us >= PULSE_DURATION_US)) {
         digitalWrite(SOLENOID_PIN, LOW);
         solenoidActive = false;
+        
+        // Debug: report how many contacts were detected
+        if (windowActive && contactCount > 0) {
+            // Send contact count as debug info (optional)
+            // Serial.write('D'); // Could use 'D' for debug count
+            // Serial.write(contactCount);
+        }
+        
+        windowActive = false;
+        contactCount = 0;
     }
 }

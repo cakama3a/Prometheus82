@@ -90,7 +90,7 @@ if platform.system() == 'Windows':
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
-STICK_MOVEMENT_COMPENSATION = 3.5   # Compensation for stick movement time in ms at 99% deflection
+STICK_MOVEMENT_COMPENSATION = 3.5   # Default compensation for stick movement time (ms) - will be calibrated
 HARDWARE_TEST_ITERATIONS = 10       # Number of iterations for hardware test
 
 # Variables that should not be changed without need
@@ -374,19 +374,22 @@ class LatencyTester:
         pygame.display.flip()
 
     def calibrate_stick_movement_compensation(self, iterations=20):
+        """New calibration algorithm: measures time between first and second Arduino sensor contacts"""
         if self.test_type != TEST_TYPE_STICK:
             return None
         if not self.serial:
             return None
         print(f"\nStarting stick movement calibration: {iterations} hits")
-        slack_to_next_start = []
-        cal_interval_us = self.pulse_duration_us * RATIO
-        invalid_hold_count = 0
+        print("Measuring time between first and second sensor contacts...")
+        
+        contact_intervals_ms = []
+        
         try:
             self.serial.reset_input_buffer()
             self.serial.reset_output_buffer()
         except Exception:
             pass
+            
         for i in range(iterations):
             start_time_us = time.perf_counter() * 1000000
             if self.serial:
@@ -395,44 +398,127 @@ class LatencyTester:
                     self.serial.flush()
                 except Exception:
                     pass
+            
+            # Small delay to let Arduino start processing
+            time.sleep(0.001)  # 1ms delay
+            
             self.measuring = False
             self.last_trigger_time_us = start_time_us
-            contact_time_us = None
-            t0 = time.perf_counter()
-            while time.perf_counter() - t0 < 1.0:
-                if self.serial and self.serial.in_waiting and self.serial.read() == b'S':
-                    contact_time_us = time.perf_counter() * 1000000
-                    break
-                pygame.event.pump()
-            if not contact_time_us:
-                print_error("Calibration: no contact signal received")
-                time.sleep(self.pulse_duration_us / 1000000 + 0.1)
-                continue
-            next_start_us = start_time_us + cal_interval_us
-            slack_ms = max(0.0, (next_start_us - contact_time_us) / 1000.0)
-            # 20 ms hold-check: ensure button still pressed (stick fully deflected)
-            hold_ok = None
-            try:
-                time.sleep(0.020)
-                if self.serial:
-                    self.serial.write(b'Q')
-                    self.serial.flush()
-                    tQ = time.perf_counter()
-                    while time.perf_counter() - tQ < 0.200:
-                        if self.serial.in_waiting:
-                            resp = self.serial.read()
-                            if resp in (b'H', b'U'):
-                                hold_ok = (resp == b'H')
+            
+            # Collect all sensor contacts during the measurement window
+            all_data = []
+            timeout_us = 25000  # 25ms timeout
+            start_wait_us = time.perf_counter() * 1000000
+            
+            while (time.perf_counter() * 1000000 - start_wait_us) < timeout_us:
+                if self.serial and self.serial.in_waiting:
+                    # Read all available data
+                    available = self.serial.in_waiting
+                    data = self.serial.read(available)
+                    current_time_us = time.perf_counter() * 1000000
+                    
+                    # Store data with timing information
+                    if data:
+                        relative_time_ms = (current_time_us - start_time_us) / 1000.0
+                        all_data.append({
+                            'data': data,
+                            'time': current_time_us,
+                            'relative_time': relative_time_ms
+                        })
+                        
+                        # Check for first contact
+                        for byte_val in data:
+                            if byte_val == ord('S'):
+                                print(f"Calibration {i+1}/{iterations}: first contact after {relative_time_ms:.3f}ms")
                                 break
-                        time.sleep(0.001)
-            except Exception:
-                pass
-            if hold_ok is False:
-                invalid_hold_count += 1
-                print(f"Calibration {i+1}/{iterations}: button→next start {Fore.YELLOW}{slack_ms:.3f} ms{Fore.RESET}")
+                
+                pygame.event.pump()
+            
+            # Analyze collected data to find all 'S' signals
+            contacts = []
+            for data_entry in all_data:
+                data = data_entry['data']
+                current_time_us = data_entry['time']
+                for byte_val in data:
+                    if byte_val == ord('S'):
+                        contacts.append({
+                            'time': current_time_us,
+                            'relative_time_ms': data_entry['relative_time']
+                        })
+            
+            # If we found contacts, analyze them
+            if len(contacts) >= 2:
+                # Show all detected contacts with timing
+                print(f"Calibration {i+1}/{iterations}: detected {len(contacts)} contacts")
+                for j, contact in enumerate(contacts):
+                    interval_from_first = contact['relative_time_ms'] - contacts[0]['relative_time_ms']
+                    print(f"  Contact {j+1}: {contact['relative_time_ms']:.2f}ms from start (+{interval_from_first:.2f}ms from first)")
+                
+                # Find the best second contact (2-6ms after first)
+                first_contact = contacts[0]
+                best_second_contact = None
+                best_interval = None
+                
+                for j in range(1, len(contacts)):
+                    interval_ms = contacts[j]['relative_time_ms'] - first_contact['relative_time_ms']
+                    if 2.0 <= interval_ms <= 6.0:  # Target range
+                        if best_interval is None or abs(interval_ms - 4.0) < abs(best_interval - 4.0):
+                            best_interval = interval_ms
+                            best_second_contact = contacts[j]
+                
+                # Use the best contact or fallback to second contact
+                if best_second_contact:
+                    contact_interval_ms = best_interval
+                    print(f"Calibration {i+1}/{iterations}: ✓ selected contact pair with {contact_interval_ms:.3f}ms interval")
+                else:
+                    # Fallback: use second contact
+                    second_contact = contacts[1]
+                    contact_interval_ms = second_contact['relative_time_ms'] - first_contact['relative_time_ms']
+                    print(f"Calibration {i+1}/{iterations}: using second contact with {contact_interval_ms:.3f}ms interval")
+                
+                # Validate and store
+                if 1.0 <= contact_interval_ms <= 10.0:
+                    contact_intervals_ms.append(contact_interval_ms)
+                    print(f"Calibration {i+1}/{iterations}: ✓ accepted {contact_interval_ms:.3f}ms")
+                else:
+                    print_error(f"Calibration {i+1}/{iterations}: unreasonable interval {contact_interval_ms:.3f}ms, skipping")
             else:
-                slack_to_next_start.append(slack_ms)
-                print(f"Calibration {i+1}/{iterations}: button→next start {slack_ms:.3f} ms")
+                # No contacts or only one contact
+                if len(contacts) == 0:
+                    print_error(f"Calibration {i+1}/{iterations}: no 'S' signals detected")
+                else:
+                    print_error(f"Calibration {i+1}/{iterations}: only 1 contact detected, need at least 2")
+                    print(f"  Single contact at {contacts[0]['relative_time_ms']:.2f}ms from start")
+                
+                # Debug: show what data we received
+                if all_data:
+                    print(f"  Total data packets received: {len(all_data)}")
+                    total_bytes = sum(len(entry['data']) for entry in all_data)
+                    print(f"  Total bytes received: {total_bytes}")
+                    
+                    # Show timing of first few packets
+                    if len(all_data) > 0:
+                        print(f"  First packet: {len(all_data[0]['data'])} bytes at {all_data[0]['relative_time']:.2f}ms")
+                        if len(all_data) > 1:
+                            print(f"  Last packet: {len(all_data[-1]['data'])} bytes at {all_data[-1]['relative_time']:.2f}ms")
+                    
+                    # Look for any 'S' characters in all data
+                    s_count = sum(1 for entry in all_data for b in entry['data'] if b == ord('S'))
+                    print(f"  'S' characters found in all data: {s_count}")
+                    
+                    # Show what other characters we received
+                    if all_data:
+                        all_bytes = [b for entry in all_data for b in entry['data']]
+                        unique_bytes = list(set(all_bytes))
+                        if len(unique_bytes) <= 20:  # Only show if not too many
+                            print(f"  All unique bytes received: {[hex(b) for b in sorted(unique_bytes)]}")
+                        else:
+                            print(f"  Received {len(unique_bytes)} different byte values")
+                else:
+                    print_error(f"Calibration {i+1}/{iterations}: no data received from Arduino")
+            
+            # Wait for next cycle
+            cal_interval_us = self.pulse_duration_us * RATIO
             now_us = time.perf_counter() * 1000000
             wait_s = max(0.0, (start_time_us + cal_interval_us - now_us) / 1000000.0)
             time.sleep(wait_s)
@@ -440,37 +526,36 @@ class LatencyTester:
                 self.render_test_window(None)
             except Exception:
                 pass
-        base_ms = 12.0
-        if not slack_to_next_start:
-            print_error("Calibration: no valid hits. Please move the gamepad closer to the sensor and repeat.")
+        
+        if not contact_intervals_ms:
+            print_error("Calibration: no valid contact pairs received.")
+            print_error("Possible issues:")
+            print_error("1. Gamepad is too far from the sensor")
+            print_error("2. Sensor is not detecting stick movement properly")
+            print_error("3. Arduino is not sending contact signals")
+            print_error("Please check hardware setup and repeat.")
             return False
-        print(f"Button→Next Start intervals: min {min(slack_to_next_start):.3f} ms, avg {statistics.mean(slack_to_next_start):.3f} ms, max {max(slack_to_next_start):.3f} ms")
+        
+        print(f"\nCalibration successful! Collected {len(contact_intervals_ms)} valid measurements.")
+        print(f"First→Second Contact intervals: min {min(contact_intervals_ms):.3f} ms, avg {statistics.mean(contact_intervals_ms):.3f} ms, max {max(contact_intervals_ms):.3f} ms")
+        print(f"Standard deviation: {statistics.stdev(contact_intervals_ms) if len(contact_intervals_ms) > 1 else 0:.3f} ms")
+        
+        # Calculate STICK_MOVEMENT_COMPENSATION as median of contact intervals
+        # This represents the time between first sensor contact and second contact
         try:
-            cal_interval_ms = (self.pulse_duration_us * RATIO) / 1000.0
-            items = [{'idx': i, 'slack': s, 'net': max(0.0, (cal_interval_ms - s) - self.contact_delay)} for i, s in enumerate(slack_to_next_start)]
-            if not items:
-                print_error("Calibration: no valid hits. Please move the gamepad closer to the sensor and repeat.")
-                return False
-            med_net = statistics.median([it['net'] for it in items])
-            abs_dev_net = [abs(it['net'] - med_net) for it in items]
-            mad_net = statistics.median(abs_dev_net) if abs_dev_net else 0.0
-            thr_net = 3.0 * mad_net if mad_net > 0 else 0.2
-            filtered_items = [it for it in items if abs(it['net'] - med_net) <= thr_net]
-            if len(filtered_items) < max(3, int(len(items) * 0.6)):
-                sorted_by_net = sorted(items, key=lambda it: it['net'])
-                filtered_items = sorted_by_net[1:-1] if len(sorted_by_net) > 2 else sorted_by_net
-            med_net2 = statistics.median([it['net'] for it in filtered_items])
-            sorted_desc = sorted(filtered_items, key=lambda it: it['slack'], reverse=True)
-            topn = min(10, max(3, int(len(sorted_desc) * 0.25)))
-            top_nets = [it['net'] for it in sorted_desc[:topn]]
-            median_top = statistics.median(top_nets) if top_nets else med_net2
-            comp_from_intervals = max(0.0, base_ms - median_top)
-            self.stick_movement_compensation_ms = comp_from_intervals
-        except Exception:
-            pass
-        if invalid_hold_count > 0:
-            print_error(f"Calibration: {invalid_hold_count} invalid hit(s) detected — stick was not fully deflected after 20 ms.\nMove gamepad closer to the sensor and repeat. Test will not start.")
+            self.stick_movement_compensation_ms = statistics.median(contact_intervals_ms)
+            print(f"\nCalculated STICK_MOVEMENT_COMPENSATION: {self.stick_movement_compensation_ms:.3f} ms")
+            print("(This represents the time between first sensor contact and second contact when sensor catches up with stick)")
+            
+            # Validate the result
+            if self.stick_movement_compensation_ms < 1.0 or self.stick_movement_compensation_ms > 8.0:
+                print_info(f"Warning: calculated compensation {self.stick_movement_compensation_ms:.3f} ms seems unusual.")
+                print_info("Expected range is typically 2-6 ms. Please verify the setup.")
+                
+        except Exception as e:
+            print_error(f"Error calculating compensation: {e}")
             return False
+        
         return True
 
     def set_pulse_duration(self, duration_ms):
