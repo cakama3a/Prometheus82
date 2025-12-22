@@ -625,6 +625,8 @@ class LatencyTester:
               f"Successful: {successful_tests}\nFailed: {HARDWARE_TEST_ITERATIONS - successful_tests}")
         
         # --- NEW DRY REFACTORED BLOCK START ---
+        timing_warning = False
+        avg_interval = None
         if len(sensor_press_times) > 2:  # Need at least 3 presses to get 2 intervals
             press_intervals = [(sensor_press_times[i] - sensor_press_times[i-1]) * 1000 
                                for i in range(1, len(sensor_press_times))]
@@ -646,12 +648,28 @@ class LatencyTester:
             print(filter_note)
             print(f"Average time between sensor presses: {avg_interval:.2f} ms")
             print(f"{Fore.YELLOW}(Note: Normal values are around 250 ±2ms){Fore.RESET}\n")
+            
+            # Check if timing is outside acceptable range (250 ±2ms)
+            if avg_interval < 248 or avg_interval > 252:
+                timing_warning = True
         else:
             print(f"\n{Fore.YELLOW}Not enough sensor presses detected ({len(sensor_press_times)}) to calculate intervals.{Fore.RESET}")
         # --- NEW DRY REFACTORED BLOCK END ---
 
-        print(f"{Fore.GREEN if successful_tests == HARDWARE_TEST_ITERATIONS else Fore.RED}"
-              f"Hardware test {'passed: Solenoid and sensor are functioning correctly.' if successful_tests == HARDWARE_TEST_ITERATIONS else 'failed: Check solenoid and sensor connections or hardware integrity.'}{Fore.RESET}")
+        # Display appropriate final message based on test results and timing
+        if successful_tests == HARDWARE_TEST_ITERATIONS:
+            if timing_warning and avg_interval is not None:
+                print(f"\n{Fore.YELLOW}⚠️  WARNING: Solenoid is operating with incorrect timing!{Fore.RESET}")
+                print(f"{Fore.YELLOW}Average timing: {avg_interval:.2f}ms (should be 250 ±2ms){Fore.RESET}")
+                print(f"\n{Fore.YELLOW}This may affect test result accuracy. Recommended actions:{Fore.RESET}")
+                print(f"{Fore.YELLOW}• Try reinstalling the gamepad in a different position{Fore.RESET}")
+                print(f"{Fore.YELLOW}• Try a different power source or cable{Fore.RESET}")
+                print(f"{Fore.YELLOW}• If the issue persists, consider replacing the solenoid{Fore.RESET}")
+            else:
+                print(f"{Fore.GREEN}Hardware test passed: Solenoid and sensor are functioning correctly.{Fore.RESET}")
+        else:
+            print(f"{Fore.RED}Hardware test failed: Check solenoid and sensor connections or hardware integrity.{Fore.RESET}")
+        
         self.close_test_window()
         return successful_tests == HARDWARE_TEST_ITERATIONS
 
