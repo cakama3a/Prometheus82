@@ -671,7 +671,7 @@ class LatencyTester:
             print(f"{Fore.RED}Hardware test failed: Check solenoid and sensor connections or hardware integrity.{Fore.RESET}")
         
         self.close_test_window()
-        return successful_tests == HARDWARE_TEST_ITERATIONS
+        return successful_tests == HARDWARE_TEST_ITERATIONS, timing_warning
 
     def check_input(self):
         """Processes input for stick, button, or keyboard tests"""
@@ -1073,14 +1073,20 @@ if __name__ == "__main__":
             
             try:
                 if test_type == TEST_TYPE_HARDWARE:
-                    test_passed = tester.test_hardware()
+                    test_passed, timing_warning = tester.test_hardware()
                     
                     # Close test window after hardware test completes
                     if pygame.display.get_init() and pygame.display.get_surface() is not None:
                         pygame.display.quit()
                     
-                    print(f"{Fore.GREEN if test_passed else Fore.RED}"
-                          f"Hardware is {'fully functional. Ready for stick or button testing.' if test_passed else 'issues detected. Please check connections and try again.'}{Fore.RESET}")
+                    if test_passed:
+                        if timing_warning:
+                            print(f"{Fore.YELLOW}Hardware functional but with timing warnings. See above for details.{Fore.RESET}")
+                            print(f"{Fore.YELLOW}Ready for stick or button testing, but results may be affected.{Fore.RESET}")
+                        else:
+                            print(f"{Fore.GREEN}Hardware is fully functional. Ready for stick or button testing.{Fore.RESET}")
+                    else:
+                        print(f"{Fore.RED}Hardware issues detected. Please check connections and try again.{Fore.RESET}")
                 else:
                     if test_type == TEST_TYPE_BUTTON:
                         print("\nIn the test window, press Start, then press the gamepad button you want to measure.")
