@@ -659,7 +659,7 @@ class LatencyTester:
         # Display appropriate final message based on test results and timing
         if successful_tests == HARDWARE_TEST_ITERATIONS:
             if timing_warning and avg_interval is not None:
-                print(f"\n{Fore.YELLOW}⚠️  WARNING: Solenoid is operating with incorrect timing!{Fore.RESET}")
+                print(f"{Fore.YELLOW}⚠️  WARNING: Solenoid is operating with incorrect timing!{Fore.RESET}")
                 print(f"{Fore.YELLOW}Average timing: {avg_interval:.2f}ms (should be 250 ±2ms){Fore.RESET}")
                 print(f"\n{Fore.YELLOW}This may affect test result accuracy. Recommended actions:{Fore.RESET}")
                 print(f"{Fore.YELLOW}• Try reinstalling the gamepad in a different position{Fore.RESET}")
@@ -1081,7 +1081,7 @@ if __name__ == "__main__":
                     
                     if test_passed:
                         if timing_warning:
-                            print(f"{Fore.YELLOW}Hardware functional but with timing warnings. See above for details.{Fore.RESET}")
+                            print(f"\n{Fore.YELLOW}Hardware functional but with timing warnings. See above for details.{Fore.RESET}")
                             print(f"{Fore.YELLOW}Ready for stick or button testing, but results may be affected.{Fore.RESET}")
                         else:
                             print(f"{Fore.GREEN}Hardware is fully functional. Ready for stick or button testing.{Fore.RESET}")
