@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.0"                 # Updated version with microsecond support
+VERSION = "5.2.4.1"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -212,6 +212,34 @@ def print_error(message):
 def print_info(message):
     print(f"\n{Fore.GREEN}Info: {message}{Fore.RESET}")
 
+def load_window_icon():
+    """Load window icon from various possible locations"""
+    icon_paths = [
+        "icon.png",  # Current directory
+        os.path.join(os.path.dirname(__file__), "icon.png"),  # Script directory
+        os.path.join(os.path.dirname(sys.executable), "icon.png"),  # EXE directory
+    ]
+    
+    # Try regular paths first
+    for icon_path in icon_paths:
+        if icon_path and os.path.exists(icon_path):
+            try:
+                return pygame.image.load(icon_path)
+            except Exception:
+                pass
+    
+    # Try PyInstaller bundle if frozen
+    if getattr(sys, 'frozen', False):
+        try:
+            bundle_dir = sys._MEIPASS
+            icon_path = os.path.join(bundle_dir, "icon.png")
+            if os.path.exists(icon_path):
+                return pygame.image.load(icon_path)
+        except Exception:
+            pass
+    
+    return None
+
 # ASCII Logo
 print(f" ")
 print("██████╗ ██████╗  ██████╗ ███╗   ███╗███████╗████████╗██╗  ██╗███████╗██╗   ██╗███████╗   " + Fore.LIGHTRED_EX + " █████╗ ██████╗ " + Fore.RESET + "")
@@ -263,6 +291,10 @@ class LatencyTester:
                 if not pygame.display.get_init():
                     pygame.display.init()
                 if pygame.display.get_surface() is None:
+                    # Load and set window icon
+                    icon = load_window_icon()
+                    if icon:
+                        pygame.display.set_icon(icon)
                     pygame.display.set_mode((800, 600))
                     pygame.display.set_caption("Prometheus 82 - Testing")
                     pygame.font.init()
@@ -324,13 +356,18 @@ class LatencyTester:
         header = "Keep this window on top during testing"
         surf = self._font.render(header, True, (255, 255, 0))
         self._screen.blit(surf, (10, 10))
-        if self.test_type == TEST_TYPE_STICK and getattr(self, "_started", False) and len(self.latency_results) == 0:
+        
+        if self.test_type == TEST_TYPE_HARDWARE:
+            surf2 = self._font.render("Calculating...", True, (255, 255, 255))
+            self._screen.blit(surf2, (10, 40))
+        elif self.test_type == TEST_TYPE_STICK and getattr(self, "_started", False) and len(self.latency_results) == 0:
             surf2 = self._font.render("Calibrating...", True, (255, 255, 255))
             self._screen.blit(surf2, (10, 40))
         else:
             progress_text = f"Progress: {len(self.latency_results)}/{TEST_ITERATIONS}"
             surf2 = self._font.render(progress_text, True, (200, 200, 200))
             self._screen.blit(surf2, (10, 40))
+            
         if last_latency is not None:
             surf3 = self._font.render(f"Last latency: {last_latency:.2f} ms", True, (150, 200, 255))
             self._screen.blit(surf3, (10, 70))
@@ -343,14 +380,14 @@ class LatencyTester:
             return None
         print(f"\nStarting stick movement calibration: {iterations} hits")
         slack_to_next_start = []
-        cal_interval_us = self.pulse_duration_us * (RATIO + 1)
+        cal_interval_us = self.pulse_duration_us * RATIO
         invalid_hold_count = 0
+        try:
+            self.serial.reset_input_buffer()
+            self.serial.reset_output_buffer()
+        except Exception:
+            pass
         for i in range(iterations):
-            try:
-                self.serial.reset_input_buffer()
-                self.serial.reset_output_buffer()
-            except Exception:
-                pass
             start_time_us = time.perf_counter() * 1000000
             if self.serial:
                 self.serial.write(b'C')
@@ -409,7 +446,7 @@ class LatencyTester:
             return False
         print(f"Button→Next Start intervals: min {min(slack_to_next_start):.3f} ms, avg {statistics.mean(slack_to_next_start):.3f} ms, max {max(slack_to_next_start):.3f} ms")
         try:
-            cal_interval_ms = (self.pulse_duration_us * (RATIO + 1)) / 1000.0
+            cal_interval_ms = (self.pulse_duration_us * RATIO) / 1000.0
             items = [{'idx': i, 'slack': s, 'net': max(0.0, (cal_interval_ms - s) - self.contact_delay)} for i, s in enumerate(slack_to_next_start)]
             if not items:
                 print_error("Calibration: no valid hits. Please move the gamepad closer to the sensor and repeat.")
@@ -423,32 +460,18 @@ class LatencyTester:
                 sorted_by_net = sorted(items, key=lambda it: it['net'])
                 filtered_items = sorted_by_net[1:-1] if len(sorted_by_net) > 2 else sorted_by_net
             med_net2 = statistics.median([it['net'] for it in filtered_items])
-            stable_items = sorted(filtered_items, key=lambda it: abs(it['net'] - med_net2))[:min(10, len(filtered_items))]
-            ordered = sorted(filtered_items, key=lambda it: it['idx'])
-            half = max(1, len(ordered) // 2)
-            first_half = ordered[:half]
-            second_half = ordered[half:]
-            med_first = statistics.median([it['net'] for it in first_half]) if first_half else med_net2
-            med_second = statistics.median([it['net'] for it in second_half]) if second_half else med_net2
-            median_move_all = statistics.median([med_first, med_second])
-            median_slack_all = statistics.median([it['slack'] for it in filtered_items])
-            comp_from_intervals = max(0.0, base_ms - median_move_all)
+            sorted_desc = sorted(filtered_items, key=lambda it: it['slack'], reverse=True)
+            topn = min(10, max(3, int(len(sorted_desc) * 0.25)))
+            top_nets = [it['net'] for it in sorted_desc[:topn]]
+            median_top = statistics.median(top_nets) if top_nets else med_net2
+            comp_from_intervals = max(0.0, base_ms - median_top)
             self.stick_movement_compensation_ms = comp_from_intervals
-            used_count = len(stable_items)
-            print(f"Stick movement (net) from intervals: min {min(it['net'] for it in filtered_items):.3f} ms, median {median_move_all:.3f} ms, max {max(it['net'] for it in filtered_items):.3f} ms")
-            print(f"Medians by halves: first {med_first:.3f} ms, second {med_second:.3f} ms")
-            print(f"Stability filter: used {used_count}/{len(filtered_items)} most stable (from {len(items)} total)")
-            print(f"STICK_MOVEMENT_COMPENSATION = Base({base_ms:.3f} ms) − median_net_move({median_move_all:.3f} ms)")
-            print(f"Where median_net_move = cal_interval({cal_interval_ms:.3f} ms) − median_slack({median_slack_all:.3f} ms) − contact_delay({self.contact_delay:.3f} ms)")
-            print(f"Calculated STICK_MOVEMENT_COMPENSATION: {comp_from_intervals:.3f} ms")
         except Exception:
             pass
         if invalid_hold_count > 0:
             print_error(f"Calibration: {invalid_hold_count} invalid hit(s) detected — stick was not fully deflected after 20 ms.\nMove gamepad closer to the sensor and repeat. Test will not start.")
             return False
         return True
-        print_error("Calibration: no valid results, keeping default compensation. Make sure you have updated the Arduino firmware.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
-        return None
 
     def set_pulse_duration(self, duration_ms):
         """Sets the solenoid pulse duration"""
@@ -574,63 +597,128 @@ class LatencyTester:
         """Tests the solenoid and sensor functionality"""
         self.open_test_window()
         self.wait_for_start()
-        print(f"\nStarting hardware test with {HARDWARE_TEST_ITERATIONS} iterations...\n")
-        successful_tests = 0
-        sensor_press_times = []
         
-        for i in range(HARDWARE_TEST_ITERATIONS):
-            print(f"Test {i+1}/{HARDWARE_TEST_ITERATIONS}")
-            self.serial.reset_input_buffer()
-            self.serial.reset_output_buffer()
+        # User requested 10 repetitions of interval measurement.
+        # We need 11 presses to get 10 intervals.
+        iterations = 11
+        # Use standard test interval: pulse_duration * RATIO (converted to seconds)
+        interval_s = self.test_interval_us / 1000000.0
+        
+        print(f"\nStarting hardware test with {iterations} iterations at {interval_s*1000:.0f}ms intervals...\n")
+        
+        sensor_press_times = []
+        successful_detections = 0
+        
+        self.serial.reset_input_buffer()
+        self.serial.reset_output_buffer()
+        
+        # Synchronize start time
+        start_loop_time = time.perf_counter()
+        
+        for i in range(iterations):
+            # Calculate when the next shot should happen
+            next_shot_time = start_loop_time + (i + 1) * interval_s
+            
+            # Fire solenoid (blindly, based on time)
             self.trigger_solenoid()
-            start = time.time()
-            while time.time() - start < 1.0:  # 1 second timeout
-                if self.serial.in_waiting and self.serial.read() == b'S':
-                    print(f"{Fore.GREEN}Test {i+1}: Solenoid activated, sensor detected contact successfully.{Fore.RESET}")
-                    sensor_press_times.append(time.perf_counter())
-                    successful_tests += 1
-                    break
-            else:
-                print(f"{Fore.RED}Test {i+1}: Failed - No sensor response detected.{Fore.RESET}")
-            time.sleep(self.pulse_duration_us / 1000000 + 0.2)  # Wait for solenoid pulse and small delay
-            try:
-                self.render_test_window(None)
-            except Exception:
+            
+            # Wait until the next shot time, while listening for sensor response
+            detected_in_cycle = False
+            while time.perf_counter() < next_shot_time:
+                if self.serial.in_waiting:
+                    try:
+                        b = self.serial.read()
+                        if b == b'S':
+                            # Record time immediately
+                            now = time.perf_counter()
+                            sensor_press_times.append(now)
+                            successful_detections += 1
+                            detected_in_cycle = True
+                            
+                            # If we have at least 2 presses, we can calculate and print the interval immediately
+                            if len(sensor_press_times) > 1:
+                                interval_ms = (sensor_press_times[-1] - sensor_press_times[-2]) * 1000
+                                idx = len(sensor_press_times) - 1
+                                print(f"Interval {idx}: {interval_ms:.2f} ms")
+                                
+                    except Exception:
+                        pass
+                
+                # Keep window responsive
+                try:
+                    self.render_test_window(None)
+                except Exception:
+                    pass
+                
+                # Prevent CPU hogging
+                time.sleep(0.001)
+            
+            if not detected_in_cycle:
+                # Optional: print failure if needed
                 pass
         
-        print(f"\n{Fore.CYAN}Hardware Test Results:{Fore.RESET}\nTotal tests: {HARDWARE_TEST_ITERATIONS}\n"
-              f"Successful: {successful_tests}\nFailed: {HARDWARE_TEST_ITERATIONS - successful_tests}")
+        # Wait a little extra after the last shot for any straggling response
+        end_wait = time.perf_counter() + 0.1
+        while time.perf_counter() < end_wait:
+             if self.serial.in_waiting:
+                 try:
+                     if self.serial.read() == b'S':
+                         now = time.perf_counter()
+                         sensor_press_times.append(now)
+                         successful_detections += 1
+                         # Print interval if we have enough points
+                         if len(sensor_press_times) > 1:
+                            interval_ms = (sensor_press_times[-1] - sensor_press_times[-2]) * 1000
+                            idx = len(sensor_press_times) - 1
+                            print(f"Interval {idx}: {interval_ms:.2f} ms")
+                 except Exception:
+                     pass
+             time.sleep(0.001)
+
+        print(f"\n{Fore.CYAN}Hardware Test Results:{Fore.RESET}")
+        print(f"Total shots: {iterations}")
+        print(f"Detected hits: {successful_detections}")
         
-        # --- NEW DRY REFACTORED BLOCK START ---
-        if len(sensor_press_times) > 2:  # Need at least 3 presses to get 2 intervals
-            press_intervals = [(sensor_press_times[i] - sensor_press_times[i-1]) * 1000 
-                               for i in range(1, len(sensor_press_times))]
-
-            print(f"\n{Fore.CYAN}Sensor Interval Results:{Fore.RESET}")
-            print(f"Total intervals measured: {len(press_intervals)}")
-
-            # Set defaults
-            filtered_intervals = press_intervals
-            filter_note = f"  {Fore.YELLOW}Note: Not enough intervals to filter, showing simple average.{Fore.RESET}"
-
-            if len(press_intervals) > 2: # Need at least 3 intervals to filter min/max
-                press_intervals.sort()
-                filtered_intervals = press_intervals[1:-1] # Re-assign with filtered list
-                filter_note = f"Filtered intervals (removed min/max): {len(filtered_intervals)}" # Re-assign note
+        timing_warning = False
+        avg_interval = 0
+        
+        if len(sensor_press_times) > 1:
+            intervals = []
+            for i in range(1, len(sensor_press_times)):
+                interval_ms = (sensor_press_times[i] - sensor_press_times[i-1]) * 1000
+                intervals.append(interval_ms)
             
-            # Common logic
-            avg_interval = statistics.mean(filtered_intervals)
-            print(filter_note)
-            print(f"Average time between sensor presses: {avg_interval:.2f} ms")
-            print(f"{Fore.YELLOW}(Note: Normal values are around 250 ±2ms){Fore.RESET}\n")
+            if intervals:
+                avg_interval = statistics.mean(intervals)
+                target_interval = interval_s * 1000
+                tester_error = avg_interval - target_interval
+                
+                print(f"\nAverage time between sensor presses: {avg_interval:.2f} ms")
+                print(f"Tester error: {tester_error:+.2f} ms")
+                print(f"{Fore.YELLOW}(Note: Normal values are around {target_interval:.0f} ±1ms){Fore.RESET}\n")
+                
+                # Check if timing is outside acceptable range (target ±1ms)
+                if avg_interval < (target_interval - 1) or avg_interval > (target_interval + 1):
+                    timing_warning = True
         else:
-            print(f"\n{Fore.YELLOW}Not enough sensor presses detected ({len(sensor_press_times)}) to calculate intervals.{Fore.RESET}")
-        # --- NEW DRY REFACTORED BLOCK END ---
+            print(f"\n{Fore.YELLOW}Not enough sensor presses detected to calculate intervals.{Fore.RESET}")
 
-        print(f"{Fore.GREEN if successful_tests == HARDWARE_TEST_ITERATIONS else Fore.RED}"
-              f"Hardware test {'passed: Solenoid and sensor are functioning correctly.' if successful_tests == HARDWARE_TEST_ITERATIONS else 'failed: Check solenoid and sensor connections or hardware integrity.'}{Fore.RESET}")
+        # Display appropriate final message based on test results and timing
+        if successful_detections >= (iterations - 2):
+            if timing_warning and avg_interval != 0:
+                print(f"{Fore.YELLOW}⚠️  WARNING: Solenoid is operating with incorrect timing!{Fore.RESET}")
+                print(f"{Fore.YELLOW}Average timing: {avg_interval:.2f}ms (should be {interval_s*1000:.0f} ±1ms){Fore.RESET}")
+                print(f"\n{Fore.YELLOW}This may affect test result accuracy. Recommended actions:{Fore.RESET}")
+                print(f"{Fore.YELLOW}• Try reinstalling the gamepad in a different position{Fore.RESET}")
+                print(f"{Fore.YELLOW}• Try a different power source or cable{Fore.RESET}")
+                print(f"{Fore.YELLOW}• If the issue persists, consider replacing the solenoid{Fore.RESET}")
+            else:
+                print(f"{Fore.GREEN}Hardware test passed: Solenoid and sensor are functioning correctly.{Fore.RESET}")
+        else:
+            print(f"{Fore.RED}Hardware test failed: Check solenoid and sensor connections or hardware integrity.{Fore.RESET}")
+
         self.close_test_window()
-        return successful_tests == HARDWARE_TEST_ITERATIONS
+        return successful_detections >= (iterations - 2), timing_warning
 
     def check_input(self):
         """Processes input for stick, button, or keyboard tests"""
@@ -755,6 +843,23 @@ class LatencyTester:
                     self._last_render_time = now
             except Exception:
                 pass
+        if self.test_type == TEST_TYPE_STICK:
+            try:
+                if self._comp_history:
+                    med = statistics.median(self._comp_history)
+                    abs_dev = [abs(x - med) for x in self._comp_history]
+                    mad = statistics.median(abs_dev) if abs_dev else 0.0
+                    thr = 3.0 * mad if mad > 0 else 0.2
+                    filtered = [x for x in self._comp_history if abs(x - med) <= thr]
+                    if len(filtered) < max(3, int(len(self._comp_history) * 0.6)):
+                        sv = sorted(self._comp_history)
+                        filtered = sv[1:-1] if len(sv) > 2 else sv
+                    sv2 = sorted(filtered, reverse=True) if filtered else []
+                    topn = min(10, max(3, int((len(sv2) if sv2 else 0) * 0.25)))
+                    top_vals = sv2[:topn] if sv2 else []
+                    self.stick_movement_compensation_ms = statistics.median(top_vals) if top_vals else med
+            except Exception:
+                pass
         self.close_test_window()
 
 def detect_gamepad_mode(joystick):
@@ -807,6 +912,10 @@ if __name__ == "__main__":
         if not pygame.display.get_init():
             pygame.display.init()
         if pygame.display.get_surface() is None:
+            # Load and set window icon
+            icon = load_window_icon()
+            if icon:
+                pygame.display.set_icon(icon)
             pygame.display.set_mode((800, 600))
             pygame.display.set_caption("Prometheus 82 - Testing")
             pygame.font.init()
@@ -1011,14 +1120,20 @@ if __name__ == "__main__":
             
             try:
                 if test_type == TEST_TYPE_HARDWARE:
-                    test_passed = tester.test_hardware()
+                    test_passed, timing_warning = tester.test_hardware()
                     
                     # Close test window after hardware test completes
                     if pygame.display.get_init() and pygame.display.get_surface() is not None:
                         pygame.display.quit()
                     
-                    print(f"{Fore.GREEN if test_passed else Fore.RED}"
-                          f"Hardware is {'fully functional. Ready for stick or button testing.' if test_passed else 'issues detected. Please check connections and try again.'}{Fore.RESET}")
+                    if test_passed:
+                        if timing_warning:
+                            print(f"\n{Fore.YELLOW}Hardware functional but with timing warnings. See above for details.{Fore.RESET}")
+                            print(f"{Fore.YELLOW}Ready for stick or button testing, but results may be affected.{Fore.RESET}")
+                        else:
+                            print(f"{Fore.GREEN}Hardware is fully functional. Ready for stick or button testing.{Fore.RESET}")
+                    else:
+                        print(f"{Fore.RED}Hardware issues detected. Please check connections and try again.{Fore.RESET}")
                 else:
                     if test_type == TEST_TYPE_BUTTON:
                         print("\nIn the test window, press Start, then press the gamepad button you want to measure.")
