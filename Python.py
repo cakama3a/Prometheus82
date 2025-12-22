@@ -621,7 +621,6 @@ class LatencyTester:
             
             # Fire solenoid (blindly, based on time)
             self.trigger_solenoid()
-            # print(f"Test {i+1}: Fired") 
             
             # Wait until the next shot time, while listening for sensor response
             detected_in_cycle = False
@@ -630,10 +629,18 @@ class LatencyTester:
                     try:
                         b = self.serial.read()
                         if b == b'S':
-                            print(f"{Fore.GREEN}Test {i+1}: Sensor detected.{Fore.RESET}")
-                            sensor_press_times.append(time.perf_counter())
+                            # Record time immediately
+                            now = time.perf_counter()
+                            sensor_press_times.append(now)
                             successful_detections += 1
                             detected_in_cycle = True
+                            
+                            # If we have at least 2 presses, we can calculate and print the interval immediately
+                            if len(sensor_press_times) > 1:
+                                interval_ms = (sensor_press_times[-1] - sensor_press_times[-2]) * 1000
+                                idx = len(sensor_press_times) - 1
+                                print(f"Interval {idx}: {interval_ms:.2f} ms")
+                                
                     except Exception:
                         pass
                 
@@ -647,7 +654,7 @@ class LatencyTester:
                 time.sleep(0.001)
             
             if not detected_in_cycle:
-                # Optional: print failure if needed, or just keep silent to match requested output style
+                # Optional: print failure if needed
                 pass
         
         # Wait a little extra after the last shot for any straggling response
@@ -656,9 +663,14 @@ class LatencyTester:
              if self.serial.in_waiting:
                  try:
                      if self.serial.read() == b'S':
-                         sensor_press_times.append(time.perf_counter())
+                         now = time.perf_counter()
+                         sensor_press_times.append(now)
                          successful_detections += 1
-                         print(f"{Fore.GREEN}Post-loop: Sensor detected.{Fore.RESET}")
+                         # Print interval if we have enough points
+                         if len(sensor_press_times) > 1:
+                            interval_ms = (sensor_press_times[-1] - sensor_press_times[-2]) * 1000
+                            idx = len(sensor_press_times) - 1
+                            print(f"Interval {idx}: {interval_ms:.2f} ms")
                  except Exception:
                      pass
              time.sleep(0.001)
@@ -668,20 +680,42 @@ class LatencyTester:
         print(f"Detected hits: {successful_detections}")
         
         timing_warning = False
+        avg_interval = 0
         
         if len(sensor_press_times) > 1:
-            print(f"\n{Fore.CYAN}Time between button presses (10 repetitions):{Fore.RESET}")
             intervals = []
             for i in range(1, len(sensor_press_times)):
                 interval_ms = (sensor_press_times[i] - sensor_press_times[i-1]) * 1000
                 intervals.append(interval_ms)
-                print(f"Interval {i}: {interval_ms:.2f} ms")
             
             if intervals:
                 avg_interval = statistics.mean(intervals)
+                target_interval = interval_s * 1000
+                tester_error = avg_interval - target_interval
+                
                 print(f"\nAverage time between sensor presses: {avg_interval:.2f} ms")
+                print(f"Tester error: {tester_error:+.2f} ms")
+                print(f"{Fore.YELLOW}(Note: Normal values are around {target_interval:.0f} ±1ms){Fore.RESET}\n")
+                
+                # Check if timing is outside acceptable range (target ±1ms)
+                if avg_interval < (target_interval - 1) or avg_interval > (target_interval + 1):
+                    timing_warning = True
         else:
             print(f"\n{Fore.YELLOW}Not enough sensor presses detected to calculate intervals.{Fore.RESET}")
+
+        # Display appropriate final message based on test results and timing
+        if successful_detections >= (iterations - 2):
+            if timing_warning and avg_interval != 0:
+                print(f"{Fore.YELLOW}⚠️  WARNING: Solenoid is operating with incorrect timing!{Fore.RESET}")
+                print(f"{Fore.YELLOW}Average timing: {avg_interval:.2f}ms (should be {interval_s*1000:.0f} ±1ms){Fore.RESET}")
+                print(f"\n{Fore.YELLOW}This may affect test result accuracy. Recommended actions:{Fore.RESET}")
+                print(f"{Fore.YELLOW}• Try reinstalling the gamepad in a different position{Fore.RESET}")
+                print(f"{Fore.YELLOW}• Try a different power source or cable{Fore.RESET}")
+                print(f"{Fore.YELLOW}• If the issue persists, consider replacing the solenoid{Fore.RESET}")
+            else:
+                print(f"{Fore.GREEN}Hardware test passed: Solenoid and sensor are functioning correctly.{Fore.RESET}")
+        else:
+            print(f"{Fore.RED}Hardware test failed: Check solenoid and sensor connections or hardware integrity.{Fore.RESET}")
 
         self.close_test_window()
         return successful_detections >= (iterations - 2), timing_warning
