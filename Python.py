@@ -601,8 +601,8 @@ class LatencyTester:
         # User requested 10 repetitions of interval measurement.
         # We need 11 presses to get 10 intervals.
         iterations = 11
-        # Fixed interval for solenoid shots (independent of sensor feedback)
-        interval_s = 0.3  # 300 ms
+        # Use standard test interval: pulse_duration * RATIO (converted to seconds)
+        interval_s = self.test_interval_us / 1000000.0
         
         print(f"\nStarting hardware test with {iterations} iterations at {interval_s*1000:.0f}ms intervals...\n")
         
@@ -624,6 +624,7 @@ class LatencyTester:
             # print(f"Test {i+1}: Fired") 
             
             # Wait until the next shot time, while listening for sensor response
+            detected_in_cycle = False
             while time.perf_counter() < next_shot_time:
                 if self.serial.in_waiting:
                     try:
@@ -632,6 +633,7 @@ class LatencyTester:
                             print(f"{Fore.GREEN}Test {i+1}: Sensor detected.{Fore.RESET}")
                             sensor_press_times.append(time.perf_counter())
                             successful_detections += 1
+                            detected_in_cycle = True
                     except Exception:
                         pass
                 
@@ -643,6 +645,10 @@ class LatencyTester:
                 
                 # Prevent CPU hogging
                 time.sleep(0.001)
+            
+            if not detected_in_cycle:
+                # Optional: print failure if needed, or just keep silent to match requested output style
+                pass
         
         # Wait a little extra after the last shot for any straggling response
         end_wait = time.perf_counter() + 0.1
@@ -657,8 +663,9 @@ class LatencyTester:
                      pass
              time.sleep(0.001)
 
-        print(f"\n{Fore.CYAN}Hardware Test Results:{Fore.RESET}\nTotal shots: {iterations}\n"
-              f"Detected hits: {successful_detections}")
+        print(f"\n{Fore.CYAN}Hardware Test Results:{Fore.RESET}")
+        print(f"Total shots: {iterations}")
+        print(f"Detected hits: {successful_detections}")
         
         timing_warning = False
         
