@@ -373,30 +373,29 @@ class LatencyTester:
             self._screen.blit(surf3, (10, 70))
         pygame.display.flip()
 
-    def calibrate_stick_movement_compensation(self, iterations=20):
+    def check_stick_setup(self, iterations=5):
         if self.test_type != TEST_TYPE_STICK:
             return None
         if not self.serial:
             return None
-        print(f"\nStarting stick movement calibration: {iterations} hits")
-        slack_to_next_start = []
-        cal_interval_us = self.pulse_duration_us * RATIO
+        print(f"\nVerifying setup: {iterations} hits")
+        
         invalid_hold_count = 0
         try:
             self.serial.reset_input_buffer()
             self.serial.reset_output_buffer()
         except Exception:
             pass
+            
         for i in range(iterations):
-            start_time_us = time.perf_counter() * 1000000
             if self.serial:
                 self.serial.write(b'C')
                 try:
                     self.serial.flush()
                 except Exception:
                     pass
-            self.measuring = False
-            self.last_trigger_time_us = start_time_us
+            
+            # Wait for contact
             contact_time_us = None
             t0 = time.perf_counter()
             while time.perf_counter() - t0 < 1.0:
@@ -404,13 +403,13 @@ class LatencyTester:
                     contact_time_us = time.perf_counter() * 1000000
                     break
                 pygame.event.pump()
+            
             if not contact_time_us:
-                print_error("Calibration: no contact signal received")
-                time.sleep(self.pulse_duration_us / 1000000 + 0.1)
+                print_error("Setup check: no contact signal received")
+                time.sleep(0.1)
                 continue
-            next_start_us = start_time_us + cal_interval_us
-            slack_ms = max(0.0, (next_start_us - contact_time_us) / 1000.0)
-            # 20 ms hold-check: ensure button still pressed (stick fully deflected)
+
+            # 20 ms hold-check
             hold_ok = None
             try:
                 time.sleep(0.020)
@@ -427,50 +426,24 @@ class LatencyTester:
                         time.sleep(0.001)
             except Exception:
                 pass
+
             if hold_ok is False:
                 invalid_hold_count += 1
-                print(f"Calibration {i+1}/{iterations}: button→next start {Fore.YELLOW}{slack_ms:.3f} ms{Fore.RESET}")
+                print(f"Hit {i+1}/{iterations}: {Fore.YELLOW}Invalid (released too early){Fore.RESET}")
             else:
-                slack_to_next_start.append(slack_ms)
-                print(f"Calibration {i+1}/{iterations}: button→next start {slack_ms:.3f} ms")
-            now_us = time.perf_counter() * 1000000
-            wait_s = max(0.0, (start_time_us + cal_interval_us - now_us) / 1000000.0)
-            time.sleep(wait_s)
+                print(f"Hit {i+1}/{iterations}: OK")
+                
+            time.sleep(0.1)
             try:
                 self.render_test_window(None)
             except Exception:
                 pass
-        base_ms = 12.0
-        if not slack_to_next_start:
-            print_error("Calibration: no valid hits. Please move the gamepad closer to the sensor and repeat.")
-            return False
-        print(f"Button→Next Start intervals: min {min(slack_to_next_start):.3f} ms, avg {statistics.mean(slack_to_next_start):.3f} ms, max {max(slack_to_next_start):.3f} ms")
-        try:
-            cal_interval_ms = (self.pulse_duration_us * RATIO) / 1000.0
-            items = [{'idx': i, 'slack': s, 'net': max(0.0, (cal_interval_ms - s) - self.contact_delay)} for i, s in enumerate(slack_to_next_start)]
-            if not items:
-                print_error("Calibration: no valid hits. Please move the gamepad closer to the sensor and repeat.")
-                return False
-            med_net = statistics.median([it['net'] for it in items])
-            abs_dev_net = [abs(it['net'] - med_net) for it in items]
-            mad_net = statistics.median(abs_dev_net) if abs_dev_net else 0.0
-            thr_net = 3.0 * mad_net if mad_net > 0 else 0.2
-            filtered_items = [it for it in items if abs(it['net'] - med_net) <= thr_net]
-            if len(filtered_items) < max(3, int(len(items) * 0.6)):
-                sorted_by_net = sorted(items, key=lambda it: it['net'])
-                filtered_items = sorted_by_net[1:-1] if len(sorted_by_net) > 2 else sorted_by_net
-            med_net2 = statistics.median([it['net'] for it in filtered_items])
-            sorted_desc = sorted(filtered_items, key=lambda it: it['slack'], reverse=True)
-            topn = min(10, max(3, int(len(sorted_desc) * 0.25)))
-            top_nets = [it['net'] for it in sorted_desc[:topn]]
-            median_top = statistics.median(top_nets) if top_nets else med_net2
-            comp_from_intervals = max(0.0, base_ms - median_top)
-            self.stick_movement_compensation_ms = comp_from_intervals
-        except Exception:
-            pass
+
         if invalid_hold_count > 0:
-            print_error(f"Calibration: {invalid_hold_count} invalid hit(s) detected — stick was not fully deflected after 20 ms.\nMove gamepad closer to the sensor and repeat. Test will not start.")
+            print_error(f"Setup check: {invalid_hold_count} invalid hit(s) detected — stick was not fully deflected.\nMove gamepad closer to the sensor and repeat.")
             return False
+        
+        print(f"{Fore.GREEN}Setup verification passed.{Fore.RESET}")
         return True
 
     def set_pulse_duration(self, duration_ms):
@@ -814,7 +787,7 @@ class LatencyTester:
         print("Test window ready. Press Start to begin.")
         self.wait_for_start()
         if self.test_type == TEST_TYPE_STICK:
-            ok = self.calibrate_stick_movement_compensation(iterations=20)
+            ok = self.check_stick_setup(iterations=5)
             if not ok:
                 if pygame.display.get_init() and pygame.display.get_surface() is not None:
                     pygame.display.quit()
@@ -843,23 +816,7 @@ class LatencyTester:
                     self._last_render_time = now
             except Exception:
                 pass
-        if self.test_type == TEST_TYPE_STICK:
-            try:
-                if self._comp_history:
-                    med = statistics.median(self._comp_history)
-                    abs_dev = [abs(x - med) for x in self._comp_history]
-                    mad = statistics.median(abs_dev) if abs_dev else 0.0
-                    thr = 3.0 * mad if mad > 0 else 0.2
-                    filtered = [x for x in self._comp_history if abs(x - med) <= thr]
-                    if len(filtered) < max(3, int(len(self._comp_history) * 0.6)):
-                        sv = sorted(self._comp_history)
-                        filtered = sv[1:-1] if len(sv) > 2 else sv
-                    sv2 = sorted(filtered, reverse=True) if filtered else []
-                    topn = min(10, max(3, int((len(sv2) if sv2 else 0) * 0.25)))
-                    top_vals = sv2[:topn] if sv2 else []
-                    self.stick_movement_compensation_ms = statistics.median(top_vals) if top_vals else med
-            except Exception:
-                pass
+
         self.close_test_window()
 
 def detect_gamepad_mode(joystick):
@@ -994,6 +951,27 @@ if __name__ == "__main__":
         input("Press Enter to close...")
         pygame.quit()
         sys.exit()
+
+    # Select stick movement compensation
+    if test_type == TEST_TYPE_STICK:
+        print("\nSelect stick movement compensation (2.0 - 6.0 ms):")
+        print(f"See {Fore.LIGHTRED_EX}https://gamepadla.com/how-to.html{Fore.RESET} for guide.")
+        print("Press Enter for default (3.5 ms).")
+        while True:
+            try:
+                comp_input = input("Enter value (2.0-6.0) or Enter: ").strip()
+                if not comp_input:
+                    STICK_MOVEMENT_COMPENSATION = 3.5
+                    break
+                val = float(comp_input)
+                if 2.0 <= val <= 6.0:
+                    STICK_MOVEMENT_COMPENSATION = val
+                    break
+                else:
+                    print("Value must be between 2.0 and 6.0")
+            except ValueError:
+                print("Invalid input. Please enter a number.")
+        print(f"Stick movement compensation set to: {STICK_MOVEMENT_COMPENSATION} ms")
 
     # Select iterations (affects cooling timeout)
     if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
