@@ -260,7 +260,7 @@ print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometh
 print(f"{Style.DIM}To open links, press CTRL+Click{Style.RESET_ALL}")
 
 class LatencyTester:
-    def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY):
+    def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY, stick_compensation=STICK_MOVEMENT_COMPENSATION, iterations=TEST_ITERATIONS):
         self.joystick = gamepad
         self.serial = serial_port
         self.test_type = test_type
@@ -280,7 +280,8 @@ class LatencyTester:
         self._started = False
         self._last_render_time = 0.0
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
-        self.stick_movement_compensation_ms = STICK_MOVEMENT_COMPENSATION
+        self.stick_movement_compensation_ms = stick_compensation
+        self.iterations = iterations
 
     def open_test_window(self):
         while True:
@@ -361,7 +362,7 @@ class LatencyTester:
             surf2 = self._font.render("Calibrating...", True, (255, 255, 255))
             self._screen.blit(surf2, (10, 40))
         else:
-            progress_text = f"Progress: {len(self.latency_results)}/{TEST_ITERATIONS}"
+            progress_text = f"Progress: {len(self.latency_results)}/{self.iterations}"
             surf2 = self._font.render(progress_text, True, (200, 200, 200))
             self._screen.blit(surf2, (10, 40))
             
@@ -521,7 +522,7 @@ class LatencyTester:
     def log_progress(self, latency):
         """Logs test progress with percentage"""
         progress = len(self.latency_results)
-        async_log(f"[{progress / TEST_ITERATIONS * 100:3.0f}%] {latency:.2f} ms")
+        async_log(f"[{progress / self.iterations * 100:3.0f}%] {latency:.2f} ms")
 
     def is_stick_at_extreme(self):
         """Checks if stick is at extreme position"""
@@ -661,40 +662,61 @@ class LatencyTester:
         self.close_test_window()
         return successful_detections >= (iterations - 2), timing_warning
 
+    def _calculate_latency(self):
+        """Calculates current latency including contact delay and compensation"""
+        current_time_us = time.perf_counter() * 1000000
+        # Calculate raw latency in milliseconds
+        latency_ms = (current_time_us - self.start_time_us) / 1000.0
+        # Add contact delay
+        latency_ms += self.contact_delay
+        # Subtract stick compensation if applicable
+        if self.test_type == TEST_TYPE_STICK:
+            latency_ms -= self.stick_movement_compensation_ms
+        return latency_ms
+
     def check_input(self):
         """Processes input for stick, button, or keyboard tests"""
         if self.test_type not in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD) or not self.measuring:
             return False
         
+        input_detected = False
+        
         if self.test_type == TEST_TYPE_STICK:
             if not self.stick_axes and self.detect_active_stick():
                 return False
             if self.is_stick_at_extreme():
-                latency_ms = ((time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0) - self.stick_movement_compensation_ms
+                input_detected = True
+                
         elif self.test_type == TEST_TYPE_BUTTON:
             if self.button_to_test is None and self.detect_active_button():
                 return False
             if self.is_button_pressed():
-                latency_ms = (time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0
-        else:  # TEST_TYPE_KEYBOARD
+                input_detected = True
+                
+        elif self.test_type == TEST_TYPE_KEYBOARD:
             if self.key_to_test is None and self.detect_active_key():
                 return False
             if self.is_key_pressed():
-                latency_ms = (time.perf_counter() * 1000000 - self.start_time_us + self.contact_delay * 1000) / 1000.0
+                input_detected = True
         
-        if 'latency_ms' in locals():
+        if input_detected:
+            latency_ms = self._calculate_latency()
+            
             if self._skip_first_measurement:
                 self._skip_first_measurement = False
                 self.measuring = False
                 return True
+                
             if latency_ms <= self.max_latency_us / 1000.0:
                 self.latency_results.append(latency_ms)
                 self.log_progress(latency_ms)
             else:
                 self.invalid_measurements += 1
                 print(f"Invalid measurement: {latency_ms:.2f} ms (> {self.max_latency_us/1000:.2f} ms)")
+                
             self.measuring = False
             return True
+            
         return False
 
     def get_statistics(self):
@@ -729,9 +751,9 @@ class LatencyTester:
                 if pygame.display.get_init() and pygame.display.get_surface() is not None:
                     pygame.display.quit()
                 return
-        print(f"\nStarting {TEST_ITERATIONS} measurements with microsecond precision...\n")
+        print(f"\nStarting {self.iterations} measurements with microsecond precision...\n")
         self.trigger_solenoid()
-        while len(self.latency_results) < TEST_ITERATIONS:
+        while len(self.latency_results) < self.iterations:
             current_time_us = time.perf_counter() * 1000000
             if (not self.measuring and current_time_us - self.last_trigger_time_us >= self.test_interval_us):
                 self.trigger_solenoid()
@@ -1029,7 +1051,7 @@ if __name__ == "__main__":
                 CONTACT_DELAY = avg_latency
                 print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
 
-            tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY)
+            tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, STICK_MOVEMENT_COMPENSATION, TEST_ITERATIONS)
             if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
                 print_info("To start the test, switch to the program window and press Start.")
             
