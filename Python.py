@@ -102,9 +102,9 @@ STICK_THRESHOLD = 0.99              # Stick activation threshold
 RATIO = 5                           # Delay to pulse duration ratio
 CONTACT_DELAY = 0.2                 # Contact sensor delay (ms) for correction (will be updated after calibration)
 REQUIRED_ARDUINO_VERSION = "1.1.0"
-INCREASE_DURATION = 10              # Pulse duration increase increment (ms)
+# INCREASE_DURATION = 10              # Pulse duration increase increment (ms)
 LATENCY_EQUALITY_THRESHOLD = 0.001  # Threshold for comparing latencies (ms)
-CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
+# CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
 
 # Constants for test types
 TEST_TYPE_STICK = "stick"
@@ -272,9 +272,6 @@ class LatencyTester:
         self.button_to_test = None
         self.key_to_test = None
         self.invalid_measurements = 0
-        self.consecutive_same_latencies = 0
-        self.last_latency = None
-        self.consecutive_invalid = 0
         self.pulse_duration_us = PULSE_DURATION * 1000  # Convert ms to µs
         self.test_interval_us = self.pulse_duration_us * RATIO
         self.max_latency_us = self.test_interval_us - self.pulse_duration_us
@@ -471,35 +468,6 @@ class LatencyTester:
                 time.sleep(0.001)
         print_error("Failed to set pulse duration after 3 attempts. Continuing with default value.")
         return False
-
-    def update_pulse_parameters(self):
-        """Updates PULSE_DURATION, TEST_INTERVAL and MAX_LATENCY"""
-        duration_ms = int(self.pulse_duration_us / 1000) + INCREASE_DURATION
-        self.set_pulse_duration(duration_ms)
-        print(f"Updated parameters: PULSE_DURATION={int(self.pulse_duration_us/1000)} ms, TEST_INTERVAL={int(self.test_interval_us/1000)} ms, MAX_LATENCY={int(self.max_latency_us/1000)} ms")
-
-    def _check_consecutive_latencies(self, latency):
-        """Checks for consecutive identical latencies and updates pulse parameters if needed."""
-        if self.last_latency is not None and abs(latency - self.last_latency) < LATENCY_EQUALITY_THRESHOLD:
-            self.consecutive_same_latencies += 1
-            if self.consecutive_same_latencies >= CONSECUTIVE_EVENT_LIMIT:
-                print(f"Detected {CONSECUTIVE_EVENT_LIMIT} consecutive_latencies. Increasing pulse duration.")
-                self.update_pulse_parameters()
-                self.consecutive_same_latencies = 0
-        else:
-            self.consecutive_same_latencies = 1
-        self.last_latency = latency
-
-    def _handle_invalid_measurement(self, latency):
-        """Processes invalid measurements and updates parameters if needed."""
-        self.invalid_measurements += 1
-        self.consecutive_invalid += 1
-        print(f"Invalid measurement: {latency:.2f} ms (> {self.max_latency_us/1000:.2f} ms)")
-        if self.consecutive_invalid >= CONSECUTIVE_EVENT_LIMIT:
-            print(f"Detected {CONSECUTIVE_EVENT_LIMIT} consecutive invalid measurements. Increasing pulse duration.")
-            self.update_pulse_parameters()
-            self.consecutive_invalid = 0
-        self.consecutive_same_latencies = 0  # Reset identical latencies counter
 
     def detect_active_stick(self):
         """Detects active stick movement beyond threshold and dynamically determines the axis pair."""
@@ -722,9 +690,9 @@ class LatencyTester:
             if latency_ms <= self.max_latency_us / 1000.0:
                 self.latency_results.append(latency_ms)
                 self.log_progress(latency_ms)
-                self._check_consecutive_latencies(latency_ms)
             else:
-                self._handle_invalid_measurement(latency_ms)
+                self.invalid_measurements += 1
+                print(f"Invalid measurement: {latency_ms:.2f} ms (> {self.max_latency_us/1000:.2f} ms)")
             self.measuring = False
             return True
         return False
@@ -749,37 +717,6 @@ class LatencyTester:
             'stick_movement_compensation': self.stick_movement_compensation_ms
         }
 
-    def check_for_stall_and_adjust(self):
-        """Checks for test stalling and adjusts pulse duration if necessary"""
-        current_time = time.time()
-        current_count = len(self.latency_results)
-        if not hasattr(self, '_last_stall_check_time'):
-            self._last_stall_check_time = current_time
-            self._last_measurement_count = current_count
-            self._stall_counter = 0
-            self._pushes_since_last_stall = 0
-            return False
-        
-        self._pushes_since_last_stall += 1
-        if current_count == self._last_measurement_count and current_time - self._last_stall_check_time > 2:
-            self._stall_counter += 1
-            if self._stall_counter == 1 or self._pushes_since_last_stall >= 50:
-                print(f"No new measurements for 2 seconds. {'Making control push without changing parameters...' if self._stall_counter == 1 else 'Multiple stalls detected. Increasing pulse duration...'}")
-                if self._stall_counter > 1:
-                    self.update_pulse_parameters()
-                self._pushes_since_last_stall = 0
-                self._last_stall_check_time = current_time
-                return True
-            print("Stall detected, but waiting for more stalls before increasing parameters...")
-            self._last_stall_check_time = current_time
-            return True
-        
-        if current_count > self._last_measurement_count:
-            self._last_measurement_count = current_count
-            self._last_stall_check_time = current_time
-            self._stall_counter = 0
-        return False
-
     def test_loop(self):
         """Main test loop for stick or button tests"""
         print("\nPreparing test window...")
@@ -796,7 +733,7 @@ class LatencyTester:
         self.trigger_solenoid()
         while len(self.latency_results) < TEST_ITERATIONS:
             current_time_us = time.perf_counter() * 1000000
-            if self.check_for_stall_and_adjust() or (not self.measuring and current_time_us - self.last_trigger_time_us >= self.test_interval_us):
+            if (not self.measuring and current_time_us - self.last_trigger_time_us >= self.test_interval_us):
                 self.trigger_solenoid()
             if self.serial and self.serial.in_waiting:
                 found = False
