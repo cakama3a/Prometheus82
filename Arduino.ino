@@ -47,7 +47,7 @@ void loop() {
         }
         
         // Other commands are processed as before
-        if (cmd == 'T' || cmd == 'C') {
+        if (cmd == 'T') {
             contactDetected = false;
             digitalWrite(SOLENOID_PIN, HIGH);
             solenoidStartTime_us = micros();

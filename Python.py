@@ -389,7 +389,7 @@ class LatencyTester:
             
         for i in range(iterations):
             if self.serial:
-                self.serial.write(b'C')
+                self.serial.write(b'T')
                 try:
                     self.serial.flush()
                 except Exception:
