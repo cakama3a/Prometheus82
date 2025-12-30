@@ -18,7 +18,7 @@ void setup() {
     Serial.begin(115200);
     pinMode(CONTACT_PIN, INPUT_PULLUP);
     pinMode(SOLENOID_PIN, OUTPUT);
-    const char* FWV = "1.1.0";
+    const char* FWV = "1.1.1";
     
     attachInterrupt(digitalPinToInterrupt(CONTACT_PIN), handleContact, FALLING);
     

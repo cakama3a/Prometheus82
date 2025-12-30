@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.1"                 # Updated version with microsecond support
+VERSION = "5.2.4.2"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -101,7 +101,7 @@ UPPER_QUANTILE = 0.98               # Upper quantile for filtering
 STICK_THRESHOLD = 0.99              # Stick activation threshold
 RATIO = 5                           # Delay to pulse duration ratio
 CONTACT_DELAY = 0.2                 # Contact sensor delay (ms) for correction (will be updated after calibration)
-REQUIRED_ARDUINO_VERSION = "1.1.0"
+REQUIRED_ARDUINO_VERSION = "1.1.1"
 # INCREASE_DURATION = 10              # Pulse duration increase increment (ms)
 LATENCY_EQUALITY_THRESHOLD = 0.001  # Threshold for comparing latencies (ms)
 # CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
