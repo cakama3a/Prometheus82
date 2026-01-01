@@ -401,7 +401,8 @@ class LatencyTester:
                 pygame.event.pump()
             
             if not contact_time_us:
-                print_error("Setup check: no contact signal received")
+                print(f"{Fore.YELLOW}Error: Setup check: no contact signal received{Fore.RESET}")
+                invalid_hold_count += 1
                 time.sleep(0.1)
                 continue
 
