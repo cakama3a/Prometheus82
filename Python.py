@@ -90,7 +90,6 @@ if platform.system() == 'Windows':
 TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
-STICK_MOVEMENT_COMPENSATION = 3.5   # Compensation for stick movement time in ms at 99% deflection
 HARDWARE_TEST_ITERATIONS = 10       # Number of iterations for hardware test
 
 # Variables that should not be changed without need
@@ -260,7 +259,7 @@ print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometh
 print(f"{Style.DIM}To open links, press CTRL+Click{Style.RESET_ALL}")
 
 class LatencyTester:
-    def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY, stick_compensation=STICK_MOVEMENT_COMPENSATION, iterations=TEST_ITERATIONS):
+    def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY, iterations=TEST_ITERATIONS):
         self.joystick = gamepad
         self.serial = serial_port
         self.test_type = test_type
@@ -280,7 +279,6 @@ class LatencyTester:
         self._started = False
         self._last_render_time = 0.0
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
-        self.stick_movement_compensation_ms = stick_compensation
         self.iterations = iterations
 
     def open_test_window(self):
@@ -663,15 +661,12 @@ class LatencyTester:
         return successful_detections >= (iterations - 2), timing_warning
 
     def _calculate_latency(self):
-        """Calculates current latency including contact delay and compensation"""
+        """Calculates current latency including contact delay"""
         current_time_us = time.perf_counter() * 1000000
         # Calculate raw latency in milliseconds
         latency_ms = (current_time_us - self.start_time_us) / 1000.0
         # Add contact delay
         latency_ms += self.contact_delay
-        # Subtract stick compensation if applicable
-        if self.test_type == TEST_TYPE_STICK:
-            latency_ms -= self.stick_movement_compensation_ms
         return latency_ms
 
     def check_input(self):
@@ -735,8 +730,7 @@ class LatencyTester:
             'jitter': round(np.std(filtered_results), 2),
             'filtered_results': filtered_results,
             'pulse_duration': self.pulse_duration_us / 1000,
-            'contact_delay': self.contact_delay,
-            'stick_movement_compensation': self.stick_movement_compensation_ms
+            'contact_delay': self.contact_delay
         }
 
     def test_loop(self):
@@ -911,27 +905,6 @@ if __name__ == "__main__":
         pygame.quit()
         sys.exit()
 
-    # Select stick movement compensation
-    if test_type == TEST_TYPE_STICK:
-        print("\nSelect stick movement compensation (2.0 - 6.0 ms):")
-        print(f"See {Fore.LIGHTRED_EX}https://gamepadla.com/how-to.html{Fore.RESET} for guide.")
-        print("Press Enter for default (3.5 ms).")
-        while True:
-            try:
-                comp_input = input("Enter value (2.0-6.0) or Enter: ").strip()
-                if not comp_input:
-                    STICK_MOVEMENT_COMPENSATION = 3.5
-                    break
-                val = float(comp_input)
-                if 2.0 <= val <= 6.0:
-                    STICK_MOVEMENT_COMPENSATION = val
-                    break
-                else:
-                    print("Value must be between 2.0 and 6.0")
-            except ValueError:
-                print("Invalid input. Please enter a number.")
-        print(f"Stick movement compensation set to: {STICK_MOVEMENT_COMPENSATION} ms")
-
     # Select iterations (affects cooling timeout)
     if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
         print("\nSelect number of iterations:\n1: 400 (For Gamepadla.com validation)\n2: 200\n3: 100\nOr enter a custom number between 10 and 400.")
@@ -1051,7 +1024,7 @@ if __name__ == "__main__":
                 CONTACT_DELAY = avg_latency
                 print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
 
-            tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, STICK_MOVEMENT_COMPENSATION, TEST_ITERATIONS)
+            tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, TEST_ITERATIONS)
             if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
                 print_info("To start the test, switch to the program window and press Start.")
             
@@ -1103,8 +1076,6 @@ if __name__ == "__main__":
                         print(f"{'Filtered count:':<26}{stats['filtered_samples']:>8}")
                         print(f"{'Pulse duration:':<26}{stats['pulse_duration']:>8.1f} ms")
                         print(f"{'Contact delay:':<26}{stats['contact_delay']:>8.3f} ms")
-                        if test_type == TEST_TYPE_STICK:
-                            print(f"{'Stick movement comp.:':<26}{stats['stick_movement_compensation']:>8.3f} ms")
         
                         if stats['contact_delay'] > 1.2:
                             print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
@@ -1137,8 +1108,7 @@ if __name__ == "__main__":
                                             'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB', # mathod name is not a mistake!
                                             'delay_list': ', '.join(str(round(x, 2)) for x in tester.latency_results),
                                             'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
-                                            'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration'],
-                                            'stick_movement_compensation': tester.stick_movement_compensation_ms if test_type == TEST_TYPE_STICK else None
+                                            'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration']
                                         }
                                         try:
                                             response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
