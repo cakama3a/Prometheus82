@@ -1,10 +1,13 @@
 ![image](https://github.com/user-attachments/assets/c381a466-5ec2-460f-a508-51514bf5bfd5)
 
+> [!IMPORTANT]
+> **UPDATE 2026:** Starting in 2026, a separate sensor (along with a second solenoid) with a reverse button layout has been added for testing sticks. If you have an older version with a single button at the end of the solenoid, here is the [latest stable release for it](https://github.com/cakama3a/Prometheus82/releases/tag/5.2.3.6)
+
 ## Description
 Prometheus 82 is an open-source, Arduino-based electromechanical device designed for precise testing of gamepad input latency. Utilizing a solenoid to physically simulate button presses and analog stick movements, paired with Python software that mimics a game engine, it accurately measures the delay between a physical action and the system's response. Unlike traditional end-to-end latency testing methods using high-speed cameras, which include delays from monitors, GPU frame rendering, and vary depending on specific games, Prometheus 82 directly captures the entire signal chain from physical input to system registration, eliminating these delays. This method ensures consistent testing conditions across different testers, requiring no synchronization of equipment such as monitors, GPUs, or game engines for comparable results. This makes Prometheus 82 an ideal tool for gamepad enthusiasts, developers, and researchers seeking accurate and comparable input latency data. [Reddit article](https://www.reddit.com/r/Controller/comments/1i5uglp/gamepad_punch_tester_a_new_method_for_testing/) 
 
 ![photo-collage png (1)](https://github.com/user-attachments/assets/62b7c93d-78df-475c-8eaa-3c639ab4379a)
-*Prometheus 82 in full assembly*
+*Prometheus 82 in full assembly (The photo shows an outdated method of testing a stick)*
 
 ## Testing Process
 This section outlines the testing process for the Prometheus82 device, designed to measure input latency between the controller and a PC.
@@ -30,10 +33,11 @@ This section outlines the testing process for the Prometheus82 device, designed 
 ### Joystick Latency Algorithm
 Prometheus 82 uses a standardized **Center-to-Edge** measurement method for analog sticks to ensure consistent comparisons between different controllers.
 
-1.  **T0 (Start):** The solenoid is activated to strike the stick.
-2.  **Physical Travel:** The solenoid arm pushes the stick from the center (0%) towards the edge.
-3.  **T1 (Stop):** The timer stops the precise moment the gamepad reports a logical value of **≥99%** deviation.
-4.  **Calculation:** `Total Time - 3.5ms = Input Latency`.
+1. **T0 (Start):** The solenoid is activated to strike the stick.
+2. **Physical Travel:** The solenoid arm pushes the stick from the center (0%) towards the edge (100%).
+3. **Pressing the sensor:** The sensor button at the end of the stick's movement is pressed when it is deflected to the end.
+4. **T1 (Stop):** The timer stops the precise moment the gamepad reports a logical value of **≥99%** deviation.
+5. **Calculation:** `Total Time - 3.5ms = Input Latency`.
 
 
 ### Permissible Errors and Accuracy
@@ -44,10 +48,9 @@ The variation between different Prometheus 82 units is minimal (approximately **
 
 #### Measurement Tolerances
 
-* **Analog Sticks:** Permissible error **±2 ms**.
-    * **Reason:** Variations in spring stiffness, physical travel distance to the actuation point, and specific software response curves (deadzones) of the controller.
-    * **Algorithm:** The software currently applies a fixed compensation for physical travel time (3.5 ms).
-    * > **Note:** Active work is currently underway to further improve and refine the stick testing algorithm for greater precision.
+* **Analog Sticks:** Permissible error **±1 ms**.
+    * **Reason:** Depending on the external dead zone of the gamepad, the signal may be sent before the sensor button is pressed.
+    * > **Note:** In the gamepad settings, it is recommended to minimize the external dead zone as much as possible (if possible).
 
 * **Buttons:** Permissible error **±1 ms**.
     * **Reason:** Mechanical button play (pre-travel) and design differences in switches from various manufacturers.
@@ -58,13 +61,12 @@ To minimize errors, it is recommended to:
 2.  Connect the P82 device directly to your PC motherboard's USB port (avoid front panel hubs).
 
 ### Summary
-The testing process ensures accurate measurement of the Prometheus82 device's input latency. Running the test 400 times provides comprehensive data to evaluate the device's stability and performance under real-world conditions.
+The testing process ensures accurate measurement of the Prometheus82 device's input latency. Running the test 200/400 times provides comprehensive data to evaluate the device's stability and performance under real-world conditions.
 
 ## How to Get Prometheus 82
 You have two options to obtain a Prometheus 82 device:  
 1. Build It Yourself: Follow the [instructions](#test-bench) in this repository to 3D-print the test bench, source components, and assemble the device. All necessary files and guides are provided below.
 2. Order a Pre-Built Device: Purchase a ready-to-use Prometheus 82 from our shop at [Ko-fi Shop](https://ko-fi.com/gamepadla/shop?g=3).
-3. Buy cheaper [in cryptocurrency](https://plisio.net/payment-button/new/qsmQXIMiKA9T). After the purchase, be sure to write to me at john@gamepadla.com
 
 ## How to update the firmware of a P82 device
 [Detailed video instruction](https://youtu.be/hoBuqWb5SLw)
@@ -77,19 +79,17 @@ You have two options to obtain a Prometheus 82 device:
 5. Click the **Upload** button to flash the code to the Arduino.
 
 ## How to Use Prometheus 82
-[![2025-07-13_09-59](https://github.com/user-attachments/assets/1f5d08aa-0afb-40de-a22f-f82d48ff92d4)](https://www.youtube.com/watch?v=NBS_tU-7VqA)
+[![2025-07-13_09-59](https://github.com/user-attachments/assets/1f5d08aa-0afb-40de-a22f-f82d48ff92d4)](https://www.youtube.com/watch?v=NBS_tU-7VqA)  
   
 1. Connect the P82 device to the computer (Upper port).
 2. Connect the power supply to the device (Lower port).
 3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
 4. Place the gamepad in the test stand and secure it (not too tightly).
-5. Adjust the solenoid for testing the gamepad's buttons or sticks [as shown](https://www.youtube.com/watch?v=NBS_tU-7VqA).
-> [!IMPORTANT]
-> **Attention:** If the gamepad has stick tension adjustment, select the medium tension.
+5. Adjust the solenoid for testing the gamepad's buttons or sticks as shown in the video (important!).
 7. Launch the testing program: https://github.com/cakama3a/Prometheus82/releases/
 8. Select the testing option for the gamepad's sticks or buttons in the program menu.
 9. Start the test and wait for it to complete.
-10. Submit the test to Gamepadla.com for detailed analysis or exit the program.
+10. Submit the test to Gamepadla.com for detailed analysis or exit the program (optional).
 
 ![image](https://github.com/user-attachments/assets/0900068d-f3f0-4ae1-958f-e919bea8ca53)
 Test results on a temporary personalized Gamepadla.com page
