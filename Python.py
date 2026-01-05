@@ -1000,7 +1000,7 @@ if __name__ == "__main__":
                 pygame.quit()
                 sys.exit()
             if not fw_version:
-                print_error("Arduino firmware version not reported. Please update Arduino.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
+                print_error("Arduino firmware version not reported. Please update Arduino.\nhttps://github.com/cakama3a/Prometheus82/blob/main/README.md#how-to-update-the-firmware-of-a-p82-device")
                 input("Press Enter to close...")
                 pygame.quit()
                 sys.exit()
