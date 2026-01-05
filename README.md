@@ -27,8 +27,38 @@ This section outlines the testing process for the Prometheus82 device, designed 
 8. **Test Repetition**  
    The program repeats this process 500 times to calculate minimum, average, and maximum latency, as well as jitter.
 
+### Joystick Latency Algorithm
+Prometheus 82 uses a standardized **Center-to-Edge** measurement method for analog sticks to ensure consistent comparisons between different controllers.
+
+1.  **T0 (Start):** The solenoid is activated to strike the stick.
+2.  **Physical Travel:** The solenoid arm pushes the stick from the center (0%) towards the edge.
+3.  **T1 (Stop):** The timer stops the precise moment the gamepad reports a logical value of **≥99%** deviation.
+4.  **Calculation:** `Total Time - 3.5ms = Input Latency`.
+
+
+### Permissible Errors and Accuracy
+This section describes potential measurement deviations caused by the physical properties of controllers and the testing methodology.
+
+#### Device Consistency
+The variation between different Prometheus 82 units is minimal (approximately **0.012 ms**), which ensures consistent results across different testers. This was verified in a comprehensive [test with 5 devices](https://www.reddit.com/r/GPDL/comments/1mdwp2c/testing_the_accuracy_of_5_prometheus_82_devices/) combined in various configurations.
+
+#### Measurement Tolerances
+
+* **Analog Sticks:** Permissible error **±2 ms**.
+    * **Reason:** Variations in spring stiffness, physical travel distance to the actuation point, and specific software response curves (deadzones) of the controller.
+    * **Algorithm:** The software currently applies a fixed compensation for physical travel time (3.5 ms).
+    * > **Note:** Active work is currently underway to further improve and refine the stick testing algorithm for greater precision.
+
+* **Buttons:** Permissible error **±1 ms**.
+    * **Reason:** Mechanical button play (pre-travel) and design differences in switches from various manufacturers.
+
+#### Recommendations
+To minimize errors, it is recommended to:
+1.  Use a fast Arduino board (with self-delay ≤ 0.5 ms).
+2.  Connect the P82 device directly to your PC motherboard's USB port (avoid front panel hubs).
+
 ### Summary
-The testing process ensures accurate measurement of the Prometheus82 device's input latency. Running the test 500 times provides comprehensive data to evaluate the device's stability and performance under real-world conditions.
+The testing process ensures accurate measurement of the Prometheus82 device's input latency. Running the test 400 times provides comprehensive data to evaluate the device's stability and performance under real-world conditions.
 
 ## How to Get Prometheus 82
 You have two options to obtain a Prometheus 82 device:  
@@ -36,16 +66,17 @@ You have two options to obtain a Prometheus 82 device:
 2. Order a Pre-Built Device: Purchase a ready-to-use Prometheus 82 from our shop at [Ko-fi Shop](https://ko-fi.com/gamepadla/shop?g=3).
 3. Buy cheaper [in cryptocurrency](https://plisio.net/payment-button/new/qsmQXIMiKA9T). After the purchase, be sure to write to me at john@gamepadla.com
 
-## How to Use Prometheus 82
-> **⚠️ IMPORTANT: Upload Firmware to Arduino**
-> 
-> Before using the device, you must flash the Arduino with the provided firmware:
-> 1. Open the [Arduino.ino](https://github.com/cakama3a/Prometheus82/blob/main/Arduino.ino) file in the **Arduino IDE**.
-> 2. Connect your Arduino board to the computer via USB.
-> 3. In the Arduino IDE, go to **Tools → Board** and select the correct Arduino model.
-> 4. Go to **Tools → Port** and select the correct COM port.
-> 5. Click the **Upload** button to flash the code to the Arduino.
+## How to update the firmware of a P82 device
+[Detailed video instruction](https://youtu.be/hoBuqWb5SLw)
 
+⚠️ Before using the device, you must flash the Arduino with the provided firmware:
+1. Open the [Arduino.ino](https://github.com/cakama3a/Prometheus82/blob/main/Arduino.ino) file in the **Arduino IDE**.
+2. Connect your Arduino board to the computer via USB.
+3. In the Arduino IDE, go to **Tools → Board** and select the correct Arduino model.
+4. Go to **Tools → Port** and select the correct COM port.
+5. Click the **Upload** button to flash the code to the Arduino.
+
+## How to Use Prometheus 82
 [![2025-07-13_09-59](https://github.com/user-attachments/assets/1f5d08aa-0afb-40de-a22f-f82d48ff92d4)](https://www.youtube.com/watch?v=NBS_tU-7VqA)
   
 1. Connect the P82 device to the computer (Upper port).
@@ -53,10 +84,12 @@ You have two options to obtain a Prometheus 82 device:
 3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
 4. Place the gamepad in the test stand and secure it (not too tightly).
 5. Adjust the solenoid for testing the gamepad's buttons or sticks [as shown](https://www.youtube.com/watch?v=NBS_tU-7VqA).
-6. Launch the testing program: https://github.com/cakama3a/Prometheus82/releases/
-7. Select the testing option for the gamepad's sticks or buttons in the program menu.
-8. Start the test and wait for it to complete.
-9. Submit the test to Gamepadla.com for detailed analysis or exit the program.
+> [!IMPORTANT]
+> **Attention:** If the gamepad has stick tension adjustment, select the medium tension.
+7. Launch the testing program: https://github.com/cakama3a/Prometheus82/releases/
+8. Select the testing option for the gamepad's sticks or buttons in the program menu.
+9. Start the test and wait for it to complete.
+10. Submit the test to Gamepadla.com for detailed analysis or exit the program.
 
 ![image](https://github.com/user-attachments/assets/0900068d-f3f0-4ae1-958f-e919bea8ca53)
 Test results on a temporary personalized Gamepadla.com page
@@ -136,9 +169,6 @@ For successful assembly, you will need the following tools:
 - Video comparison of [6V solenoid with 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) filmed at 1000 FPS and tips on power supply
 - For a 6V solenoid, you should set the power supply to 9V, for a 12V solenoid, you should set the power supply to 15V, this guarantees stable results when testing
 - Video about the [solenoid's own delays](https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/) and how it is reflected in the measurements at 1000 FPS
-- The permissible error between different gamepad devices with various solenoids can be up to 0.012 ms, which was verified in a test with 5 devices in different combinations ([11 measurements](https://www.reddit.com/r/GPDL/comments/1mdwp2c/testing_the_accuracy_of_5_prometheus_82_devices/)).
-- The error from the actual result of the input delay provided by the gamepad under ideal conditions can be up to ±0.69 ms.
-- To reduce the error, you need to use a new solenoid, a fast Arduino device with its own delay of no more than 0.5 ms, and connect the device directly to the PC motherboard.
 - Both ports of the control board use Type-C interfaces, so do not confuse them, remember that the lower port is used for power, and the upper port is used to connect to a PC.
 - The movement of the solenoid should be easy, it should not cling to the inner hole. Make sure that its leg is smooth and free of snags, as this can cause friction, which increases heat, wear and tear on the component and introduces an error in the measurement.
 - Distance matters. When positioning the gamepad during tests, you need to install the stick and button as far away from the sensor as possible so that the solenoid has time to accelerate sufficiently. If you install the solenoid too close, it will give incorrect measurement results.
