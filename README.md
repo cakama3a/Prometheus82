@@ -69,6 +69,7 @@ The testing process ensures accurate measurement of the Prometheus82 device's in
 You have two options to obtain a Prometheus 82 device:  
 1. Build It Yourself: Follow the [instructions](#test-bench) in this repository to 3D-print the test bench, source components, and assemble the device. All necessary files and guides are provided below.
 2. Order a Pre-Built Device: Purchase a ready-to-use Prometheus 82 from our shop at [Ko-fi Shop](https://ko-fi.com/gamepadla/shop?g=3).
+* The files do not include the STL file for the reverse sensor for testing sticks, nor the case for the P82 board.
 
 ## How to update the firmware of a P82 device
 [Detailed video instruction](https://youtu.be/hoBuqWb5SLw)
