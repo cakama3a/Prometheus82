@@ -98,7 +98,8 @@ You have two options to obtain a Prometheus 82 device:
 Test results on a temporary personalized Gamepadla.com page
 
 ## Test bench
-The test bench itself must be printed on a 3D printer from PLA or PETG plastic. You can download the STL files of the project on [thingiverse](https://www.thingiverse.com/cakama3a/designs).   
+The test bench itself must be printed on a 3D printer from PLA or PETG plastic.  
+You can download the STL files of the project on [thingiverse](https://www.thingiverse.com/cakama3a/designs).   
 All parts can be printed in 3 passes in about 10 hours and 250 grams of plastic.  
 ![photo-collage png](https://github.com/user-attachments/assets/7bed604b-53cf-4254-9142-979886f6fa6e)
 
