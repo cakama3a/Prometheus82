@@ -6,9 +6,11 @@ volatile bool windowActive = false, contactDetected = false, solenoidActive = fa
 volatile unsigned long solenoidStartTime_us = 0;
 
 void handleContact() {
-    if (windowActive && !contactDetected) {
+    if (!windowActive) return;
+    if (!contactDetected) {
         Serial.write('S');
         contactDetected = true;
+        return;
     }
 }
 
@@ -16,6 +18,7 @@ void setup() {
     Serial.begin(115200);
     pinMode(CONTACT_PIN, INPUT_PULLUP);
     pinMode(SOLENOID_PIN, OUTPUT);
+    const char* FWV = "1.1.1";
     
     attachInterrupt(digitalPinToInterrupt(CONTACT_PIN), handleContact, FALLING);
     
@@ -25,8 +28,12 @@ void setup() {
         digitalWrite(SOLENOID_PIN, LOW);
         delay(200);
     }
-    
     Serial.write('R');
+    Serial.write('V');
+    for (int i = 0; FWV[i] != 0; i++) {
+        Serial.write(FWV[i]);
+    }
+    Serial.write('\n');
 }
 
 void loop() {
@@ -60,6 +67,10 @@ void loop() {
             while (Serial.available() > 0) {
                 Serial.read();
             }
+        }
+        else if (cmd == 'Q') {
+            int state = digitalRead(CONTACT_PIN);
+            Serial.write(state == LOW ? 'H' : 'U');
         }
     }
 
