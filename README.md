@@ -119,7 +119,7 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 ![P82Tools copy-min (1)](https://github.com/user-attachments/assets/a9b18a0e-e46e-4942-aad0-72950e2bf78a)  
 ### Individual 3D printed parts for Reverse Solenoid (Test Stick)
 <img width="1455" height="661" alt="image" src="https://github.com/user-attachments/assets/c2fb2819-99bd-4c37-be96-e3658059c3a6" />  
-You can find it [here](https://www.thingiverse.com/thing:7017737/files) under the name P82_2006_Reverse_Solenoid_mod.3mf  
+You can find it on thingiverse under the name P82_2006_Reverse_Solenoid_mod.3mf - https://www.thingiverse.com/thing:7017737/files
 
 ### Main Electronic Components
 > [!NOTE]
