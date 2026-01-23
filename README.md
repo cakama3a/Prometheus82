@@ -83,7 +83,8 @@ You have two options to obtain a Prometheus 82 device:
 
 ## How to Use Prometheus 82
 [![2025-07-13_09-59](https://github.com/user-attachments/assets/1f5d08aa-0afb-40de-a22f-f82d48ff92d4)](https://www.youtube.com/watch?v=NBS_tU-7VqA)  
-  
+> [!IMPORTANT]
+> **UPDATE 2026:** Starting with version 5.2.4.3, stick testing should be performed as shown in [this video](https://www.youtube.com/watch?v=MLsXo8Si730). 
 1. Connect the P82 device to the computer (Upper port).
 2. Connect the power supply to the device (Lower port).
 3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
