@@ -116,12 +116,15 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 5. Video: [Stand assembly](https://youtu.be/FciFS4pwg_E)
 
 ## Components for Assembly
-![P82Tools copy-min (1)](https://github.com/user-attachments/assets/a9b18a0e-e46e-4942-aad0-72950e2bf78a)
+![P82Tools copy-min (1)](https://github.com/user-attachments/assets/a9b18a0e-e46e-4942-aad0-72950e2bf78a)  
+### Individual 3D printed parts for Reverse Solenoid (Test Stick)
+<img width="1455" height="661" alt="image" src="https://github.com/user-attachments/assets/c2fb2819-99bd-4c37-be96-e3658059c3a6" />  
+You can find it [here](https://www.thingiverse.com/thing:7017737/files) under the name P82_2006_Reverse_Solenoid_mod.3mf  
 
-
+### Main Electronic Components
 > [!NOTE]
 > If the link doesn't open the product and instead displays a 404 page, [write here](https://github.com/cakama3a/Prometheus82/issues/1)
-### Main Electronic Components
+
 | № | Component Name | Price | Why | Link |
 |---|----------------|-------|------|-------|
 | 1 | Solenoid TAU-0530T 12V | $1.58 | The main component for moving sticks and buttons | [AliExpress](https://www.aliexpress.com/item/32731717962.html), [Amazon](https://sovrn.co/tf717uc) |
