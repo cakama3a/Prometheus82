@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.3"                 # Updated version with microsecond support
+VERSION = "5.2.4.4"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -1049,7 +1049,8 @@ if __name__ == "__main__":
                     if test_type == TEST_TYPE_BUTTON:
                         print("\nIn the test window, press Start, then press the gamepad button you want to measure.")
                     elif test_type == TEST_TYPE_STICK:
-                        pass
+                        print(f"\n{Fore.YELLOW}Note: Stick latency testing requires a reverse sensor.{Fore.RESET}")
+                        print(f"See guide: {Fore.LIGHTRED_EX}https://youtu.be/MLsXo8Si730{Fore.RESET}")
                     elif test_type == TEST_TYPE_KEYBOARD:
                         print("\nKeyboard key will be selected when the test window opens. Press your key at the prompt.")
                     
