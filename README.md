@@ -128,26 +128,26 @@ You can find it on thingiverse under the name P82_2006_Reverse_Solenoid_mod.3mf 
 
 | № | Component Name | Price | Why | Link |
 |---|----------------|-------|------|-------|
-| 1 | Solenoid TAU-0530T 12V | $1.58 | The main component for moving sticks and buttons | [AliExpress](https://www.aliexpress.com/item/32731717962.html), [Amazon](https://sovrn.co/tf717uc) |
-| 2 | Arduino Nano 3.0 ATMEGA328P TypeC | $2.79 | Sensor and solenoid control board | [AliExpress](https://www.aliexpress.com/item/1005007066680464.html), [Amazon](https://sovrn.co/13xpdmr) |
-| 3 | Transistor IRLB8721 (1/5pcs) | $1.81 | To activate the solenoid move | [AliExpress](https://www.aliexpress.com/item/1005003607855008.html), [Amazon](https://sovrn.co/q3lxwld) |
-| 4 | Kailh Mute Button 6x6x7.3mm | $2.00 | To record the moment you press a button or stick on the gamepad | [AliExpress](https://www.aliexpress.com/item/1005007474707757.html), [Amazon](https://sovrn.co/aa2nj3s) |
-| 5 | Diode P6KE18A (1/20pcs) | $0.82 | To protect the board control circuitry | [AliExpress](https://www.aliexpress.com/item/4000267321292.html), [Amazon](https://sovrn.co/1ekve0l) |
-| 6 | Capacitor 25V 680uF 10x12 (1/5pcs) | $4.38 | To protect the board control circuitry | [AliExpress](https://www.aliexpress.com/item/1005008585838492.html), [Amazon](https://sovrn.co/1jo501t) |
-| 7 | PCB Circuit Board 4x6 | $0.56 | To install all components of the control board | [AliExpress](https://www.aliexpress.com/item/1005007084130033.html), [Amazon](https://sovrn.co/alrorsw) |
-| 8 | Resistor Set (3/300psc) | $1.34 | To protect the board control circuitry | [AliExpress](https://www.aliexpress.com/item/1005002992010027.html), [Amazon](https://sovrn.co/hutmsuj) |
+| 1 | Solenoid TAU-0530T 12V | $1.58 | The main component for moving sticks and buttons | [AliExpress](https://s.click.aliexpress.com/e/_c4VSpABv), [Amazon](https://amzn.to/4qezZfr) |
+| 2 | Arduino Nano 3.0 ATMEGA328P TypeC | $2.79 | Sensor and solenoid control board | [AliExpress](https://s.click.aliexpress.com/e/_c3tRYaQR), [Amazon](https://amzn.to/4rzM2oJ) |
+| 3 | Transistor IRLB8721 (1/5pcs) | $1.81 | To activate the solenoid move | [AliExpress](https://s.click.aliexpress.com/e/_c3t1HGuj), [Amazon](https://amzn.to/3O5WZzS) |
+| 4 | Kailh Mute Button 6x6x7.3mm | $2.00 | To record the moment you press a button or stick on the gamepad | [AliExpress](https://s.click.aliexpress.com/e/_c2xn8EG7), [Amazon](https://amzn.to/4qVE7lD) |
+| 5 | Diode P6KE18A (1/20pcs) | $0.82 | To protect the board control circuitry | [AliExpress](https://s.click.aliexpress.com/e/_c3Ap7uH9), [Amazon](https://amzn.to/45PeBWU) |
+| 6 | Capacitor 25V 680uF 10x12 (1/5pcs) | $4.38 | To protect the board control circuitry | [AliExpress](https://www.aliexpress.com/item/1005008585838492.html), [Amazon](https://amzn.to/4qtNxnG) |
+| 7 | PCB Circuit Board 4x6 | $0.56 | To install all components of the control board | [AliExpress](https://s.click.aliexpress.com/e/_c3Zl6wub), [Amazon](https://amzn.to/4qecMtN) |
+| 8 | Resistor Set (3/300psc) | $1.34 | To protect the board control circuitry | [AliExpress](https://s.click.aliexpress.com/e/_c40uZEyj), [Amazon](https://amzn.to/4rzLYW1) |
 
 ### Power and Charging
 | № | Component Name | Price | Why | Link |
 |---|----------------|-------|------|------|
-| 9 | Decoy Trigger | $0.76 | To convert 5V from the power supply to the required voltage | [AliExpress](https://www.aliexpress.com/item/1005006822642152.html), [Amazon](https://sovrn.co/27k7gdk) |
-| 10 | 20W Charger | $6.61 | It is important to use a powerful power supply, at least 20W | [EU socket](https://www.aliexpress.com/item/1005004992896883.html), [US socket](https://sovrn.co/1lk0zoc) |
+| 9 | Decoy Trigger | $0.76 | To convert 5V from the power supply to the required voltage | [AliExpress](https://www.aliexpress.com/item/1005006822642152.html), [Amazon](https://amzn.to/3O4xpLB) |
+| 10 | 20W Charger | $6.61 | It is important to use a powerful power supply, at least 20W | [EU socket](https://s.click.aliexpress.com/e/_c3DVBgP1), [US socket]([https://sovrn.co/1lk0zoc](https://amzn.to/46ro2vJ)) |
 
 ### Construction and Connection Materials
 | № | Component Name | Price | Why | Link |
 |---|----------------|-------|------|------|
-| 11 | Wire 30AWG (20cm/1m) | $1.04 | Must be elastic to connect the sensor button | [Aliexpress](https://www.aliexpress.com/item/1005001590476043.html) |
-| 12 | XH-2.54mm Plug Opposite direction, 300mm, 4P (1/5psc) | $1.13 | Connects the solenoid ports to the main board | [AliExpress](https://www.aliexpress.com/item/1005008864031395.html) |
+| 11 | Wire 30AWG (20cm/1m) | $1.04 | Must be elastic to connect the sensor button | [Aliexpress](https://s.click.aliexpress.com/e/_c2yFyGpN) |
+| 12 | XH-2.54mm Plug Opposite direction, 300mm, 4P (1/5psc) | $1.13 | Connects the solenoid ports to the main board | [AliExpress](https://s.click.aliexpress.com/e/_c42fU4wf) |
 | 13 | Wire Connector 4Pin XH2.54 mm (2/80pcs) | $3.10 | A set of ports and connectors for creating connections | [AliExpress](https://www.aliexpress.com/item/1005003422202370.html) |
 | 14 | Solder Cable 24AWG 8cm (5/120pcs) | $2.32 | Wires for soldering the main control board | [AliExpress](https://www.aliexpress.com/item/1005008194967488.html) |
 | 15 | PETG/PLA Filament 1.75mm (350/1000g) | $16.99 | Filament for printing test bench components | [AliExpress](https://www.aliexpress.com/w/wholesale-PLA-filament.html) |
