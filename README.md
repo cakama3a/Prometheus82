@@ -173,6 +173,15 @@ For successful assembly, you will need the following tools:
 | 27 | Solder | To install components and wires on the board | [AliExpress](https://www.aliexpress.com/w/wholesale-Solder.html) |
 | 28 | 3D Printer | To create a test bench, board case, and solenoid unit | [BambuLab A1 Mini](https://bambulab.com/en/a1-mini) |
 
+### Reversible sensor components (For testing sticks according to the new standard)
+| № | Component Name | Price | Why | Link |
+|---|----------------|-------|------|-------|
+| 29 | Solenoid TAU-0530T 12V | $1.58 | The main component for moving sticks and buttons | [AliExpress](https://s.click.aliexpress.com/e/_c4VSpABv), [Amazon](https://amzn.to/4qezZfr) |
+| 30 | Kailh Mute Button 6x6x7.3mm | $2.00 | To record the moment you press a button or stick on the gamepad | [AliExpress](https://s.click.aliexpress.com/e/_c2xn8EG7), [Amazon](https://amzn.to/4qVE7lD) |
+| 31 | Wire 30AWG (20cm/1m) | $1.04 | Must be elastic to connect the sensor button | [Aliexpress](https://s.click.aliexpress.com/e/_c2yFyGpN) |
+| 32 | Screws M3 50Pcs, 4mm (3/50pcs) | $1.08 | For Solenoid fix | [AliExpress](https://www.aliexpress.com/item/1005007593838226.html) |
+| 33 | Brass Heat Insert Nut M3/5.3mm (1/80pcs) | $3.59 | Required for secure fixation of the button at the end of the solenoid | [AliExpress](https://s.click.aliexpress.com/e/_c39Fuau3) |
+
 ## Notes and tips
 - Video comparison of [6V solenoid with 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) filmed at 1000 FPS and tips on power supply (outdated stick testing method)
 - For a 12V solenoid, you should set the power trigger to 15V, this guarantees stable results when testing.
