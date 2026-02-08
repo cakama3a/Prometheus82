@@ -79,7 +79,7 @@ void loop() {
             unsigned long start = millis();
             while (millis() - start < 40) {
                 digitalWrite(SOLENOID_PIN, HIGH);
-                delayMicroseconds(2200);
+                delayMicroseconds(4000);
                 digitalWrite(SOLENOID_PIN, LOW);
                 delayMicroseconds(1000);
             }

@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.4"                 # Updated version with microsecond support
+VERSION = "5.2.4.5"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -91,7 +91,7 @@ TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
 HARDWARE_TEST_ITERATIONS = 10       # Number of iterations for hardware test
-BATTERY_TEST_INTERVAL_SECONDS = 10  # Interval for battery test (seconds)
+BATTERY_TEST_INTERVAL_SECONDS = 20  # Interval for battery test (seconds)
 
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
@@ -772,6 +772,7 @@ class LatencyTester:
         
         start_time = time.time()
         iteration = 0
+        rumble_enabled = True # Flag to track if rumble works
         
         try:
             while True:
@@ -830,9 +831,63 @@ class LatencyTester:
                 
                 print(f"Time: {time_str} | Status: {status}")
                 
-                # Wait for next interval
-                # We already spent ~1 sec waiting for response
-                time.sleep(max(0, BATTERY_TEST_INTERVAL_SECONDS - 1))
+                # Calculate timing for the next interval
+                # Target time for the NEXT iteration start
+                target_next_time = start_time + (iteration * BATTERY_TEST_INTERVAL_SECONDS)
+                
+                # Logic for centered rumble:
+                # Rumble duration: 20% of interval
+                # Start time: 40% of interval (centered at 50%)
+                rumble_duration_sec = BATTERY_TEST_INTERVAL_SECONDS * 0.2
+                rumble_start_offset = BATTERY_TEST_INTERVAL_SECONDS * 0.4
+                rumble_duration_ms = int(rumble_duration_sec * 1000)
+                
+                # Calculate absolute start time for rumble
+                # The current interval started at (target_next_time - BATTERY_TEST_INTERVAL_SECONDS)
+                interval_start_time = target_next_time - BATTERY_TEST_INTERVAL_SECONDS
+                rumble_start_abs = interval_start_time + rumble_start_offset
+                
+                now = time.time()
+                wait_until_rumble = rumble_start_abs - now
+                
+                if wait_until_rumble > 0:
+                    # Wait until rumble start time
+                    time.sleep(wait_until_rumble)
+                
+                # Trigger rumble
+                if rumble_enabled:
+                    try:
+                        if self.joystick:
+                            # Start rumble
+                            if not self.joystick.rumble(1.0, 1.0, rumble_duration_ms):
+                                print(f"{Fore.YELLOW}Warning: Rumble not supported (DInput limitation?). Disabling rumble attempts.{Fore.RESET}")
+                                rumble_enabled = False
+                    except AttributeError:
+                            print(f"{Fore.YELLOW}Warning: Rumble not supported by installed Pygame version. Disabling rumble attempts.{Fore.RESET}")
+                            rumble_enabled = False
+                    except Exception as e:
+                        print(f"{Fore.YELLOW}Warning: Rumble error: {e}. Disabling rumble attempts.{Fore.RESET}")
+                        rumble_enabled = False
+                
+                # Wait for rumble duration to complete
+                # We use absolute time to ensure precise duration
+                rumble_stop_abs = rumble_start_abs + rumble_duration_sec
+                wait_rumble_duration = rumble_stop_abs - time.time()
+                
+                if wait_rumble_duration > 0:
+                    time.sleep(wait_rumble_duration)
+                
+                # Force Stop Rumble
+                if rumble_enabled and self.joystick:
+                    try:
+                        self.joystick.rumble(0, 0, 0)
+                    except:
+                        pass
+
+                # Wait for the remaining time until the next interval
+                remaining_time = target_next_time - time.time()
+                if remaining_time > 0:
+                    time.sleep(remaining_time)
                 
         except KeyboardInterrupt:
             print("\nTest stopped by user.")
