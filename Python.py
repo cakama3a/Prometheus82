@@ -91,6 +91,7 @@ TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
 HARDWARE_TEST_ITERATIONS = 10       # Number of iterations for hardware test
+BATTERY_TEST_INTERVAL_SECONDS = 10  # Interval for battery test (seconds)
 
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
@@ -110,6 +111,7 @@ TEST_TYPE_STICK = "stick"
 TEST_TYPE_BUTTON = "button"
 TEST_TYPE_HARDWARE = "hardware"     # New test type for hardware check
 TEST_TYPE_KEYBOARD = "keyboard"
+TEST_TYPE_BATTERY = "battery"       # New test type for battery life
 
 # File to store the last completed test time
 LAST_TEST_TIME_FILE = os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 'Temp', 'last_test_time.txt') if platform.system() == 'Windows' else os.path.join('/tmp', 'last_test_time.txt')
@@ -734,8 +736,121 @@ class LatencyTester:
             'contact_delay': self.contact_delay
         }
 
+    def run_battery_test(self):
+        """Runs the battery life test using soft clicks"""
+        print(f"\n{Fore.CYAN}=== Battery Life Test ==={Fore.RESET}")
+        print("This test will periodically click the gamepad to prevent sleep mode.")
+        print("It logs the uptime until the gamepad disconnects or stops responding.")
+        
+        print("\nWaiting for user to start...")
+        self.open_test_window()
+        self.wait_for_start()
+        
+        # Detect input method first
+        print("\nPlease press the button/stick you want to test once...")
+        detected = False
+        while not detected:
+            pygame.event.pump()
+            if self.joystick:
+                for i in range(self.joystick.get_numbuttons()):
+                    if self.joystick.get_button(i):
+                        self.button_to_test = i
+                        print(f"Selected Button {i}")
+                        detected = True
+                        break
+                if not detected:
+                    for i in range(self.joystick.get_numaxes()):
+                        if abs(self.joystick.get_axis(i)) > 0.5:
+                            self.stick_axes = i
+                            print(f"Selected Axis {i}")
+                            detected = True
+                            break
+            # Also check keyboard just in case, though battery test usually implies wireless gamepad
+            
+        print(f"\n{Fore.GREEN}Test Started!{Fore.RESET}")
+        print(f"Interval: {BATTERY_TEST_INTERVAL_SECONDS} seconds. Using Soft Click (B command).")
+        
+        start_time = time.time()
+        iteration = 0
+        
+        try:
+            while True:
+                iteration += 1
+                current_time = time.time()
+                elapsed_seconds = int(current_time - start_time)
+                hours = elapsed_seconds // 3600
+                minutes = (elapsed_seconds % 3600) // 60
+                seconds = elapsed_seconds % 60
+                time_str = f"{hours:02}:{minutes:02}:{seconds:02}"
+                
+                # Check if gamepad is still connected
+                if not pygame.joystick.get_count():
+                    print(f"\n{Fore.RED}Gamepad disconnected! Test finished.{Fore.RESET}")
+                    break
+                
+                # Perform soft click
+                # Send 'B' command for soft click (if supported by FW) or fallback to 'T'
+                try:
+                    self.serial.reset_input_buffer()
+                    self.serial.write(b'B') # Try new soft click command
+                    
+                    # Wait for acknowledgment 'K' or timeout
+                    ack = False
+                    t0 = time.time()
+                    while time.time() - t0 < 0.1: # Short wait
+                        if self.serial.in_waiting:
+                            if self.serial.read() == b'K':
+                                ack = True
+                                break
+                    
+                    if not ack:
+                        # Fallback if FW is old or no ack
+                        pass
+
+                except Exception as e:
+                    print(f"Serial error: {e}")
+                
+                # Wait for input response (optional verification)
+                response_detected = False
+                t_click = time.time()
+                while time.time() - t_click < 1.0:
+                    pygame.event.pump()
+                    if self.button_to_test is not None:
+                        if self.joystick.get_button(self.button_to_test):
+                            response_detected = True
+                            break
+                    elif self.stick_axes is not None:
+                        if abs(self.joystick.get_axis(self.stick_axes)) > 0.5:
+                            response_detected = True
+                            break
+                
+                status = "OK" if response_detected else "NO_RESPONSE"
+                if not response_detected:
+                    print(f"{Fore.YELLOW}Warning: No response detected after click.{Fore.RESET}")
+                
+                print(f"Time: {time_str} | Status: {status}")
+                
+                # Wait for next interval
+                # We already spent ~1 sec waiting for response
+                time.sleep(max(0, BATTERY_TEST_INTERVAL_SECONDS - 1))
+                
+        except KeyboardInterrupt:
+            print("\nTest stopped by user.")
+        
+        total_seconds = int(time.time() - start_time)
+        total_hours = total_seconds // 3600
+        total_minutes = (total_seconds % 3600) // 60
+        total_secs = total_seconds % 60
+        total_time_str = f"{total_hours:02}:{total_minutes:02}:{total_secs:02}"
+        print(f"\n{Fore.CYAN}Total Runtime: {total_time_str}{Fore.RESET}")
+        input("Press Enter to exit...")
+
     def test_loop(self):
         """Main test loop for stick or button tests"""
+        if self.test_type == TEST_TYPE_BATTERY:
+            self.run_battery_test()
+            return
+
         print("\nPreparing test window...")
         self.open_test_window()
         print("Test window ready. Press Start to begin.")
@@ -876,13 +991,13 @@ if __name__ == "__main__":
     check_cooling_period()
 
     # Select test type
-    print("\nSelect test type:\n1: Gamepad - Test analog stick (99% threshold)\n2: Gamepad - Test button\n3: Keyboard - Test key\n4: Test hardware (solenoid and sensor)")
+    print("\nSelect test type:\n1: Gamepad - Analog stick latency test\n2: Gamepad - Button latency test\n3: Keyboard - Key latency test\n------------------------\n4: Test hardware (solenoid and sensor)\n5: Gamepad - Battery Life Test\n------------------------")
     try:
-        test_choice = int(input("Enter your choice (1-4): "))
-        test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE}.get(test_choice)
+        test_choice = int(input("Enter your choice (1-5): "))
+        test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE, 5: TEST_TYPE_BATTERY}.get(test_choice)
         if not test_type:
             raise ValueError
-        if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) and not joystick:
+        if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_BATTERY) and not joystick:
             print_error(f"No gamepad found! Can't run {test_type} test.")
             input("Press Enter to close...")
             pygame.quit()

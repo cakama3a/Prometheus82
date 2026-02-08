@@ -72,6 +72,19 @@ void loop() {
             int state = digitalRead(CONTACT_PIN);
             Serial.write(state == LOW ? 'H' : 'U');
         }
+        else if (cmd == 'B') {
+            // Soft click for battery test (Software PWM)
+            // 50% Duty cycle, 40ms duration
+            // This is blocking but acceptable for battery test
+            unsigned long start = millis();
+            while (millis() - start < 40) {
+                digitalWrite(SOLENOID_PIN, HIGH);
+                delayMicroseconds(2200);
+                digitalWrite(SOLENOID_PIN, LOW);
+                delayMicroseconds(1000);
+            }
+            Serial.write('K'); // Acknowledge
+        }
     }
 
     if (solenoidActive && (micros() - solenoidStartTime_us >= PULSE_DURATION_US)) {
