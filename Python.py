@@ -8,7 +8,6 @@ import platform
 import serial
 import requests
 import webbrowser
-import numpy as np
 import os
 from serial.tools import list_ports
 from colorama import Fore, Style
@@ -728,7 +727,7 @@ class LatencyTester:
             'min': min(filtered_results),
             'max': max(filtered_results),
             'avg': statistics.mean(filtered_results),
-            'jitter': round(np.std(filtered_results), 2),
+            'jitter': round(statistics.pstdev(filtered_results) if len(filtered_results) > 0 else 0.0, 2),
             'filtered_results': filtered_results,
             'pulse_duration': self.pulse_duration_us / 1000,
             'contact_delay': self.contact_delay
