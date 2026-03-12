@@ -398,6 +398,10 @@ class LatencyTester:
                     contact_time_us = time.perf_counter() * 1000000
                     break
                 pygame.event.pump()
+                try:
+                    time.sleep(0)
+                except Exception:
+                    pass
             
             if not contact_time_us:
                 print(f"{Fore.YELLOW}Error: Setup check: no contact signal received{Fore.RESET}")
@@ -767,6 +771,10 @@ class LatencyTester:
                 if now - self._last_render_time >= 1.0 / 30.0:
                     self.render_test_window(self.latency_results[-1] if self.latency_results else None)
                     self._last_render_time = now
+            except Exception:
+                pass
+            try:
+                time.sleep(0)
             except Exception:
                 pass
 
