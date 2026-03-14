@@ -377,6 +377,7 @@ class LatencyTester:
         
         invalid_hold_count = 0
         invalid_deflection_count = 0
+        invalid_contact_count = 0
         try:
             self.serial.reset_input_buffer()
             self.serial.reset_output_buffer()
@@ -389,34 +390,6 @@ class LatencyTester:
             if self.joystick:
                 baseline_axes = [self.joystick.get_axis(a) for a in range(self.joystick.get_numaxes())]
 
-            if self.serial:
-                self.serial.write(b'T')
-                try:
-                    self.serial.flush()
-                except Exception:
-                    pass
-            
-            # Wait for contact
-            contact_time_us = None
-            t0 = time.perf_counter()
-            while time.perf_counter() - t0 < 1.0:
-                if self.serial and self.serial.in_waiting and self.serial.read() == b'S':
-                    contact_time_us = time.perf_counter() * 1000000
-                    break
-                pygame.event.pump()
-                try:
-                    time.sleep(0)
-                except Exception:
-                    pass
-            
-            if not contact_time_us:
-                print(f"{Fore.YELLOW}Error: Setup check: no contact signal received{Fore.RESET}")
-                invalid_hold_count += 1
-                time.sleep(0.1)
-                continue
-
-            # 20 ms hold-check
-            hold_ok = None
             max_deflection = 0.0
             
             def update_deflection():
@@ -439,31 +412,57 @@ class LatencyTester:
                             if val > max_deflection:
                                 max_deflection = val
 
-            try:
-                time.sleep(0.020)
-                update_deflection()
-
-                if self.serial:
-                    self.serial.write(b'Q')
+            if self.serial:
+                self.serial.write(b'T')
+                try:
                     self.serial.flush()
-                    tQ = time.perf_counter()
-                    while time.perf_counter() - tQ < 0.200:
-                        if self.serial.in_waiting:
-                            resp = self.serial.read()
-                            if resp in (b'H', b'U'):
-                                hold_ok = (resp == b'H')
-                                break
-                        
-                        update_deflection()
-                        time.sleep(0.001)
-            except Exception:
-                pass
-
-            # Wait a bit longer to capture max deflection (delay for stick peak)
-            t_deflect = time.perf_counter()
-            while time.perf_counter() - t_deflect < 0.250:
+                except Exception:
+                    pass
+            
+            # Wait for contact
+            contact_time_us = None
+            t0 = time.perf_counter()
+            while time.perf_counter() - t0 < 1.0:
+                if self.serial and self.serial.in_waiting and self.serial.read() == b'S':
+                    contact_time_us = time.perf_counter() * 1000000
+                    break
                 update_deflection()
-                time.sleep(0.001)
+                try:
+                    time.sleep(0.001)
+                except Exception:
+                    pass
+            
+            hold_ok = None
+
+            if not contact_time_us:
+                invalid_contact_count += 1
+            else:
+                # 20 ms hold-check
+                try:
+                    time.sleep(0.020)
+                    update_deflection()
+
+                    if self.serial:
+                        self.serial.write(b'Q')
+                        self.serial.flush()
+                        tQ = time.perf_counter()
+                        while time.perf_counter() - tQ < 0.200:
+                            if self.serial.in_waiting:
+                                resp = self.serial.read()
+                                if resp in (b'H', b'U'):
+                                    hold_ok = (resp == b'H')
+                                    break
+                            
+                            update_deflection()
+                            time.sleep(0.001)
+                except Exception:
+                    pass
+
+                # Wait a bit longer to capture max deflection (delay for stick peak)
+                t_deflect = time.perf_counter()
+                while time.perf_counter() - t_deflect < 0.250:
+                    update_deflection()
+                    time.sleep(0.001)
                 
             deflection_pct = min(int(max_deflection * 100), 100)
             
@@ -473,9 +472,10 @@ class LatencyTester:
             else:
                 deflection_str = f"{deflection_pct}%"
 
-            if hold_ok is False:
-                invalid_hold_count += 1
-                print(f"Hit {i+1}/{iterations}: {Fore.YELLOW}Invalid (released too early){Fore.RESET} | Deflection {deflection_str}")
+            if not contact_time_us or hold_ok is False:
+                if hold_ok is False:
+                    invalid_hold_count += 1
+                print(f"Hit {i+1}/{iterations}: {Fore.RED}FAIL{Fore.RESET} | Deflection {deflection_str}")
             else:
                 print(f"Hit {i+1}/{iterations}: OK | Deflection {deflection_str}")
                 
@@ -485,12 +485,12 @@ class LatencyTester:
             except Exception:
                 pass
 
-        if invalid_deflection_count > 0:
-            print_error(f"Setup check failed: Stick is not fully deflecting ({invalid_deflection_count} hits < 99%).\nPlease reinstall the gamepad on the stand or adjust the sensor position with a screwdriver.")
-            return False
-
-        if invalid_hold_count > 0:
-            print_error(f"Setup check: {invalid_hold_count} invalid hit(s) detected — stick was released too early.\nMove gamepad closer to the sensor and repeat.")
+        if any([invalid_contact_count > 0, invalid_deflection_count > 0, invalid_hold_count > 0]):
+            sensor_errors = invalid_contact_count + invalid_hold_count
+            if sensor_errors > 0:
+                print_error(f"Setup check failed: Sensor button did not register the hit properly ({sensor_errors} invalid hits).\nPlease move the gamepad closer to the sensor. Instruction: https://youtu.be/MLsXo8Si730")
+            if invalid_deflection_count > 0:
+                print_error(f"Setup check failed: Stick is not fully deflecting ({invalid_deflection_count} hits < 99%).\nPlease reinstall the gamepad on the stand or adjust the sensor position with a screwdriver.")
             return False
         
         print(f"{Fore.GREEN}Setup verification passed.{Fore.RESET}")
