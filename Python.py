@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.4"                 # Updated version with microsecond support
+VERSION = "5.2.4.5"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -933,7 +933,7 @@ if __name__ == "__main__":
     check_cooling_period()
 
     # Select test type
-    print("\nSelect test type:\n1: Gamepad - Test analog stick (99% threshold)\n2: Gamepad - Test button\n3: Keyboard - Test key\n4: Test hardware (solenoid and sensor)")
+    print("\nSelect test type:\n1: Gamepad\t- Test analog stick\n2: Gamepad\t- Test button\n3: Keyboard\t- Test key\n4: Hardware\t- Test solenoid and sensor")
     try:
         test_choice = int(input("Enter your choice (1-4): "))
         test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE}.get(test_choice)
