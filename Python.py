@@ -376,6 +376,7 @@ class LatencyTester:
         print(f"\nVerifying setup: {iterations} hits")
         
         invalid_hold_count = 0
+        invalid_deflection_count = 0
         try:
             self.serial.reset_input_buffer()
             self.serial.reset_output_buffer()
@@ -465,12 +466,18 @@ class LatencyTester:
                 time.sleep(0.001)
                 
             deflection_pct = min(int(max_deflection * 100), 100)
+            
+            if deflection_pct < 99:
+                deflection_str = f"{Fore.RED}{deflection_pct}%{Fore.RESET}"
+                invalid_deflection_count += 1
+            else:
+                deflection_str = f"{deflection_pct}%"
 
             if hold_ok is False:
                 invalid_hold_count += 1
-                print(f"Hit {i+1}/{iterations}: {Fore.YELLOW}Invalid (released too early){Fore.RESET} | Deflection {deflection_pct}%")
+                print(f"Hit {i+1}/{iterations}: {Fore.YELLOW}Invalid (released too early){Fore.RESET} | Deflection {deflection_str}")
             else:
-                print(f"Hit {i+1}/{iterations}: OK | Deflection {deflection_pct}%")
+                print(f"Hit {i+1}/{iterations}: OK | Deflection {deflection_str}")
                 
             time.sleep(0.1)
             try:
@@ -478,8 +485,12 @@ class LatencyTester:
             except Exception:
                 pass
 
+        if invalid_deflection_count > 0:
+            print_error(f"Setup check failed: Stick is not fully deflecting ({invalid_deflection_count} hits < 99%).\nPlease reinstall the gamepad on the stand or adjust the sensor position with a screwdriver.")
+            return False
+
         if invalid_hold_count > 0:
-            print_error(f"Setup check: {invalid_hold_count} invalid hit(s) detected — stick was not fully deflected.\nMove gamepad closer to the sensor and repeat.")
+            print_error(f"Setup check: {invalid_hold_count} invalid hit(s) detected — stick was released too early.\nMove gamepad closer to the sensor and repeat.")
             return False
         
         print(f"{Fore.GREEN}Setup verification passed.{Fore.RESET}")
