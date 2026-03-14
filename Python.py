@@ -383,6 +383,11 @@ class LatencyTester:
             pass
             
         for i in range(iterations):
+            pygame.event.pump()
+            baseline_axes = []
+            if self.joystick:
+                baseline_axes = [self.joystick.get_axis(a) for a in range(self.joystick.get_numaxes())]
+
             if self.serial:
                 self.serial.write(b'T')
                 try:
@@ -411,8 +416,32 @@ class LatencyTester:
 
             # 20 ms hold-check
             hold_ok = None
+            max_deflection = 0.0
+            
+            def update_deflection():
+                nonlocal max_deflection
+                if not self.stick_axes:
+                    self.detect_active_stick()
+                else:
+                    pygame.event.pump()
+                    
+                if self.joystick:
+                    axes = self.stick_axes if self.stick_axes else range(self.joystick.get_numaxes())
+                    for axis in axes:
+                        current_val = self.joystick.get_axis(axis)
+                        if self.stick_axes:
+                            val = abs(current_val)
+                            if val > max_deflection:
+                                max_deflection = val
+                        elif axis < len(baseline_axes) and abs(current_val - baseline_axes[axis]) > 0.05:
+                            val = abs(current_val)
+                            if val > max_deflection:
+                                max_deflection = val
+
             try:
                 time.sleep(0.020)
+                update_deflection()
+
                 if self.serial:
                     self.serial.write(b'Q')
                     self.serial.flush()
@@ -423,15 +452,25 @@ class LatencyTester:
                             if resp in (b'H', b'U'):
                                 hold_ok = (resp == b'H')
                                 break
+                        
+                        update_deflection()
                         time.sleep(0.001)
             except Exception:
                 pass
 
+            # Wait a bit longer to capture max deflection (delay for stick peak)
+            t_deflect = time.perf_counter()
+            while time.perf_counter() - t_deflect < 0.250:
+                update_deflection()
+                time.sleep(0.001)
+                
+            deflection_pct = min(int(max_deflection * 100), 100)
+
             if hold_ok is False:
                 invalid_hold_count += 1
-                print(f"Hit {i+1}/{iterations}: {Fore.YELLOW}Invalid (released too early){Fore.RESET}")
+                print(f"Hit {i+1}/{iterations}: {Fore.YELLOW}Invalid (released too early){Fore.RESET} | Deflection {deflection_pct}%")
             else:
-                print(f"Hit {i+1}/{iterations}: OK")
+                print(f"Hit {i+1}/{iterations}: OK | Deflection {deflection_pct}%")
                 
             time.sleep(0.1)
             try:
