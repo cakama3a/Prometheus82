@@ -1,5 +1,7 @@
 ![image](https://github.com/user-attachments/assets/c381a466-5ec2-460f-a508-51514bf5bfd5)
 
+An up-to-date user guide: https://www.youtube.com/watch?v=Jr5kND7qLt8
+
 > [!IMPORTANT]
 > **UPDATE 2026:** Starting in 2026, a separate sensor (along with a second solenoid) with a reverse button layout has been added for testing sticks. If you have an older version with a single button at the end of the solenoid, here is the [latest stable release for it](https://github.com/cakama3a/Prometheus82/releases/tag/5.2.3.6).  
 [Backup branch on GitHub](https://github.com/cakama3a/Prometheus82/tree/One_Solenoid)  
