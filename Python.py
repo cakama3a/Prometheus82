@@ -376,43 +376,11 @@ class LatencyTester:
         print(f"\nVerifying setup: {iterations} hits")
         
         invalid_hold_count = 0
-        invalid_deflection_count = 0
         try:
             self.serial.reset_input_buffer()
             self.serial.reset_output_buffer()
         except Exception:
             pass
-
-        def measure_deflection(sample_s=0.30):
-            if not self.joystick:
-                return None, None
-            try:
-                num_axes = self.joystick.get_numaxes()
-            except Exception:
-                return None, None
-            if not num_axes:
-                return None, None
-            end_t = time.perf_counter() + float(sample_s)
-            max_abs = 0.0
-            max_axis = None
-            while time.perf_counter() < end_t:
-                try:
-                    pygame.event.pump()
-                except Exception:
-                    pass
-                for axis in range(num_axes):
-                    try:
-                        v = abs(self.joystick.get_axis(axis))
-                    except Exception:
-                        continue
-                    if v > max_abs:
-                        max_abs = v
-                        max_axis = axis
-                try:
-                    time.sleep(0.005)
-                except Exception:
-                    pass
-            return max_abs * 100.0, max_axis
             
         for i in range(iterations):
             if self.serial:
@@ -459,37 +427,13 @@ class LatencyTester:
             except Exception:
                 pass
 
-            deflection_percent, max_axis = measure_deflection()
-            if self.stick_axes is None and max_axis is not None:
-                try:
-                    partner_axis = max_axis + 1 if (max_axis % 2 == 0) else max_axis - 1
-                    if 0 <= partner_axis < self.joystick.get_numaxes():
-                        self.stick_axes = sorted([max_axis, partner_axis])
-                    else:
-                        self.stick_axes = [max_axis]
-                except Exception:
-                    self.stick_axes = [max_axis]
-
-            min_deflection_percent = STICK_THRESHOLD * 100.0
-            deflection_ok = deflection_percent is None or deflection_percent >= min_deflection_percent
-            if deflection_percent is not None and not deflection_ok:
-                invalid_deflection_count += 1
-
             if hold_ok is False:
                 invalid_hold_count += 1
-                if deflection_percent is None:
-                    print(f"Hit {i+1}/{iterations}: {Fore.YELLOW}Invalid (released too early){Fore.RESET}")
-                else:
-                    print(f"Hit {i+1}/{iterations}: {Fore.YELLOW}Invalid (released too early){Fore.RESET} | Stick deflection: {deflection_percent:.1f}%")
+                print(f"Hit {i+1}/{iterations}: {Fore.YELLOW}Invalid (released too early){Fore.RESET}")
             else:
-                if deflection_percent is None:
-                    print(f"Hit {i+1}/{iterations}: OK")
-                elif deflection_ok:
-                    print(f"Hit {i+1}/{iterations}: OK | Stick deflection: {deflection_percent:.1f}%")
-                else:
-                    print(f"Hit {i+1}/{iterations}: {Fore.YELLOW}Invalid (not fully deflected){Fore.RESET} | Stick deflection: {deflection_percent:.1f}%")
+                print(f"Hit {i+1}/{iterations}: OK")
                 
-            time.sleep(0.25)
+            time.sleep(0.1)
             try:
                 self.render_test_window(None)
             except Exception:
@@ -497,10 +441,6 @@ class LatencyTester:
 
         if invalid_hold_count > 0:
             print_error(f"Setup check: {invalid_hold_count} invalid hit(s) detected — stick was not fully deflected.\nMove gamepad closer to the sensor and repeat.")
-            return False
-
-        if invalid_deflection_count > 0:
-            print_error("Stick did not reach full deflection (99%+). Reposition the gamepad in the stand, or calibrate the sensor distance using a screwdriver.")
             return False
         
         print(f"{Fore.GREEN}Setup verification passed.{Fore.RESET}")
