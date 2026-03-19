@@ -39,9 +39,11 @@ Prometheus 82 uses a standardized **Center-to-Edge** measurement method for anal
 
 1. **T0 (Start):** The solenoid is activated to strike the stick.
 2. **Physical Travel:** The solenoid arm pushes the stick from the center (0%) towards the edge (100%).
-3. **Pressing the sensor:** The sensor button at the end of the stick's movement is pressed when it is deflected to the end.
+3. **Sensor Trigger:** The sensor button (new Reverse Solenoid mod) is pressed exactly when the stick reaches its maximum physical deflection.
 4. **T1 (Stop):** The timer stops the precise moment the gamepad reports a logical value of **≥99%** deviation.
-5. **Calculation:** `Total Time - 3.5ms = Input Latency`.
+5. ~~**Calculation:** `Total Time - 3.5ms = Input Latency`~~  
+   > [!IMPORTANT]  
+   > **UPDATE (v5.2.4.3+):** Starting with the 2026 hardware revision (Reverse Solenoid), **manual offset subtraction is no longer required**. The new hardware design captures the end-of-travel event directly, providing a real-time hardware trigger.
 
 
 ### Permissible Errors and Accuracy
