@@ -81,7 +81,7 @@ You have two options to obtain a Prometheus 82 device:
 ⚠️ Before using the device, you must flash the Arduino with the provided firmware:
 1. Open the [Arduino.ino](https://github.com/cakama3a/Prometheus82/blob/main/Arduino.ino) file in the **Arduino IDE**.
 2. Connect your Arduino board to the computer via USB.
-3. In the Arduino IDE, go to **Tools → Board** and select the correct Arduino model.
+3. In the [Arduino IDE](https://www.arduino.cc/en/software/), go to **Tools → Board** and select the correct Arduino model.
 4. Go to **Tools → Port** and select the correct COM port.
 5. Click the **Upload** button to flash the code to the Arduino.
 
