@@ -830,6 +830,31 @@ class LatencyTester:
 
         self.close_test_window()
 
+def detect_input_mode(name, guid, axes_at_rest):
+    name_lower = name.lower()
+    guid_lower = guid.lower()
+    guid_chunks = {guid_lower[i:i+4] for i in range(0, len(guid_lower), 4) if len(guid_lower[i:i+4]) == 4}
+
+    if any(s in name_lower for s in ("dualsense", "ps5", "edge", "dualshock", "ds4", "ps4", "playstation")):
+        return "Sony"
+
+    switch_name_markers = (
+        "joy-con",
+        "joycon",
+        "nintendo switch",
+        "switch pro",
+        "nintendo",
+    )
+    if any(s in name_lower for s in switch_name_markers):
+        return "Switch"
+    if "pro controller" in name_lower and ("nintendo" in name_lower or "057e" in guid_chunks):
+        return "Switch"
+    if "057e" in guid_chunks:
+        return "Switch"
+    if any(abs(a + 1) < 0.1 for a in axes_at_rest):
+        return "XInput"
+    return "DInput"
+
 def detect_gamepad_mode(joystick):
     """Detect gamepad mode (XInput, DInput, Sony, Switch) based on name and axes at rest"""
     MODES = {
@@ -852,18 +877,11 @@ def detect_gamepad_mode(joystick):
     
     # Get axes at rest after warmup
     axes_at_rest = [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
-    name_lower = joystick.get_name().lower()
+    joystick_name = joystick.get_name()
+    joystick_guid = joystick.get_guid()
     
     # Detect mode based on name and axes
-    initial_mode = "DInput"
-    if any(s in name_lower for s in ("dualsense", "ps5", "edge")):
-        initial_mode = "Sony"
-    elif any(s in name_lower for s in ("switch", "joy-con", "pro controller")):
-        initial_mode = "Switch"
-    elif any(s in name_lower for s in ("dualshock", "ds4", "ps4", "playstation")):
-        initial_mode = "Sony"
-    elif any(abs(a + 1) < 0.1 for a in axes_at_rest):
-        initial_mode = "XInput"
+    initial_mode = detect_input_mode(joystick_name, joystick_guid, axes_at_rest)
     
     return initial_mode
 
