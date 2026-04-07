@@ -110,35 +110,59 @@ TEST_TYPE_BUTTON = "button"
 TEST_TYPE_HARDWARE = "hardware"     # New test type for hardware check
 TEST_TYPE_KEYBOARD = "keyboard"
 
-# File to store the last completed test time
-LAST_TEST_TIME_FILE = os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 'Temp', 'last_test_time.txt') if platform.system() == 'Windows' else os.path.join('/tmp', 'last_test_time.txt')
+_TEMP_DIR = os.path.join(os.path.expanduser('~'), 'AppData', 'Local', 'Temp') if platform.system() == 'Windows' else '/tmp'
+LAST_TEST_TIME_FILE_BUTTON = os.path.join(_TEMP_DIR, 'last_test_time_button.txt')
+LAST_TEST_TIME_FILE_STICK = os.path.join(_TEMP_DIR, 'last_test_time_stick.txt')
 
 # Function to check time since last test
-def check_cooling_period():
-    if not os.path.exists(LAST_TEST_TIME_FILE):
-        return True
+def check_cooling_period(test_type=None):
     try:
-        with open(LAST_TEST_TIME_FILE) as f:
-            content = f.read().strip()
-            parts = content.split(',')
-            if len(parts) == 2:
-                last_time = float(parts[0])
-                cooling_seconds = float(parts[1])
-            else:
-                last_time = float(content)
-                cooling_seconds = COOLING_PERIOD_SECONDS
-            remaining = max(0, int(cooling_seconds - (time.time() - last_time)))
-            if remaining > 0:
-                print(f"\n{Fore.YELLOW}WARNING: Cooling required: {remaining} seconds remaining.{Fore.RESET}")
+        if test_type is None:
+            warnings = []
+            for label, path in (("BUTTON", LAST_TEST_TIME_FILE_BUTTON), ("STICK", LAST_TEST_TIME_FILE_STICK)):
+                if os.path.exists(path):
+                    with open(path) as f:
+                        content = f.read().strip()
+                        parts = content.split(',')
+                        if len(parts) == 2:
+                            last_time = float(parts[0])
+                            cooling_seconds = float(parts[1])
+                        else:
+                            last_time = float(content)
+                            cooling_seconds = COOLING_PERIOD_SECONDS
+                        remaining = max(0, int(cooling_seconds - (time.time() - last_time)))
+                        if remaining > 0:
+                            warnings.append(f"{label}: {remaining} seconds")
+            if warnings:
+                print(f"\n{Fore.YELLOW}WARNING: Cooling required — " + "; ".join(warnings) + f".{Fore.RESET}")
             return True
+        else:
+            path = LAST_TEST_TIME_FILE_STICK if test_type == TEST_TYPE_STICK else LAST_TEST_TIME_FILE_BUTTON
+            if not os.path.exists(path):
+                return True
+            with open(path) as f:
+                content = f.read().strip()
+                parts = content.split(',')
+                if len(parts) == 2:
+                    last_time = float(parts[0])
+                    cooling_seconds = float(parts[1])
+                else:
+                    last_time = float(content)
+                    cooling_seconds = COOLING_PERIOD_SECONDS
+                remaining = max(0, int(cooling_seconds - (time.time() - last_time)))
+                if remaining > 0:
+                    label = "STICK" if test_type == TEST_TYPE_STICK else "BUTTON"
+                    print(f"\n{Fore.YELLOW}WARNING: Cooling required ({label}): {remaining} seconds remaining.{Fore.RESET}")
+                return True
     except (ValueError, IOError):
         return True
 
-def get_cooling_remaining_seconds():
-    if not os.path.exists(LAST_TEST_TIME_FILE):
+def get_cooling_remaining_seconds(test_type):
+    path = LAST_TEST_TIME_FILE_STICK if test_type == TEST_TYPE_STICK else LAST_TEST_TIME_FILE_BUTTON
+    if not os.path.exists(path):
         return 0
     try:
-        with open(LAST_TEST_TIME_FILE) as f:
+        with open(path) as f:
             content = f.read().strip()
             parts = content.split(',')
             if len(parts) == 2:
@@ -152,14 +176,16 @@ def get_cooling_remaining_seconds():
         return 0
 
 # Function to record the test completion time
-def save_test_completion_time(iterations):
+def save_test_completion_time(iterations, test_type):
     try:
         cooling_minutes = (iterations / 400.0) * 10.0
         cooling_seconds = int(cooling_minutes * 60)
-        with open(LAST_TEST_TIME_FILE, 'w') as f:
+        path = LAST_TEST_TIME_FILE_STICK if test_type == TEST_TYPE_STICK else LAST_TEST_TIME_FILE_BUTTON
+        with open(path, 'w') as f:
             f.write(f"{time.time()},{cooling_seconds}")
         print(f"\n{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
-        print(f"{Fore.YELLOW}Cooling timer set to {cooling_seconds} seconds.{Fore.RESET}")
+        label = "STICK" if test_type == TEST_TYPE_STICK else "BUTTON"
+        print(f"{Fore.YELLOW}Cooling timer ({label}) set to {cooling_seconds} seconds.{Fore.RESET}")
     except IOError as e:
         print_error(f"Recording test completion time: {e}")
 
@@ -962,7 +988,7 @@ if __name__ == "__main__":
             input("Press Enter to close...")
             pygame.quit()
             sys.exit()
-        remaining = get_cooling_remaining_seconds()
+        remaining = get_cooling_remaining_seconds(test_type)
         if remaining > 0:
             print(f"\n{Fore.YELLOW}WARNING: Device has not cooled yet. Running this test now may cause degradation. Remaining cooling time: {remaining} seconds.{Fore.RESET}")
             while True:
@@ -1137,7 +1163,7 @@ if __name__ == "__main__":
                     
                     stats = tester.get_statistics()
                     if stats:
-                        save_test_completion_time(TEST_ITERATIONS)
+                        save_test_completion_time(TEST_ITERATIONS, test_type)
                         print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
                         print(f"\n{Style.BRIGHT}{Fore.CYAN}" + "="*15 + f"LATENCY" + "="*15 + f"{Fore.RESET}{Style.RESET_ALL}")
                         print(f"{'Min latency:':<26}{stats['min']:>8.2f} ms")
