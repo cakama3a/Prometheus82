@@ -3,3 +3,4 @@
 *.bat
 Other.py
 /Prometheus82_PyInstaller
+/__pycache__
