@@ -304,6 +304,7 @@ class LatencyTester:
         self._skip_first_measurement = True
         self._started = False
         self._last_render_time = 0.0
+        self._stick_runtime_fallback_used = False
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
         self.iterations = iterations
 
@@ -856,6 +857,14 @@ class LatencyTester:
                     self.start_time_us = time.perf_counter() * 1000000
                     self.measuring = True
             self.check_input()
+            if self.measuring and current_time_us - self.start_time_us > self.max_latency_us:
+                self.invalid_measurements += 1
+                print(f"Invalid measurement: no input detected within {self.max_latency_us/1000:.2f} ms")
+                self.measuring = False
+                if self.test_type == TEST_TYPE_STICK and not self._stick_runtime_fallback_used and self.pulse_duration_us < STICK_SETUP_FALLBACK_PULSE_DURATION * 1000:
+                    self._stick_runtime_fallback_used = True
+                    print_info(f"Switching to stronger solenoid pulse ({STICK_SETUP_FALLBACK_PULSE_DURATION} ms) for remaining measurements.")
+                    self.set_pulse_duration(STICK_SETUP_FALLBACK_PULSE_DURATION)
             pygame.event.pump()
             try:
                 now = time.perf_counter()
