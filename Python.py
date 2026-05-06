@@ -302,6 +302,7 @@ class LatencyTester:
         self.test_interval_us = self.pulse_duration_us * RATIO
         self.max_latency_us = self.test_interval_us - self.pulse_duration_us
         self.latency_results = []
+        self.latency_sum = 0.0
         self._skip_first_measurement = True
         self._started = False
         self._last_render_time = 0.0
@@ -378,7 +379,7 @@ class LatencyTester:
     def close_test_window(self):
         return
 
-    def render_test_window(self, last_latency=None):
+    def render_test_window(self, average_latency=None):
         if not hasattr(self, "_screen") or self._screen is None:
             return
         self._screen.fill((0, 0, 0))
@@ -397,8 +398,8 @@ class LatencyTester:
             surf2 = self._font.render(progress_text, True, (200, 200, 200))
             self._screen.blit(surf2, (10, 40))
             
-        if last_latency is not None:
-            surf3 = self._font.render(f"Last latency: {last_latency:.2f} ms", True, (150, 200, 255))
+        if average_latency is not None:
+            surf3 = self._font.render(f"Average latency: {average_latency:.2f} ms", True, (150, 200, 255))
             self._screen.blit(surf3, (10, 70))
         pygame.display.flip()
 
@@ -807,6 +808,7 @@ class LatencyTester:
                 
             if latency_ms <= self.max_latency_us / 1000.0:
                 self.latency_results.append(latency_ms)
+                self.latency_sum += latency_ms
                 self.log_progress(latency_ms)
             else:
                 self.invalid_measurements += 1
@@ -877,7 +879,8 @@ class LatencyTester:
             try:
                 now = time.perf_counter()
                 if now - self._last_render_time >= 1.0 / 30.0:
-                    self.render_test_window(self.latency_results[-1] if self.latency_results else None)
+                    average_latency = self.latency_sum / len(self.latency_results) if self.latency_results else None
+                    self.render_test_window(average_latency)
                     self._last_render_time = now
             except Exception:
                 pass
