@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.5"                 # Updated version with microsecond support
+VERSION = "5.2.4.6"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -103,9 +103,7 @@ STICK_THRESHOLD = 0.99              # Stick activation threshold
 RATIO = 5                           # Delay to pulse duration ratio
 CONTACT_DELAY = 0.2                 # Contact sensor delay (ms) for correction (will be updated after calibration)
 REQUIRED_ARDUINO_VERSION = "1.1.1"
-# INCREASE_DURATION = 10              # Pulse duration increase increment (ms)
 LATENCY_EQUALITY_THRESHOLD = 0.001  # Threshold for comparing latencies (ms)
-# CONSECUTIVE_EVENT_LIMIT = 5         # Number of consecutive events for action
 
 # Constants for test types
 TEST_TYPE_STICK = "stick"
@@ -1231,8 +1229,8 @@ if __name__ == "__main__":
                                 while True:
                                     test_key = generate_short_id()
                                     gamepad_name = input("Enter gamepad name: ")
-                                    connection = {"1": "Cable", "2": "Bluetooth", "3": "Dongle"}.get(
-                                        input("Current connection (1. Cable, 2. Bluetooth, 3. Dongle): "), "Unset")
+                                    connection = {"1": "Cable", "2": "Dongle", "3": "Bluetooth"}.get(
+                                        input("Current connection (1. Cable, 2. Dongle, 3. Bluetooth): "), "Unset")
                                     data = {
                                         'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
                                         'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
