@@ -93,6 +93,7 @@ HARDWARE_TEST_ITERATIONS = 10       # Number of iterations for hardware test
 STICK_SETUP_DEFLECTION_WAIT = 0.250
 STICK_SETUP_FALLBACK_PULSE_DURATION = 80
 STICK_SETUP_FALLBACK_DEFLECTION_WAIT = 0.500
+STICK_SETUP_FALLBACK_MAX_ITERATIONS = 200
 
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
@@ -308,6 +309,11 @@ class LatencyTester:
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
         self.iterations = iterations
 
+    def limit_iterations_for_fallback_pulse(self):
+        if self.test_type == TEST_TYPE_STICK and self.iterations > STICK_SETUP_FALLBACK_MAX_ITERATIONS:
+            self.iterations = STICK_SETUP_FALLBACK_MAX_ITERATIONS
+            print_info(f"Stronger solenoid pulse mode is limited to {self.iterations} measurements to reduce heating.")
+
     def open_test_window(self):
         while True:
             try:
@@ -408,6 +414,7 @@ class LatencyTester:
 
         print_info(f"Retrying setup check with stronger solenoid pulse ({STICK_SETUP_FALLBACK_PULSE_DURATION} ms).")
         self.set_pulse_duration(STICK_SETUP_FALLBACK_PULSE_DURATION)
+        self.limit_iterations_for_fallback_pulse()
         return self._check_stick_setup_once(iterations, STICK_SETUP_FALLBACK_DEFLECTION_WAIT, report_errors=True)
 
     def _check_stick_setup_once(self, iterations=5, deflection_wait=STICK_SETUP_DEFLECTION_WAIT, report_errors=True):
@@ -865,6 +872,7 @@ class LatencyTester:
                     self._stick_runtime_fallback_used = True
                     print_info(f"Switching to stronger solenoid pulse ({STICK_SETUP_FALLBACK_PULSE_DURATION} ms) for remaining measurements.")
                     self.set_pulse_duration(STICK_SETUP_FALLBACK_PULSE_DURATION)
+                    self.limit_iterations_for_fallback_pulse()
             pygame.event.pump()
             try:
                 now = time.perf_counter()
@@ -1187,7 +1195,7 @@ if __name__ == "__main__":
                     
                     stats = tester.get_statistics()
                     if stats:
-                        save_test_completion_time(TEST_ITERATIONS, test_type)
+                        save_test_completion_time(tester.iterations, test_type)
                         print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
                         print(f"\n{Style.BRIGHT}{Fore.CYAN}" + "="*15 + f"LATENCY" + "="*15 + f"{Fore.RESET}{Style.RESET_ALL}")
                         print(f"{'Min latency:':<26}{stats['min']:>8.2f} ms")
@@ -1196,7 +1204,7 @@ if __name__ == "__main__":
                         print(f"{'Jitter:':<26}{stats['jitter']:>8.2f} ms")
                         print(f"{Style.BRIGHT}{Fore.CYAN}" + "="*37 + f"{Fore.RESET}{Style.RESET_ALL}")
                         print(f"\n{Style.BRIGHT}Measurement Results{Style.RESET_ALL}")
-                        print(f"{'Iterations:':<26}{TEST_ITERATIONS:>8}")
+                        print(f"{'Iterations:':<26}{tester.iterations:>8}")
                         print(f"{'Total measurements:':<26}{stats['total_samples']:>8}")
                         print(f"{'Valid measurements:':<26}{stats['valid_samples']:>8}")
                         print(f"{'Invalid measurements:':<26}{stats['invalid_samples']:>8} (>{stats['pulse_duration']*(RATIO-1):.1f} ms)")
@@ -1209,7 +1217,7 @@ if __name__ == "__main__":
 
                         # Action selection with retry on invalid input
                         while True:
-                            if TEST_ITERATIONS < 200:
+                            if tester.iterations < 200:
                                 print("\nSelect action:\n1: Export to CSV\n2: Exit")
                                 try:
                                     user_input = int(input("Enter your choice (1-2): "))
