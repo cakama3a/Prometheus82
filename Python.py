@@ -90,6 +90,9 @@ TEST_ITERATIONS = 400               # Number of test iterations
 PULSE_DURATION = 40                 # Solenoid pulse duration (ms)
 LATENCY_TEST_ITERATIONS = 1000      # Number of measurements for Arduino latency test
 HARDWARE_TEST_ITERATIONS = 10       # Number of iterations for hardware test
+STICK_SETUP_DEFLECTION_WAIT = 0.250
+STICK_SETUP_FALLBACK_PULSE_DURATION = 80
+STICK_SETUP_FALLBACK_DEFLECTION_WAIT = 0.500
 
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
@@ -399,6 +402,20 @@ class LatencyTester:
             return None
         if not self.serial:
             return None
+
+        ok = self._check_stick_setup_once(iterations, STICK_SETUP_DEFLECTION_WAIT, report_errors=False)
+        if ok:
+            return True
+
+        print_info(f"Retrying setup check with stronger solenoid pulse ({STICK_SETUP_FALLBACK_PULSE_DURATION} ms).")
+        self.set_pulse_duration(STICK_SETUP_FALLBACK_PULSE_DURATION)
+        return self._check_stick_setup_once(iterations, STICK_SETUP_FALLBACK_DEFLECTION_WAIT, report_errors=True)
+
+    def _check_stick_setup_once(self, iterations=5, deflection_wait=STICK_SETUP_DEFLECTION_WAIT, report_errors=True):
+        if self.test_type != TEST_TYPE_STICK:
+            return None
+        if not self.serial:
+            return None
         print(f"\nVerifying setup: {iterations} hits")
         
         invalid_hold_count = 0
@@ -486,7 +503,7 @@ class LatencyTester:
 
                 # Wait a bit longer to capture max deflection (delay for stick peak)
                 t_deflect = time.perf_counter()
-                while time.perf_counter() - t_deflect < 0.250:
+                while time.perf_counter() - t_deflect < deflection_wait:
                     update_deflection()
                     time.sleep(0.001)
                 
@@ -513,9 +530,9 @@ class LatencyTester:
 
         if any([invalid_contact_count > 0, invalid_deflection_count > 0, invalid_hold_count > 0]):
             sensor_errors = invalid_contact_count + invalid_hold_count
-            if sensor_errors > 0:
+            if report_errors and sensor_errors > 0:
                 print_error(f"Setup check failed: Sensor button did not register the hit properly ({sensor_errors} invalid hits).\nPlease move the gamepad closer to the sensor. Instruction: https://youtu.be/MLsXo8Si730")
-            if invalid_deflection_count > 0:
+            if report_errors and invalid_deflection_count > 0:
                 print_error(f"Setup check failed: Stick is not fully deflecting ({invalid_deflection_count} hits < 99%).\nPlease reinstall the gamepad on the stand or adjust the sensor position with a screwdriver.")
             return False
         
