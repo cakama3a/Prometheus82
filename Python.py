@@ -951,7 +951,26 @@ def generate_short_id(length=12):
     """Generates a random short ID"""
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
+def restart_current_program():
+    try:
+        stop_async_logger()
+    except Exception:
+        pass
+    try:
+        if pygame.display.get_init():
+            pygame.display.quit()
+        pygame.quit()
+    except Exception:
+        pass
+    try:
+        sys.stdout.flush()
+        sys.stderr.flush()
+    except Exception:
+        pass
+    os.execv(sys.executable, [sys.executable] + sys.argv)
+
 if __name__ == "__main__":
+    wait_on_exit = True
     pygame.init()
     pygame.joystick.init()
     start_async_logger()
@@ -1218,34 +1237,26 @@ if __name__ == "__main__":
                         if stats['contact_delay'] > 1.2:
                             print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
 
+                        uploaded_to_gamepadla = False
+                        exported_to_csv = False
                         # Action selection with retry on invalid input
                         while True:
-                            if tester.iterations < 200:
-                                print("\nSelect action:\n1: Export to CSV\n2: Exit")
-                                try:
-                                    user_input = int(input("Enter your choice (1-2): "))
-                                    if user_input == 1:
-                                        choice = 2
-                                    elif user_input == 2:
-                                        choice = 4
-                                    else:
-                                        print("Invalid selection! Please enter 1 or 2.")
-                                        continue
-                                except ValueError:
-                                    print_error("Invalid input! Please enter 1 or 2.")
+                            open_label = f"{Fore.LIGHTBLACK_EX}Open on Gamepadla.com (already used){Fore.RESET}" if uploaded_to_gamepadla else "Open on Gamepadla.com"
+                            export_label = f"{Fore.LIGHTBLACK_EX}Export to CSV (already used){Fore.RESET}" if exported_to_csv else "Export to CSV"
+                            print(f"\nSelect action:\n1: {open_label}\n2: {export_label}\n3: Restart test\n4: Exit")
+                            try:
+                                choice = int(input("Enter your choice (1-4): "))
+                                if choice not in [1, 2, 3, 4]:
+                                    print("Invalid selection! Please enter 1, 2, 3, or 4.")
                                     continue
-                            else:
-                                print("\nSelect action:\n1: Open on Gamepadla.com\n2: Export to CSV\n3: Upload to Gamepadla.com AND Export to CSV\n4: Exit")
-                                try:
-                                    choice = int(input("Enter your choice (1-4): "))
-                                    if choice not in [1, 2, 3, 4]:
-                                        print("Invalid selection! Please enter 1, 2, 3, or 4.")
-                                        continue
-                                except ValueError:
-                                    print_error("Invalid input! Please enter 1, 2, 3, or 4.")
-                                    continue
+                            except ValueError:
+                                print_error("Invalid input! Please enter 1, 2, 3, or 4.")
+                                continue
 
-                            if choice == 1 or choice == 3:
+                            if choice == 1:
+                                if uploaded_to_gamepadla:
+                                    print(f"{Fore.YELLOW}Warning: This result has already been opened on Gamepadla.com. Restart the test to send a new result.{Fore.RESET}")
+                                    continue
                                 while True:
                                     test_key = generate_short_id()
                                     gamepad_name = input("Enter gamepad name: ")
@@ -1269,24 +1280,28 @@ if __name__ == "__main__":
                                         if response.status_code == 200:
                                             print("Test results successfully sent to the server.")
                                             webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
-                                            # If choice 3, also export to CSV
-                                            if choice == 3:
-                                                export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
+                                            uploaded_to_gamepadla = True
                                             break
                                         print(f"\nServer error. Status code: {response.status_code}")
                                     except requests.exceptions.RequestException:
                                         print("\nNo internet connection or server is unreachable")
                                     if input("\nDo you want to try sending the data again? (Y/N): ").upper() != 'Y':
-                                        # If choice 3 and user doesn't want to retry, still save CSV
-                                        if choice == 3:
-                                            export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
                                         break
                             elif choice == 2:
+                                if exported_to_csv:
+                                    print(f"{Fore.YELLOW}Warning: This result has already been exported to CSV. Restart the test to export a new result.{Fore.RESET}")
+                                    continue
                                 export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
+                                exported_to_csv = True
+                                continue
+                            elif choice == 3:
+                                print("\nRestarting with a fresh test session...")
+                                restart_current_program()
                             elif choice == 4:
+                                wait_on_exit = False
                                 break
                             
-                            break
+                            continue
             except KeyboardInterrupt:
                 print("\nTest interrupted by user.")
     except serial.SerialException as e:
@@ -1296,4 +1311,5 @@ if __name__ == "__main__":
     finally:
         stop_async_logger()
         pygame.quit()
-        input("Press Enter to exit...")
+        if wait_on_exit:
+            input("Press Enter to exit...")
