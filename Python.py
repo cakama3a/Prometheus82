@@ -266,6 +266,226 @@ def load_window_icon():
     
     return None
 
+def gui_init(title="Prometheus 82"):
+    if not pygame.get_init():
+        pygame.init()
+    if not pygame.display.get_init():
+        pygame.display.init()
+    if pygame.display.get_surface() is None:
+        icon = load_window_icon()
+        if icon:
+            pygame.display.set_icon(icon)
+        pygame.display.set_mode((900, 650))
+    pygame.display.set_caption(title)
+    pygame.font.init()
+    return pygame.display.get_surface()
+
+def gui_draw_text(screen, text, pos, font, color=(230, 230, 230), max_width=None):
+    words = str(text).split(" ")
+    lines = []
+    current = ""
+    for word in words:
+        test = word if not current else current + " " + word
+        if max_width and font.size(test)[0] > max_width:
+            if current:
+                lines.append(current)
+            current = word
+        else:
+            current = test
+    if current:
+        lines.append(current)
+    x, y = pos
+    for line in lines:
+        screen.blit(font.render(line, True, color), (x, y))
+        y += font.get_height() + 4
+    return y
+
+def gui_button(screen, rect, text, font, mouse_pos, color=(45, 95, 150), hover=(65, 125, 195), disabled=False):
+    draw_color = (55, 55, 60) if disabled else (hover if rect.collidepoint(mouse_pos) else color)
+    pygame.draw.rect(screen, draw_color, rect, border_radius=12)
+    pygame.draw.rect(screen, (105, 125, 150), rect, 2, border_radius=12)
+    label = font.render(text, True, (180, 180, 180) if disabled else (255, 255, 255))
+    screen.blit(label, label.get_rect(center=rect.center))
+
+def gui_wait_for_quit():
+    screen = gui_init()
+    font = pygame.font.Font(None, 30)
+    small = pygame.font.Font(None, 24)
+    clock = pygame.time.Clock()
+    while True:
+        mouse = pygame.mouse.get_pos()
+        close_rect = pygame.Rect(340, 520, 220, 56)
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN and event.key in (K_ESCAPE, K_RETURN, K_SPACE):
+                return
+            if event.type == MOUSEBUTTONDOWN and close_rect.collidepoint(event.pos):
+                return
+        screen.fill((14, 17, 24))
+        gui_draw_text(screen, "Prometheus 82", (40, 40), pygame.font.Font(None, 46), (130, 190, 255))
+        gui_draw_text(screen, "Press Enter, Space, Esc or click Close to exit.", (40, 110), small, (220, 220, 220))
+        gui_button(screen, close_rect, "Close", font, mouse)
+        pygame.display.flip()
+        clock.tick(60)
+
+def gui_message(title, lines, buttons=("OK",), accent=(130, 190, 255)):
+    screen = gui_init()
+    title_font = pygame.font.Font(None, 44)
+    font = pygame.font.Font(None, 28)
+    small = pygame.font.Font(None, 23)
+    clock = pygame.time.Clock()
+    if isinstance(lines, str):
+        lines = [lines]
+    while True:
+        mouse = pygame.mouse.get_pos()
+        button_rects = []
+        total_width = len(buttons) * 180 + (len(buttons) - 1) * 16
+        start_x = (screen.get_width() - total_width) // 2
+        for i, label in enumerate(buttons):
+            button_rects.append((pygame.Rect(start_x + i * 196, 550, 180, 54), label))
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN:
+                if event.key in (K_RETURN, K_SPACE):
+                    return buttons[0]
+                if event.key == K_ESCAPE:
+                    return buttons[-1]
+            if event.type == MOUSEBUTTONDOWN:
+                for rect, label in button_rects:
+                    if rect.collidepoint(event.pos):
+                        return label
+        screen.fill((14, 17, 24))
+        gui_draw_text(screen, title, (40, 40), title_font, accent, 820)
+        y = 120
+        for line in lines:
+            y = gui_draw_text(screen, line, (50, y), small if len(line) > 90 else font, (225, 225, 225), 800) + 10
+        for rect, label in button_rects:
+            gui_button(screen, rect, label, font, mouse, color=(50, 110, 75) if label in ("OK", "Continue", "Yes") else (120, 65, 65))
+        pygame.display.flip()
+        clock.tick(60)
+
+def gui_select(title, options, subtitle=None, allow_cancel=True):
+    screen = gui_init()
+    title_font = pygame.font.Font(None, 42)
+    font = pygame.font.Font(None, 27)
+    small = pygame.font.Font(None, 22)
+    clock = pygame.time.Clock()
+    scroll = 0
+    while True:
+        mouse = pygame.mouse.get_pos()
+        rects = []
+        for i, option in enumerate(options):
+            rects.append((pygame.Rect(70, 145 + i * 74 - scroll, 760, 58), i))
+        cancel_rect = pygame.Rect(670, 570, 160, 48)
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN:
+                if allow_cancel and event.key == K_ESCAPE:
+                    return None
+                if K_1 <= event.key <= K_9:
+                    idx = event.key - K_1
+                    if idx < len(options):
+                        return idx
+                if event.key == K_UP:
+                    scroll = max(0, scroll - 40)
+                if event.key == K_DOWN:
+                    scroll = min(max(0, len(options) * 74 - 380), scroll + 40)
+            if event.type == MOUSEWHEEL:
+                scroll = min(max(0, len(options) * 74 - 380), max(0, scroll - event.y * 40))
+            if event.type == MOUSEBUTTONDOWN:
+                if allow_cancel and cancel_rect.collidepoint(event.pos):
+                    return None
+                for rect, idx in rects:
+                    if rect.collidepoint(event.pos):
+                        return idx
+        screen.fill((14, 17, 24))
+        gui_draw_text(screen, title, (40, 34), title_font, (130, 190, 255), 820)
+        if subtitle:
+            gui_draw_text(screen, subtitle, (44, 90), small, (200, 205, 215), 810)
+        for rect, idx in rects:
+            if -70 < rect.y < 545:
+                gui_button(screen, rect, options[idx], font, mouse)
+        if allow_cancel:
+            gui_button(screen, cancel_rect, "Cancel", font, mouse, color=(105, 65, 65), hover=(135, 80, 80))
+        pygame.display.flip()
+        clock.tick(60)
+
+def gui_text_input(title, prompt, default_text=""):
+    screen = gui_init()
+    title_font = pygame.font.Font(None, 42)
+    font = pygame.font.Font(None, 30)
+    small = pygame.font.Font(None, 23)
+    clock = pygame.time.Clock()
+    text = default_text
+    while True:
+        mouse = pygame.mouse.get_pos()
+        ok_rect = pygame.Rect(500, 520, 150, 54)
+        cancel_rect = pygame.Rect(670, 520, 150, 54)
+        input_rect = pygame.Rect(70, 245, 760, 56)
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == KEYDOWN:
+                if event.key == K_RETURN and text.strip():
+                    return text.strip()
+                if event.key == K_ESCAPE:
+                    return None
+                if event.key == K_BACKSPACE:
+                    text = text[:-1]
+                elif event.unicode and len(text) < 80:
+                    text += event.unicode
+            if event.type == MOUSEBUTTONDOWN:
+                if ok_rect.collidepoint(event.pos) and text.strip():
+                    return text.strip()
+                if cancel_rect.collidepoint(event.pos):
+                    return None
+        screen.fill((14, 17, 24))
+        gui_draw_text(screen, title, (40, 40), title_font, (130, 190, 255), 820)
+        gui_draw_text(screen, prompt, (70, 150), small, (220, 220, 220), 760)
+        pygame.draw.rect(screen, (28, 34, 45), input_rect, border_radius=10)
+        pygame.draw.rect(screen, (110, 140, 180), input_rect, 2, border_radius=10)
+        screen.blit(font.render(text, True, (255, 255, 255)), (input_rect.x + 14, input_rect.y + 14))
+        gui_button(screen, ok_rect, "OK", font, mouse, disabled=not text.strip(), color=(50, 110, 75))
+        gui_button(screen, cancel_rect, "Cancel", font, mouse, color=(105, 65, 65), hover=(135, 80, 80))
+        pygame.display.flip()
+        clock.tick(60)
+
+def gui_show_status(title, message):
+    screen = gui_init()
+    screen.fill((14, 17, 24))
+    gui_draw_text(screen, title, (40, 44), pygame.font.Font(None, 42), (130, 190, 255), 820)
+    gui_draw_text(screen, message, (70, 160), pygame.font.Font(None, 28), (220, 220, 220), 760)
+    pygame.display.flip()
+    pygame.event.pump()
+
+def upload_results_to_gamepadla(stats, tester, joystick, detected_mode, test_type, gamepad_name, connection):
+    test_key = generate_short_id()
+    data = {
+        'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
+        'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
+        'driver': joystick.get_name() if joystick else "N/A", 'connection': connection,
+        'mode': detected_mode if detected_mode else "Unknown",
+        'name': gamepad_name, 'os_name': platform.system(), 'os_version': platform.uname().version,
+        'min_latency': round(stats['min'], 2), 'max_latency': round(stats['max'], 2),
+        'avg_latency': round(stats['avg'], 2), 'jitter': stats['jitter'],
+        'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB',
+        'delay_list': ', '.join(str(round(x, 2)) for x in tester.latency_results),
+        'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
+        'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration']
+    }
+    response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
+    if response.status_code == 200:
+        webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
+        return True, f"Uploaded successfully. Result: https://gamepadla.com/result/{test_key}/"
+    return False, f"Server error. Status code: {response.status_code}"
+
 # ASCII Logo
 print(f" ")
 print("██████╗ ██████╗  ██████╗ ███╗   ███╗███████╗████████╗██╗  ██╗███████╗██╗   ██╗███████╗   " + Fore.LIGHTRED_EX + " █████╗ ██████╗ " + Fore.RESET + "")
@@ -382,25 +602,31 @@ class LatencyTester:
     def render_test_window(self, average_latency=None):
         if not hasattr(self, "_screen") or self._screen is None:
             return
-        self._screen.fill((0, 0, 0))
-        header = "Keep this window on top during testing"
-        surf = self._font.render(header, True, (255, 255, 0))
-        self._screen.blit(surf, (10, 10))
+        self._screen.fill((14, 17, 24))
+        header = "Prometheus 82 - Testing"
+        surf = pygame.font.Font(None, 42).render(header, True, (130, 190, 255))
+        self._screen.blit(surf, (40, 34))
+        hint = self._font.render("Keep this window on top during testing", True, (245, 210, 90))
+        self._screen.blit(hint, (44, 84))
         
         if self.test_type == TEST_TYPE_HARDWARE:
-            surf2 = self._font.render("Calculating...", True, (255, 255, 255))
-            self._screen.blit(surf2, (10, 40))
+            surf2 = self._font.render("Status: Calculating hardware timing...", True, (255, 255, 255))
+            self._screen.blit(surf2, (70, 160))
         elif self.test_type == TEST_TYPE_STICK and getattr(self, "_started", False) and len(self.latency_results) == 0:
-            surf2 = self._font.render("Calibrating...", True, (255, 255, 255))
-            self._screen.blit(surf2, (10, 40))
+            surf2 = self._font.render("Status: Calibrating stick setup...", True, (255, 255, 255))
+            self._screen.blit(surf2, (70, 160))
         else:
             progress_text = f"Progress: {len(self.latency_results)}/{self.iterations}"
-            surf2 = self._font.render(progress_text, True, (200, 200, 200))
-            self._screen.blit(surf2, (10, 40))
+            progress = len(self.latency_results) / max(1, self.iterations)
+            pygame.draw.rect(self._screen, (30, 36, 48), pygame.Rect(70, 220, 760, 34), border_radius=12)
+            pygame.draw.rect(self._screen, (70, 150, 235), pygame.Rect(70, 220, int(760 * progress), 34), border_radius=12)
+            pygame.draw.rect(self._screen, (105, 125, 150), pygame.Rect(70, 220, 760, 34), 2, border_radius=12)
+            surf2 = self._font.render(progress_text, True, (220, 220, 220))
+            self._screen.blit(surf2, (70, 176))
             
         if average_latency is not None:
-            surf3 = self._font.render(f"Average latency: {average_latency:.2f} ms", True, (150, 200, 255))
-            self._screen.blit(surf3, (10, 70))
+            surf3 = pygame.font.Font(None, 36).render(f"Average latency: {average_latency:.2f} ms", True, (150, 200, 255))
+            self._screen.blit(surf3, (70, 290))
         pygame.display.flip()
 
     def check_stick_setup(self, iterations=5):
@@ -951,163 +1177,136 @@ def generate_short_id(length=12):
     """Generates a random short ID"""
     return ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(length))
 
-if __name__ == "__main__":
+def gui_results_screen(stats, tester, joystick, detected_mode, test_type):
+    lines = [
+        f"Min latency: {stats['min']:.2f} ms",
+        f"Max latency: {stats['max']:.2f} ms",
+        f"Average latency: {stats['avg']:.2f} ms",
+        f"Jitter: {stats['jitter']:.2f} ms",
+        f"Iterations: {tester.iterations}",
+        f"Total / valid / invalid: {stats['total_samples']} / {stats['valid_samples']} / {stats['invalid_samples']}",
+        f"Filtered count: {stats['filtered_samples']}",
+        f"Pulse duration: {stats['pulse_duration']:.1f} ms",
+        f"Contact delay: {stats['contact_delay']:.3f} ms",
+    ]
+    if stats['contact_delay'] > 1.2:
+        lines.append(f"Warning: tester inherent latency exceeds recommended 1.2 ms.")
+    if tester.iterations < 200:
+        action = gui_message("Test completed", lines, ("Export CSV", "Exit"), (90, 220, 130))
+        if action == "Export CSV":
+            export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
+            gui_message("CSV export", "Data saved to CSV file.")
+        return
+    action = gui_message("Test completed", lines, ("Upload", "Export CSV", "Both", "Exit"), (90, 220, 130))
+    if action in ("Upload", "Both"):
+        gamepad_name = gui_text_input("Gamepad name", "Enter the gamepad name for Gamepadla.com:", joystick.get_name() if joystick else "")
+        if gamepad_name:
+            connection_idx = gui_select("Connection type", ("Cable", "Dongle", "Bluetooth"), "Select current controller connection.")
+            connection = ("Cable", "Dongle", "Bluetooth")[connection_idx] if connection_idx is not None else "Unset"
+            while True:
+                gui_show_status("Uploading", "Sending results to Gamepadla.com...")
+                try:
+                    ok, message = upload_results_to_gamepadla(stats, tester, joystick, detected_mode, test_type, gamepad_name, connection)
+                except requests.exceptions.RequestException:
+                    ok, message = False, "No internet connection or server is unreachable."
+                if ok:
+                    gui_message("Upload complete", message)
+                    break
+                retry = gui_message("Upload failed", message, ("Retry", "Skip"))
+                if retry != "Retry":
+                    break
+    if action in ("Export CSV", "Both"):
+        export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
+        gui_message("CSV export", "Data saved to CSV file.")
+
+def main():
+    global TEST_ITERATIONS, CONTACT_DELAY
     pygame.init()
     pygame.joystick.init()
     start_async_logger()
     try:
-        if not pygame.display.get_init():
-            pygame.display.init()
-        if pygame.display.get_surface() is None:
-            # Load and set window icon
-            icon = load_window_icon()
-            if icon:
-                pygame.display.set_icon(icon)
-            pygame.display.set_mode((800, 600))
-            pygame.display.set_caption("Prometheus 82 - Testing")
-            pygame.font.init()
-        screen = pygame.display.get_surface()
-        font = pygame.font.Font(None, 28)
-        screen.fill((0, 0, 0))
-        msg1 = "Do not close this window."
-        msg2 = "Go to the console to manage the test."
-        surf1 = font.render(msg1, True, (255, 255, 0))
-        surf2 = font.render(msg2, True, (200, 200, 200))
-        screen.blit(surf1, (20, 20))
-        screen.blit(surf2, (20, 60))
-        pygame.display.flip()
-    except Exception as e:
-        print_error(f"Couldn't create window at startup: {e}")
-    
-    # Cooling period check will be performed after selecting test iterations
-    
-    # Select gamepad
-    joystick = None
-    detected_mode = None
-    joystick_count = pygame.joystick.get_count()
-    if joystick_count:
-        if joystick_count > 1:
-            print("\nAvailable gamepads:")
+        gui_init("Prometheus 82")
+        gui_message("Prometheus 82", [
+            f"Version {VERSION}",
+            "Professional gamepad latency tester with microsecond precision.",
+            "This build uses pygame UI for setup, testing and result actions."
+        ], ("Start",))
+        joystick = None
+        detected_mode = None
+        joystick_count = pygame.joystick.get_count()
+        if joystick_count:
+            joysticks = []
             for i in range(joystick_count):
                 joy = pygame.joystick.Joystick(i)
                 joy.init()
-                print(f"{i + 1}: {joy.get_name()}")
-            try:
-                joystick = pygame.joystick.Joystick(int(input(f"Select gamepad (1-{joystick_count}): ")) - 1)
-                print(f"\nSelected gamepad: {joystick.get_name()}")
-            except (ValueError, IndexError):
-                print("Invalid selection! No gamepad will be used.")
+                joysticks.append(joy)
+            if joystick_count == 1:
+                joystick = joysticks[0]
+            else:
+                idx = gui_select("Select gamepad", [joy.get_name() for joy in joysticks], "Choose the controller to test.")
+                if idx is not None:
+                    joystick = joysticks[idx]
+            if joystick:
+                gui_show_status("Detecting gamepad", f"Selected: {joystick.get_name()}")
+                detected_mode = detect_gamepad_mode(joystick)
         else:
-            joystick = pygame.joystick.Joystick(0)
-            print(f"\nAutoselected gamepad: {joystick.get_name()}")
-        joystick.init()
-        
-        # Detect gamepad mode (XInput, DInput, Sony, Switch)
-        detected_mode = detect_gamepad_mode(joystick)
-        print(f"Detected protocol:  {Fore.GREEN}{detected_mode}{Fore.RESET}")
-    else:
-        print_error("No gamepad found! Some features will be unavailable.")
+            gui_message("No gamepad found", "Gamepad stick and button tests will be unavailable.", ("Continue",), (245, 190, 80))
 
-    # Cooling status before selecting test type
-    check_cooling_period()
-
-    # Select test type
-    print("\nSelect test type:\n1: Gamepad\t- Test analog stick\n2: Gamepad\t- Test button\n3: Keyboard\t- Test key\n4: Hardware\t- Test solenoid and sensor")
-    try:
-        test_choice = int(input("Enter your choice (1-4): "))
-        test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE}.get(test_choice)
-        if not test_type:
-            raise ValueError
+        test_options = ["Gamepad - Test analog stick", "Gamepad - Test button", "Keyboard - Test key", "Hardware - Test solenoid and sensor"]
+        test_types = [TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD, TEST_TYPE_HARDWARE]
+        test_idx = gui_select("Select test type", test_options, "Use number keys, mouse, or arrow keys.")
+        if test_idx is None:
+            return
+        test_type = test_types[test_idx]
         if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) and not joystick:
-            print_error(f"No gamepad found! Can't run {test_type} test.")
-            input("Press Enter to close...")
-            pygame.quit()
-            sys.exit()
+            gui_message("No gamepad", f"Can't run {test_type} test without a gamepad.", ("Exit",), (235, 90, 90))
+            return
         remaining = get_cooling_remaining_seconds(test_type)
         if remaining > 0:
-            print(f"\n{Fore.YELLOW}WARNING: Device has not cooled yet. Running this test now may cause degradation. Remaining cooling time: {remaining} seconds.{Fore.RESET}")
-            while True:
-                choice = input("Continue anyway? (Y/N): ").upper()
-                if choice in ('Y', 'N'):
-                    break
-                print("Invalid choice. Please enter Y or N.")
-            if choice == 'N':
-                print("Test cancelled.")
-                input("Press Enter to close...")
-                pygame.quit()
-                sys.exit()
-    except ValueError:
-        print_error("Invalid input!")
-        input("Press Enter to close...")
-        pygame.quit()
-        sys.exit()
-
-    # Select iterations (affects cooling timeout)
-    if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
-        print("\nSelect number of iterations:\n1: 400 (For Gamepadla.com validation)\n2: 200\n3: 100\nOr enter a custom number between 10 and 400.")
-        try:
-            iter_input = input("Enter your choice (1/2/3 or custom 10-400): ").strip()
-            if iter_input == '1':
+            choice = gui_message("Cooling warning", f"Device has not cooled yet. Remaining cooling time: {remaining} seconds. Continue anyway?", ("Yes", "No"), (245, 190, 80))
+            if choice == "No":
+                return
+        if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
+            iter_idx = gui_select("Number of iterations", ("400 - Gamepadla validation", "200", "100", "Custom 10-400"), "Select measurement count.")
+            if iter_idx is None:
+                return
+            if iter_idx == 0:
                 TEST_ITERATIONS = 400
-            elif iter_input == '2':
+            elif iter_idx == 1:
                 TEST_ITERATIONS = 200
-            elif iter_input == '3':
+            elif iter_idx == 2:
                 TEST_ITERATIONS = 100
             else:
-                custom_iters = int(iter_input)
-                if custom_iters < 10 or custom_iters > 400:
-                    raise ValueError
-                TEST_ITERATIONS = custom_iters
-        except ValueError:
-            print("Invalid iterations input! Please enter 1, 2, 3, or a number between 10 and 400.")
-            input("Press Enter to close...")
-            pygame.quit()
-            sys.exit()
+                custom = gui_text_input("Custom iterations", "Enter a number between 10 and 400:", "400")
+                try:
+                    TEST_ITERATIONS = int(custom)
+                    if TEST_ITERATIONS < 10 or TEST_ITERATIONS > 400:
+                        raise ValueError
+                except Exception:
+                    gui_message("Invalid value", "Please enter a number between 10 and 400.", ("Exit",), (235, 90, 90))
+                    return
 
-        pass
+        ports = [p for p in list_ports.comports() if "bluetooth" not in p.description.lower()]
+        if not ports:
+            gui_message("No COM ports", "No suitable COM ports found. Perhaps Prometheus 82 is not connected.", ("Exit",), (235, 90, 90))
+            return
+        if len(ports) == 1:
+            port = ports[0]
+        else:
+            idx = gui_select("Select COM port", [f"{p.device} - {p.description}" for p in ports], "Choose Prometheus 82 serial port.")
+            if idx is None:
+                return
+            port = ports[idx]
 
-    # Setup serial connection
-    # --- MODIFICATION START ---
-    all_ports = list_ports.comports()
-    # Filter out ports that have "Bluetooth" in their description (case-insensitive)
-    ports = [p for p in all_ports if "bluetooth" not in p.description.lower()]
-
-    if not ports:
-        print_error("No suitable COM ports found. Perhaps you have not connected Prometheus 82 to your computer.")
-        input("Press Enter to close...")
-        pygame.quit()
-        sys.exit()
-    
-    port = None
-    if len(ports) == 1:
-        port = ports[0]
-    else:
-        print("\nAvailable COM ports:")
-        for i, p in enumerate(ports):
-            print(f"{i + 1}: {p.device} - {p.description}")
-        try:
-            selection = int(input(f"Select COM port (1-{len(ports)}): ")) - 1
-            if 0 <= selection < len(ports):
-                port = ports[selection]
-            else:
-                # Trigger the except block for out-of-range numbers
-                raise IndexError("Selection out of range")
-        except (ValueError, IndexError):
-            print("Invalid selection!")
-            input("Press Enter to close...")
-            pygame.quit()
-            sys.exit()
-    # --- MODIFICATION END ---
-
-    try:
+        gui_show_status("Connecting", f"Opening {port.device}...")
         with serial.Serial(port.device, 115200, timeout=1) as ser:
             ser.reset_input_buffer()
             ser.reset_output_buffer()
-            
             start_time = time.time()
             ready = False
             fw_version = None
             while time.time() - start_time < 5:
+                pygame.event.pump()
                 if ser.in_waiting:
                     b = ser.read()
                     if b == b'R':
@@ -1131,169 +1330,60 @@ if __name__ == "__main__":
                 else:
                     time.sleep(0.001)
             if not ready:
-                print_error("Prometheus did not send ready signal ('R'). Check connection or Prometheus code.")
-                input("Press Enter to close...")
-                pygame.quit()
-                sys.exit()
+                gui_message("Connection error", "Prometheus did not send ready signal ('R'). Check connection or firmware.", ("Exit",), (235, 90, 90))
+                return
             if not fw_version:
-                print_error("Arduino firmware version not reported. Please update Arduino.\nhttps://github.com/cakama3a/Prometheus82/blob/main/README.md#how-to-update-the-firmware-of-a-p82-device")
-                input("Press Enter to close...")
-                pygame.quit()
-                sys.exit()
+                gui_message("Firmware error", "Arduino firmware version was not reported. Please update Arduino firmware.", ("Exit",), (235, 90, 90))
+                return
             def _ver_tuple(s):
                 try:
                     return tuple(int(x) for x in s.split("."))
                 except Exception:
                     return (0,)
             if _ver_tuple(fw_version) < _ver_tuple(REQUIRED_ARDUINO_VERSION):
-                print_error(f"Arduino firmware v{fw_version} is outdated. Please update to at least v{REQUIRED_ARDUINO_VERSION}.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
-                input("Press Enter to close...")
-                pygame.quit()
-                sys.exit()
-            print(f"\nPrometheus 82 connected on {port.device} ({port.description}), Arduino FW v{fw_version}")
-
-            # Test Arduino latency and update CONTACT_DELAY
+                gui_message("Firmware outdated", f"Arduino firmware v{fw_version} is outdated. Please update to at least v{REQUIRED_ARDUINO_VERSION}.", ("Exit",), (235, 90, 90))
+                return
+            gui_show_status("Calibrating", f"Connected on {port.device}. Testing Arduino latency...")
             avg_latency = test_arduino_latency(ser)
-            if avg_latency is None:
-                print_error(f"Calibrating Arduino latency failed. Using default CONTACT_DELAY ({CONTACT_DELAY} ms).")
-                
-            else:
+            if avg_latency is not None:
                 CONTACT_DELAY = avg_latency
-                print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
+            else:
+                gui_message("Calibration warning", f"Arduino latency calibration failed. Default contact delay {CONTACT_DELAY} ms will be used.", ("Continue",), (245, 190, 80))
 
             tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, TEST_ITERATIONS)
-            if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
-                print_info("To start the test, switch to the program window and press Start.")
-            
             try:
                 if test_type == TEST_TYPE_HARDWARE:
                     test_passed, timing_warning = tester.test_hardware()
-                    
-                    # Close test window after hardware test completes
-                    if pygame.display.get_init() and pygame.display.get_surface() is not None:
-                        pygame.display.quit()
-                    
-                    if test_passed:
-                        if timing_warning:
-                            print(f"\n{Fore.YELLOW}Hardware functional but with timing warnings. See above for details.{Fore.RESET}")
-                            print(f"{Fore.YELLOW}Ready for stick or button testing, but results may be affected.{Fore.RESET}")
-                        else:
-                            print(f"{Fore.GREEN}Hardware is fully functional. Ready for stick or button testing.{Fore.RESET}")
+                    if test_passed and not timing_warning:
+                        gui_message("Hardware test passed", "Hardware is fully functional. Ready for stick or button testing.", ("OK",), (90, 220, 130))
+                    elif test_passed:
+                        gui_message("Hardware warning", "Hardware is functional, but timing warnings were detected. Results may be affected.", ("OK",), (245, 190, 80))
                     else:
-                        print(f"{Fore.RED}Hardware issues detected. Please check connections and try again.{Fore.RESET}")
+                        gui_message("Hardware test failed", "Hardware issues detected. Please check connections and try again.", ("OK",), (235, 90, 90))
                 else:
-                    if test_type == TEST_TYPE_BUTTON:
-                        print("\nIn the test window, press Start, then press the gamepad button you want to measure.")
-                    elif test_type == TEST_TYPE_STICK:
-                        print(f"\n{Fore.YELLOW}Note: Stick latency testing requires a reverse sensor.{Fore.RESET}")
-                        print(f"See guide: {Fore.LIGHTRED_EX}https://youtu.be/MLsXo8Si730{Fore.RESET}")
+                    if test_type == TEST_TYPE_STICK:
+                        gui_message("Stick test", "Stick latency testing requires a reverse sensor. Press Start in the next window when ready.", ("Continue",))
+                    elif test_type == TEST_TYPE_BUTTON:
+                        gui_message("Button test", "Press Start in the next window, then press the gamepad button you want to measure.", ("Continue",))
                     elif test_type == TEST_TYPE_KEYBOARD:
-                        print("\nKeyboard key will be selected when the test window opens. Press your key at the prompt.")
-                    
+                        gui_message("Keyboard test", "Press the key to test in the next window, then press Start.", ("Continue",))
                     tester.test_loop()
-                    
-                    # Close test window after test completes
-                    if pygame.display.get_init() and pygame.display.get_surface() is not None:
-                        pygame.display.quit()
-                    
                     stats = tester.get_statistics()
                     if stats:
                         save_test_completion_time(tester.iterations, test_type)
-                        print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
-                        print(f"\n{Style.BRIGHT}{Fore.CYAN}" + "="*15 + f"LATENCY" + "="*15 + f"{Fore.RESET}{Style.RESET_ALL}")
-                        print(f"{'Min latency:':<26}{stats['min']:>8.2f} ms")
-                        print(f"{'Max latency:':<26}{stats['max']:>8.2f} ms")
-                        print(f"{Style.BRIGHT}{Fore.CYAN}" + f"{'Average latency:':<26}{stats['avg']:>8.2f} ms{Fore.RESET}" + f"{Style.RESET_ALL}")
-                        print(f"{'Jitter:':<26}{stats['jitter']:>8.2f} ms")
-                        print(f"{Style.BRIGHT}{Fore.CYAN}" + "="*37 + f"{Fore.RESET}{Style.RESET_ALL}")
-                        print(f"\n{Style.BRIGHT}Measurement Results{Style.RESET_ALL}")
-                        print(f"{'Iterations:':<26}{tester.iterations:>8}")
-                        print(f"{'Total measurements:':<26}{stats['total_samples']:>8}")
-                        print(f"{'Valid measurements:':<26}{stats['valid_samples']:>8}")
-                        print(f"{'Invalid measurements:':<26}{stats['invalid_samples']:>8} (>{stats['pulse_duration']*(RATIO-1):.1f} ms)")
-                        print(f"{'Filtered count:':<26}{stats['filtered_samples']:>8}")
-                        print(f"{'Pulse duration:':<26}{stats['pulse_duration']:>8.1f} ms")
-                        print(f"{'Contact delay:':<26}{stats['contact_delay']:>8.3f} ms")
-        
-                        if stats['contact_delay'] > 1.2:
-                            print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
-
-                        # Action selection with retry on invalid input
-                        while True:
-                            if tester.iterations < 200:
-                                print("\nSelect action:\n1: Export to CSV\n2: Exit")
-                                try:
-                                    user_input = int(input("Enter your choice (1-2): "))
-                                    if user_input == 1:
-                                        choice = 2
-                                    elif user_input == 2:
-                                        choice = 4
-                                    else:
-                                        print("Invalid selection! Please enter 1 or 2.")
-                                        continue
-                                except ValueError:
-                                    print_error("Invalid input! Please enter 1 or 2.")
-                                    continue
-                            else:
-                                print("\nSelect action:\n1: Open on Gamepadla.com\n2: Export to CSV\n3: Upload to Gamepadla.com AND Export to CSV\n4: Exit")
-                                try:
-                                    choice = int(input("Enter your choice (1-4): "))
-                                    if choice not in [1, 2, 3, 4]:
-                                        print("Invalid selection! Please enter 1, 2, 3, or 4.")
-                                        continue
-                                except ValueError:
-                                    print_error("Invalid input! Please enter 1, 2, 3, or 4.")
-                                    continue
-
-                            if choice == 1 or choice == 3:
-                                while True:
-                                    test_key = generate_short_id()
-                                    gamepad_name = input("Enter gamepad name: ")
-                                    connection = {"1": "Cable", "2": "Dongle", "3": "Bluetooth"}.get(
-                                        input("Current connection (1. Cable, 2. Dongle, 3. Bluetooth): "), "Unset")
-                                    data = {
-                                        'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
-                                        'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
-                                        'driver': joystick.get_name() if joystick else "N/A", 'connection': connection,
-                                        'mode': detected_mode if detected_mode else "Unknown",
-                                        'name': gamepad_name, 'os_name': platform.system(), 'os_version': platform.uname().version,
-                                        'min_latency': round(stats['min'], 2), 'max_latency': round(stats['max'], 2),
-                                        'avg_latency': round(stats['avg'], 2), 'jitter': stats['jitter'],
-                                        'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB', # mathod name is not a mistake!
-                                        'delay_list': ', '.join(str(round(x, 2)) for x in tester.latency_results),
-                                        'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
-                                        'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration']
-                                    }
-                                    try:
-                                        response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
-                                        if response.status_code == 200:
-                                            print("Test results successfully sent to the server.")
-                                            webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
-                                            # If choice 3, also export to CSV
-                                            if choice == 3:
-                                                export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
-                                            break
-                                        print(f"\nServer error. Status code: {response.status_code}")
-                                    except requests.exceptions.RequestException:
-                                        print("\nNo internet connection or server is unreachable")
-                                    if input("\nDo you want to try sending the data again? (Y/N): ").upper() != 'Y':
-                                        # If choice 3 and user doesn't want to retry, still save CSV
-                                        if choice == 3:
-                                            export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
-                                        break
-                            elif choice == 2:
-                                export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
-                            elif choice == 4:
-                                break
-                            
-                            break
+                        gui_results_screen(stats, tester, joystick, detected_mode, test_type)
+                    else:
+                        gui_message("No results", "Test finished without valid latency measurements.", ("OK",), (245, 190, 80))
             except KeyboardInterrupt:
-                print("\nTest interrupted by user.")
+                gui_message("Interrupted", "Test interrupted by user.", ("OK",), (245, 190, 80))
     except serial.SerialException as e:
-        print_error(f"Opening port failed: {e}")
+        gui_message("Serial error", f"Opening port failed: {e}", ("Exit",), (235, 90, 90))
     except Exception as e:
-        print_error(f"While setting up COM port: {e}")
+        gui_message("Error", f"Unexpected error: {e}", ("Exit",), (235, 90, 90))
     finally:
         stop_async_logger()
+        gui_wait_for_quit()
         pygame.quit()
-        input("Press Enter to exit...")
+
+if __name__ == "__main__":
+    main()
