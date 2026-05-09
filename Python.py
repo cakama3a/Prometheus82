@@ -94,6 +94,7 @@ STICK_SETUP_DEFLECTION_WAIT = 0.250
 STICK_SETUP_FALLBACK_PULSE_DURATION = 80
 STICK_SETUP_FALLBACK_DEFLECTION_WAIT = 0.500
 STICK_SETUP_FALLBACK_MAX_ITERATIONS = 200
+STICK_MAX_CONSECUTIVE_TIMEOUTS = 8
 
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
@@ -307,6 +308,8 @@ class LatencyTester:
         self._started = False
         self._last_render_time = 0.0
         self._stick_runtime_fallback_used = False
+        self._consecutive_timeouts = 0
+        self.test_aborted = False
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
         self.iterations = iterations
 
@@ -809,6 +812,7 @@ class LatencyTester:
             if latency_ms <= self.max_latency_us / 1000.0:
                 self.latency_results.append(latency_ms)
                 self.latency_sum += latency_ms
+                self._consecutive_timeouts = 0
                 self.log_progress(latency_ms)
             else:
                 self.invalid_measurements += 1
@@ -868,8 +872,14 @@ class LatencyTester:
             self.check_input()
             if self.measuring and current_time_us - self.start_time_us > self.max_latency_us:
                 self.invalid_measurements += 1
+                self._consecutive_timeouts += 1
                 print(f"Invalid measurement: no input detected within {self.max_latency_us/1000:.2f} ms")
                 self.measuring = False
+                if self.test_type == TEST_TYPE_STICK and self._consecutive_timeouts >= STICK_MAX_CONSECUTIVE_TIMEOUTS:
+                    print_error("Test stopped: too many consecutive missed stick inputs. Make sure the test window is focused and receiving gamepad input before restarting. Also check solenoid position and stick deflection to avoid overheating the solenoid.")
+                    self.test_aborted = True
+                    self.close_test_window()
+                    return
                 if self.test_type == TEST_TYPE_STICK and not self._stick_runtime_fallback_used and self.pulse_duration_us < STICK_SETUP_FALLBACK_PULSE_DURATION * 1000:
                     self._stick_runtime_fallback_used = True
                     print_info(f"Switching to stronger solenoid pulse ({STICK_SETUP_FALLBACK_PULSE_DURATION} ms) for remaining measurements.")
@@ -1218,6 +1228,10 @@ if __name__ == "__main__":
                     # Close test window after test completes
                     if pygame.display.get_init() and pygame.display.get_surface() is not None:
                         pygame.display.quit()
+                    if getattr(tester, "test_aborted", False):
+                        input("Press Enter to exit...")
+                        pygame.quit()
+                        sys.exit()
                     
                     stats = tester.get_statistics()
                     if stats:
