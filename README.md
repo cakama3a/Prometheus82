@@ -52,6 +52,9 @@ This section describes potential measurement deviations caused by the physical p
 #### Device Consistency
 The variation between different Prometheus 82 units is minimal (approximately **0.012 ms**), which ensures consistent results across different testers. This was verified in a comprehensive [test with 5 devices](https://www.reddit.com/r/GPDL/comments/1mdwp2c/testing_the_accuracy_of_5_prometheus_82_devices/) combined in various configurations.
 
+#### Real-world Verification (8000Hz Devices)
+The precision of Prometheus 82 is further confirmed by testing high-performance 8K devices. For example, the **GameSir G7 Pro 8K Aimlabs Edition** was tested by different independent users worldwide using the latest hardware revision, yielding results of **0.6 ms** and **0.68 ms**. This remarkably small discrepancy of only **0.08 ms** demonstrates the method's excellence and its ability to accurately measure sub-1ms latencies without being affected by high polling rates.
+
 #### Measurement Tolerances
 
 * **Analog Sticks:** Permissible error **±1 ms**.
