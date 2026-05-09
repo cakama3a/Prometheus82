@@ -1043,7 +1043,7 @@ if __name__ == "__main__":
             pygame.quit()
             sys.exit()
         remaining = get_cooling_remaining_seconds(test_type)
-        if remaining > 0:
+        if remaining > 0 and (test_type != TEST_TYPE_STICK or remaining >= 40):
             print(f"\n{Fore.YELLOW}WARNING: Device has not cooled yet. Running this test now may cause degradation. Remaining cooling time: {remaining} seconds.{Fore.RESET}")
             while True:
                 choice = input("Continue anyway? (Y/N): ").upper()
