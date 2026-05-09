@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.6"                 # Updated version with microsecond support
+VERSION = "5.2.4.7"                 # Updated version with microsecond support
 
 import time
 import platform
