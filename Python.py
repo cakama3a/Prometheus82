@@ -1204,8 +1204,12 @@ if __name__ == "__main__":
                     if test_type == TEST_TYPE_BUTTON:
                         print("\nIn the test window, press Start, then press the gamepad button you want to measure.")
                     elif test_type == TEST_TYPE_STICK:
-                        print(f"\n{Fore.YELLOW}Note: Stick latency testing requires a reverse sensor.{Fore.RESET}")
-                        print(f"See guide: {Fore.LIGHTRED_EX}https://youtu.be/MLsXo8Si730{Fore.RESET}")
+                        print(f"\n{Fore.YELLOW}Stick test setup:{Fore.RESET}")
+                        print("Use a reverse sensor for stick latency testing.")
+                        print("Set the solenoid tip about 1-2 mm from the stick in the neutral position.")
+                        print("Avoid a large gap: extra acceleration before contact can cause stick bounce and high jitter.")
+                        print("The sensor button should trigger near the end of stick travel.")
+                        print(f"Guide: {Fore.LIGHTRED_EX}https://youtu.be/MLsXo8Si730{Fore.RESET}")
                     elif test_type == TEST_TYPE_KEYBOARD:
                         print("\nKeyboard key will be selected when the test window opens. Press your key at the prompt.")
                     
