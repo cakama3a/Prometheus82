@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.8"                 # Updated version with microsecond support
+VERSION = "5.2.4.7"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -21,7 +21,6 @@ import csv
 import ctypes
 import threading
 import queue
-import math
 
 # Async logging helpers placed before main so they exist at startup
 ASYNC_LOG_QUEUE = None
@@ -96,7 +95,6 @@ STICK_SETUP_FALLBACK_PULSE_DURATION = 80
 STICK_SETUP_FALLBACK_DEFLECTION_WAIT = 0.500
 STICK_SETUP_FALLBACK_MAX_ITERATIONS = 200
 STICK_MAX_CONSECUTIVE_TIMEOUTS = 8
-MAX_CONSECUTIVE_TIMEOUTS = 15        # Max missed inputs before stopping for any test
 
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
@@ -124,20 +122,42 @@ def check_cooling_period(test_type=None):
     try:
         if test_type is None:
             warnings = []
-            for t in (TEST_TYPE_BUTTON, TEST_TYPE_STICK):
-                rem = get_cooling_remaining_seconds(t)
-                if rem > 0:
-                    label = "STICK" if t == TEST_TYPE_STICK else "BUTTON"
-                    warnings.append(f"{label}: {rem} seconds")
+            for label, path in (("BUTTON", LAST_TEST_TIME_FILE_BUTTON), ("STICK", LAST_TEST_TIME_FILE_STICK)):
+                if os.path.exists(path):
+                    with open(path) as f:
+                        content = f.read().strip()
+                        parts = content.split(',')
+                        if len(parts) == 2:
+                            last_time = float(parts[0])
+                            cooling_seconds = float(parts[1])
+                        else:
+                            last_time = float(content)
+                            cooling_seconds = COOLING_PERIOD_SECONDS
+                        remaining = max(0, int(cooling_seconds - (time.time() - last_time)))
+                        if remaining > 0:
+                            warnings.append(f"{label}: {remaining} seconds")
             if warnings:
                 print(f"\n{Fore.YELLOW}WARNING: Cooling required — " + "; ".join(warnings) + f".{Fore.RESET}")
+            return True
         else:
-            remaining = get_cooling_remaining_seconds(test_type)
-            if remaining > 0:
-                label = "STICK" if test_type == TEST_TYPE_STICK else "BUTTON"
-                print(f"\n{Fore.YELLOW}WARNING: Cooling required ({label}): {remaining} seconds remaining.{Fore.RESET}")
-        return True
-    except Exception:
+            path = LAST_TEST_TIME_FILE_STICK if test_type == TEST_TYPE_STICK else LAST_TEST_TIME_FILE_BUTTON
+            if not os.path.exists(path):
+                return True
+            with open(path) as f:
+                content = f.read().strip()
+                parts = content.split(',')
+                if len(parts) == 2:
+                    last_time = float(parts[0])
+                    cooling_seconds = float(parts[1])
+                else:
+                    last_time = float(content)
+                    cooling_seconds = COOLING_PERIOD_SECONDS
+                remaining = max(0, int(cooling_seconds - (time.time() - last_time)))
+                if remaining > 0:
+                    label = "STICK" if test_type == TEST_TYPE_STICK else "BUTTON"
+                    print(f"\n{Fore.YELLOW}WARNING: Cooling required ({label}): {remaining} seconds remaining.{Fore.RESET}")
+                return True
+    except (ValueError, IOError):
         return True
 
 def get_cooling_remaining_seconds(test_type):
@@ -248,7 +268,7 @@ def load_window_icon():
     return None
 
 # ASCII Logo
-print()
+print(f" ")
 print("██████╗ ██████╗  ██████╗ ███╗   ███╗███████╗████████╗██╗  ██╗███████╗██╗   ██╗███████╗   " + Fore.LIGHTRED_EX + " █████╗ ██████╗ " + Fore.RESET + "")
 print("██╔══██╗██╔══██╗██╔═══██╗████╗ ████║██╔════╝╚══██╔══╝██║  ██║██╔════╝██║   ██║██╔════╝   " + Fore.LIGHTRED_EX + "██╔══██╗╚════██╗" + Fore.RESET + "")
 print("██████╔╝██████╔╝██║   ██║██╔████╔██║█████╗     ██║   ███████║█████╗  ██║   ██║███████╗   " + Fore.LIGHTRED_EX + "╚█████╔╝ █████╔╝" + Fore.RESET + "")
@@ -257,17 +277,17 @@ print("██║     ██║  ██║╚██████╔╝██║ �
 print("╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝   " + Fore.LIGHTRED_EX + " ╚════╝ ╚══════╝" + Fore.RESET + "")                                                                                                 
 print(f"v.{VERSION} by John Punch (" + Fore.LIGHTRED_EX + "https://gamepadla.com" + Fore.RESET + ")")
 print(f"{Fore.YELLOW}Commercial use requires a license: https://github.com/cakama3a/Prometheus82/blob/main/LICENSE.md{Fore.RESET}")
-print()
+print(f" ")
 print(f"{Fore.CYAN}Professional gamepad latency tester with microsecond precision.{Fore.RESET}")
 print(f"{Fore.CYAN}Measures button and stick response time using Prometheus 82 hardware tester.{Fore.RESET}")
-print()
+print(f" ")
 print(f"Support the project: " + Fore.LIGHTRED_EX + "https://ko-fi.com/gamepadla" + Fore.RESET + "")
 print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_tU-7VqA" + Fore.RESET + "")
 print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometheus82" + Fore.RESET + "")
 print(f"{Style.DIM}To open links, press CTRL+Click{Style.RESET_ALL}")
 
 class LatencyTester:
-    def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY, iterations=TEST_ITERATIONS, protocol=None):
+    def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY, iterations=TEST_ITERATIONS):
         self.joystick = gamepad
         self.serial = serial_port
         self.test_type = test_type
@@ -276,8 +296,6 @@ class LatencyTester:
         self.start_time_us = 0  # Start time in microseconds
         self.last_trigger_time_us = 0  # Last trigger time in microseconds
         self.stick_axes = None
-        self.primary_axis = None  # Calibrated primary axis from first solenoid strike
-        self.axis_direction = None  # Direction of primary axis (1 for positive, -1 for negative)
         self.button_to_test = None
         self.key_to_test = None
         self.invalid_measurements = 0
@@ -292,10 +310,8 @@ class LatencyTester:
         self._stick_runtime_fallback_used = False
         self._consecutive_timeouts = 0
         self.test_aborted = False
-        self._protocol = protocol
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
         self.iterations = iterations
-        self._bg_surface = None  # Pre-rendered background
 
     def limit_iterations_for_fallback_pulse(self):
         if self.test_type == TEST_TYPE_STICK and self.iterations > STICK_SETUP_FALLBACK_MAX_ITERATIONS:
@@ -327,20 +343,11 @@ class LatencyTester:
         if getattr(self, "_started", False):
             return
         self._started = False
-        
-        # UI Colors
-        BG_COLOR = (10, 12, 18)
-        ACCENT_COLOR = (0, 200, 255)
-        
-        start_rect = pygame.Rect(0, 0, 240, 70)
-        start_rect.center = (self._screen.get_width() // 2, self._screen.get_height() // 2 + 50)
-        
-        title_font = pygame.font.Font(None, 72)
-        info_font = pygame.font.Font(None, 36)
-        
+        start_rect = pygame.Rect(0, 0, 220, 64)
+        start_rect.center = (self._screen.get_width() // 2, self._screen.get_height() // 2)
+        info_font = pygame.font.Font(None, 32)
         clock = pygame.time.Clock()
         while not self._started:
-            time_val = time.time()
             for event in pygame.event.get():
                 if event.type == QUIT:
                     pygame.quit()
@@ -353,185 +360,50 @@ class LatencyTester:
                 if event.type == MOUSEBUTTONDOWN:
                     if start_rect.collidepoint(event.pos):
                         self._started = True
-            
-            # Background gradient
-            for y in range(0, 600, 2):
-                c = (10 + y//60, 12 + y//50, 18 + y//30)
-                pygame.draw.rect(self._screen, c, (0, y, 800, 2))
-                
-            # Animated title glow
-            glow_alpha = int(abs(math.sin(time_val * 2)) * 100) + 155
-            title_surf = title_font.render("PROMETHEUS 82", True, (0, glow_alpha, 255))
-            title_rect = title_surf.get_rect(center=(400, 150))
-            self._screen.blit(title_surf, title_rect)
-            
-            # Subtitle
-            sub_text = "READY TO START"
-            sub_surf = info_font.render(sub_text, True, (200, 200, 200))
-            self._screen.blit(sub_surf, sub_surf.get_rect(center=(400, 210)))
-
+            self._screen.fill((0, 0, 0))
+            banner = info_font.render("Keep this window on top during testing", True, (255, 255, 0))
+            self._screen.blit(banner, (20, 20))
             if self.test_type == TEST_TYPE_KEYBOARD:
-                msg = "Press any key to test, then press Start"
+                msg = "Press the key to test, then press Start"
                 if self.key_to_test is not None:
                     try:
                         key_name = pygame.key.name(self.key_to_test)
                     except Exception:
                         key_name = str(self.key_to_test)
-                    msg = f"Selected key: {key_name.upper()}"
-                msg_surf = info_font.render(msg, True, (0, 255, 150))
-                self._screen.blit(msg_surf, msg_surf.get_rect(center=(400, 280)))
-
-            # Button hover effect
-            mouse_pos = pygame.mouse.get_pos()
-            btn_color = (0, 180, 100) if start_rect.collidepoint(mouse_pos) else (0, 140, 70)
-            
-            # Draw button with glow
-            for i in range(5):
-                alpha_rect = start_rect.inflate(i*2, i*2)
-                pygame.draw.rect(self._screen, (0, 50, 20), alpha_rect, border_radius=15)
-                
-            pygame.draw.rect(self._screen, btn_color, start_rect, border_radius=12)
-            label = info_font.render("START TEST", True, (255, 255, 255))
+                    msg = f"Selected key: {key_name}. Press Start to begin"
+                self._screen.blit(info_font.render(msg, True, (200, 200, 200)), (20, 60))
+            pygame.draw.rect(self._screen, (50, 150, 50), start_rect, border_radius=12)
+            label = info_font.render("Start", True, (255, 255, 255))
             label_pos = label.get_rect(center=start_rect.center)
             self._screen.blit(label, label_pos)
-            
             pygame.display.flip()
             clock.tick(60)
 
-
-
-    def _pre_render_bg(self):
-        """Pre-renders the static background and header to save CPU"""
-        if self._bg_surface is not None:
-            return
-        self._bg_surface = pygame.Surface((800, 600))
-        # Background gradient
-        for y in range(0, 600, 4):
-            c = (10 + y//100, 12 + y//80, 18 + y//60)
-            pygame.draw.rect(self._bg_surface, c, (0, y, 800, 4))
-        # Header (Height 60)
-        pygame.draw.rect(self._bg_surface, (30, 35, 50), (0, 0, 800, 60))
-        pygame.draw.line(self._bg_surface, (60, 70, 90), (0, 60), (800, 60), 1)
-        title_font = pygame.font.Font(None, 32)
-        ACCENT_BLUE = (0, 180, 255)
-        header_surf = title_font.render("PROMETHEUS 82 | PERFORMANCE MONITOR", True, ACCENT_BLUE)
-        # Vertically center header text
-        self._bg_surface.blit(header_surf, (25, 30 - header_surf.get_height() // 2))
+    def close_test_window(self):
+        return
 
     def render_test_window(self, average_latency=None):
         if not hasattr(self, "_screen") or self._screen is None:
             return
-            
-        # UI Colors
-        ACCENT_BLUE = (0, 180, 255)
-        ACCENT_CYAN = (0, 255, 220)
-        TEXT_WHITE = (255, 255, 255)
-        TEXT_GRAY = (180, 190, 210)
-        
-        # Draw pre-rendered background
-        self._pre_render_bg()
-        self._screen.blit(self._bg_surface, (0, 0))
-        
-        title_font = pygame.font.Font(None, 32)
-        
-        # Test Status Card
-        card_rect = pygame.Rect(25, 80, 750, 100)
-        pygame.draw.rect(self._screen, (20, 25, 35), card_rect, border_radius=15)
-        pygame.draw.rect(self._screen, (50, 60, 80), card_rect, width=1, border_radius=15)
+        self._screen.fill((0, 0, 0))
+        header = "Keep this window on top during testing"
+        surf = self._font.render(header, True, (255, 255, 0))
+        self._screen.blit(surf, (10, 10))
         
         if self.test_type == TEST_TYPE_HARDWARE:
-            status_text = "HARDWARE TEST: RUNNING..."
-            status_color = (255, 180, 0)
+            surf2 = self._font.render("Calculating...", True, (255, 255, 255))
+            self._screen.blit(surf2, (10, 40))
         elif self.test_type == TEST_TYPE_STICK and getattr(self, "_started", False) and len(self.latency_results) == 0:
-            status_text = "STICK CALIBRATION IN PROGRESS..."
-            status_color = ACCENT_CYAN
+            surf2 = self._font.render("Calibrating...", True, (255, 255, 255))
+            self._screen.blit(surf2, (10, 40))
         else:
-            status_text = f"{self.test_type.upper()} TEST: {len(self.latency_results)} / {self.iterations}"
-            status_color = TEXT_WHITE
+            progress_text = f"Progress: {len(self.latency_results)}/{self.iterations}"
+            surf2 = self._font.render(progress_text, True, (200, 200, 200))
+            self._screen.blit(surf2, (10, 40))
             
-        status_surf = title_font.render(status_text, True, status_color)
-        self._screen.blit(status_surf, (50, 105))
-        
-        # Progress Bar with Glow and Animation
-        bar_x, bar_y = 50, 145
-        bar_w, bar_h = 700, 12
-        pygame.draw.rect(self._screen, (40, 45, 55), (bar_x, bar_y, bar_w, bar_h), border_radius=6)
-        
-        if self.iterations > 0:
-            progress_pct = len(self.latency_results) / self.iterations
-            progress_w = int(progress_pct * bar_w)
-            if progress_w > 0:
-                # Gradient for progress bar
-                pygame.draw.rect(self._screen, ACCENT_BLUE, (bar_x, bar_y, progress_w, bar_h), border_radius=6)
-                # Moving light effect (fixed period to prevent jumping)
-                light_pos = int((time.time() * 400) % (bar_w + 150)) - 100
-                if 0 < light_pos < progress_w:
-                    light_rect = pygame.Rect(bar_x + light_pos, bar_y, 40, bar_h)
-                    pygame.draw.rect(self._screen, (100, 220, 255), light_rect.clip(pygame.Rect(bar_x, bar_y, progress_w, bar_h)), border_radius=6)
-
-        # Latency Dashboard
         if average_latency is not None:
-            dash_rect = pygame.Rect(25, 200, 750, 360)
-            pygame.draw.rect(self._screen, (15, 20, 28), dash_rect, border_radius=20)
-            pygame.draw.rect(self._screen, (40, 50, 70), dash_rect, width=1, border_radius=20)
-            
-            # Glow for latency text
-            label_font = pygame.font.Font(None, 36)
-            lat_label = label_font.render("AVERAGE RESPONSE TIME", True, TEXT_GRAY)
-            self._screen.blit(lat_label, (dash_rect.centerx - lat_label.get_width()//2, 250))
-            
-            val_font = pygame.font.Font(None, 120)
-            val_text = f"{average_latency:.2f}"
-            unit_text = "ms"
-            
-            val_surf = val_font.render(val_text, True, ACCENT_CYAN)
-            unit_font = pygame.font.Font(None, 48)
-            unit_surf = unit_font.render(unit_text, True, ACCENT_BLUE)
-            
-            total_w = val_surf.get_width() + unit_surf.get_width() + 8
-            start_x = dash_rect.centerx - total_w // 2
-            
-            # Align ms precisely to the baseline of the large digits
-            # val_y is 320. unit_y = val_y + val_height - unit_height
-            val_y = 320
-            unit_y = val_y + (val_surf.get_height() - unit_surf.get_height()) - 5 # Manual adjustment for font padding
-            
-            self._screen.blit(val_surf, (start_x, val_y))
-            self._screen.blit(unit_surf, (start_x + val_surf.get_width() + 8, unit_y))
-            
-            # Stats breakdown with fixed positions to prevent jumping
-            if self.latency_results:
-                min_lat = min(self.latency_results)
-                max_lat = max(self.latency_results)
-                
-                # Render each stat at a fixed offset
-                min_surf = label_font.render(f"MIN: {min_lat:.2f}ms", True, TEXT_GRAY)
-                max_surf = label_font.render(f"MAX: {max_lat:.2f}ms", True, TEXT_GRAY)
-                tot_surf = label_font.render(f"TOTAL: {len(self.latency_results)}", True, TEXT_GRAY)
-                
-                # Positions based on thirds of the card
-                self._screen.blit(min_surf, (100, 480))
-                self._screen.blit(max_surf, (340, 480))
-                self._screen.blit(tot_surf, (580, 480))
-            
-        # Redesigned "LIVE" Badge (vertically centered in header)
-        pulse = int(abs(math.sin(time.time() * 2)) * 50) + 100
-        badge_rect = pygame.Rect(710, 16, 65, 28)
-        pygame.draw.rect(self._screen, (30, 0, 0), badge_rect, border_radius=6)
-        pygame.draw.rect(self._screen, (pulse, 20, 40), badge_rect, width=1, border_radius=6)
-        
-        # Red dot inside badge
-        pygame.draw.circle(self._screen, (255, 40, 60), (722, 30), 4)
-        
-        badge_font = pygame.font.Font(None, 24)
-        badge_surf = badge_font.render("LIVE", True, (255, 60, 80))
-        self._screen.blit(badge_surf, (732, 23))
-
-        # Instruction at the bottom
-        hint_font = pygame.font.Font(None, 24)
-        hint_surf = hint_font.render("KEEP WINDOW ACTIVE AND ON TOP TO CAPTURE INPUTS", True, (150, 150, 50))
-        self._screen.blit(hint_surf, (400 - hint_surf.get_width() // 2, 575))
-        
+            surf3 = self._font.render(f"Average latency: {average_latency:.2f} ms", True, (150, 200, 255))
+            self._screen.blit(surf3, (10, 70))
         pygame.display.flip()
 
     def check_stick_setup(self, iterations=5):
@@ -539,12 +411,6 @@ class LatencyTester:
             return None
         if not self.serial:
             return None
-
-        # Calibrate axis orientation using first solenoid strike
-        if self.primary_axis is None:
-            cal_ok = self.calibrate_axis_orientation()
-            if not cal_ok:
-                print_error("Axis calibration failed. Attempting to continue with auto-detection.")
 
         ok = self._check_stick_setup_once(iterations, STICK_SETUP_DEFLECTION_WAIT, report_errors=False)
         if ok:
@@ -587,24 +453,17 @@ class LatencyTester:
                     pygame.event.pump()
                     
                 if self.joystick:
-                    # Use calibrated primary axis if available, otherwise check all stick axes
-                    if self.primary_axis is not None:
-                        current_val = self.joystick.get_axis(self.primary_axis)
-                        val = abs(current_val)
-                        if val > max_deflection:
-                            max_deflection = val
-                    else:
-                        axes = self.stick_axes if self.stick_axes else range(self.joystick.get_numaxes())
-                        for axis in axes:
-                            current_val = self.joystick.get_axis(axis)
-                            if self.stick_axes:
-                                val = abs(current_val)
-                                if val > max_deflection:
-                                    max_deflection = val
-                            elif axis < len(baseline_axes) and abs(current_val - baseline_axes[axis]) > 0.05:
-                                val = abs(current_val)
-                                if val > max_deflection:
-                                    max_deflection = val
+                    axes = self.stick_axes if self.stick_axes else range(self.joystick.get_numaxes())
+                    for axis in axes:
+                        current_val = self.joystick.get_axis(axis)
+                        if self.stick_axes:
+                            val = abs(current_val)
+                            if val > max_deflection:
+                                max_deflection = val
+                        elif axis < len(baseline_axes) and abs(current_val - baseline_axes[axis]) > 0.05:
+                            val = abs(current_val)
+                            if val > max_deflection:
+                                max_deflection = val
 
             if self.serial:
                 self.serial.write(b'T')
@@ -716,92 +575,10 @@ class LatencyTester:
         print_error("Failed to set pulse duration after 3 attempts. Continuing with default value.")
         return False
 
-    def calibrate_axis_orientation(self):
-        """Uses first solenoid strike to determine which axis corresponds to the tested direction.
-        This solves the issue where physical direction (e.g., left) might not match
-        programmatic axis mapping (e.g., axis 0 might be programmed as down).
-        Uses protocol-aware axis pairing to match Stick Tracer standard.
-        """
-        if not self.joystick or not self.serial:
-            return False
-        
-        print("\nCalibrating axis orientation with first solenoid strike...")
-        
-        # Get baseline axis values before strike
-        pygame.event.pump()
-        baseline_axes = [self.joystick.get_axis(a) for a in range(self.joystick.get_numaxes())]
-        
-        # Fire solenoid
-        try:
-            self.serial.reset_input_buffer()
-            self.serial.reset_output_buffer()
-            self.serial.write(b'T')
-            self.serial.flush()
-        except Exception:
-            return False
-        
-        # Monitor axes for changes after strike
-        max_change = 0.0
-        changed_axis = -1
-        axis_dir = 0
-        
-        start_time = time.perf_counter()
-        while time.perf_counter() - start_time < 0.5:  # Monitor for 500ms
-            pygame.event.pump()
-            for axis in range(self.joystick.get_numaxes()):
-                current_val = self.joystick.get_axis(axis)
-                change = abs(current_val - baseline_axes[axis])
-                if change > max_change:
-                    max_change = change
-                    changed_axis = axis
-                    axis_dir = 1 if current_val > baseline_axes[axis] else -1
-            time.sleep(0.001)
-        
-        if changed_axis >= 0 and max_change > 0.1:
-            self.primary_axis = changed_axis
-            self.axis_direction = axis_dir
-            
-            # Determine partner axis using protocol-aware pairs (Stick Tracer standard).
-            # DInput uses pairs (0,1) and (3,5) — not the even/odd rule used for XInput.
-            partner_axis = -1
-            axis_pairs = INPUT_MODE_AXIS_PAIRS.get(self._protocol, INPUT_MODE_AXIS_PAIRS["Default"])
-            for pair in axis_pairs:
-                if changed_axis in pair:
-                    partner_axis = pair[0] if pair[1] == changed_axis else pair[1]
-                    break
-            # Fallback: even/odd heuristic if no pair matched
-            if partner_axis < 0:
-                if changed_axis % 2 == 0:
-                    partner_axis = changed_axis + 1
-                else:
-                    partner_axis = changed_axis - 1
-            
-            if 0 <= partner_axis < self.joystick.get_numaxes():
-                self.stick_axes = sorted([changed_axis, partner_axis])
-            else:
-                self.stick_axes = [changed_axis]
-            
-            direction_str = "positive" if axis_dir > 0 else "negative"
-            print(f"Axis calibration complete: Primary axis {changed_axis} (direction: {direction_str})")
-            print(f"Stick axes: {self.stick_axes}")
-            return True
-        else:
-            print_error("Axis calibration failed: No significant axis change detected.")
-            return False
-
     def detect_active_stick(self):
         """Detects active stick movement beyond threshold and dynamically determines the axis pair."""
         if not self.joystick:
             return False
-        
-        # If we have calibrated axis info, use it to determine the axis pair
-        if self.primary_axis is not None:
-            # Verify the calibrated axis is still active
-            if abs(self.joystick.get_axis(self.primary_axis)) > STICK_THRESHOLD:
-                return True
-            return False
-        
-        # Fallback to original detection logic
         for event in pygame.event.get():
             if event.type == JOYAXISMOTION and event.joy == self.joystick.get_id():
                 if abs(self.joystick.get_axis(event.axis)) > STICK_THRESHOLD:
@@ -854,10 +631,6 @@ class LatencyTester:
 
     def is_stick_at_extreme(self):
         """Checks if stick is at extreme position"""
-        # If we have calibrated axis info, check the primary axis specifically
-        if self.primary_axis is not None and self.joystick:
-            return abs(self.joystick.get_axis(self.primary_axis)) >= STICK_THRESHOLD
-        # Fallback to checking all stick axes
         return self.stick_axes and self.joystick and any(abs(self.joystick.get_axis(axis)) >= STICK_THRESHOLD for axis in self.stick_axes)
 
     def trigger_solenoid(self):
@@ -991,7 +764,7 @@ class LatencyTester:
         else:
             print(f"{Fore.RED}Hardware test failed: Check solenoid and sensor connections or hardware integrity.{Fore.RESET}")
 
-
+        self.close_test_window()
         return successful_detections >= (iterations - 2), timing_warning
 
     def _calculate_latency(self):
@@ -1102,10 +875,10 @@ class LatencyTester:
                 self._consecutive_timeouts += 1
                 print(f"Invalid measurement: no input detected within {self.max_latency_us/1000:.2f} ms")
                 self.measuring = False
-                limit = STICK_MAX_CONSECUTIVE_TIMEOUTS if self.test_type == TEST_TYPE_STICK else MAX_CONSECUTIVE_TIMEOUTS
-                if self._consecutive_timeouts >= limit:
-                    print_error(f"Test stopped: too many consecutive missed inputs ({self._consecutive_timeouts}).\nMake sure the test window is focused and receiving input before restarting. Also check hardware setup to avoid overheating.")
+                if self.test_type == TEST_TYPE_STICK and self._consecutive_timeouts >= STICK_MAX_CONSECUTIVE_TIMEOUTS:
+                    print_error("Test stopped: too many consecutive missed stick inputs. Make sure the test window is focused and receiving gamepad input before restarting. Also check solenoid position and stick deflection to avoid overheating the solenoid.")
                     self.test_aborted = True
+                    self.close_test_window()
                     return
                 if self.test_type == TEST_TYPE_STICK and not self._stick_runtime_fallback_used and self.pulse_duration_us < STICK_SETUP_FALLBACK_PULSE_DURATION * 1000:
                     self._stick_runtime_fallback_used = True
@@ -1115,8 +888,7 @@ class LatencyTester:
             pygame.event.pump()
             try:
                 now = time.perf_counter()
-                # ONLY render if we are not actively measuring to ensure 100% accuracy
-                if not self.measuring and now - self._last_render_time >= 1.0 / 30.0:
+                if now - self._last_render_time >= 1.0 / 30.0:
                     average_latency = self.latency_sum / len(self.latency_results) if self.latency_results else None
                     self.render_test_window(average_latency)
                     self._last_render_time = now
@@ -1127,33 +899,62 @@ class LatencyTester:
             except Exception:
                 pass
 
+        self.close_test_window()
 
+def detect_input_mode(name, guid, axes_at_rest):
+    name_lower = name.lower()
+    guid_lower = guid.lower()
+    guid_chunks = {guid_lower[i:i+4] for i in range(0, len(guid_lower), 4) if len(guid_lower[i:i+4]) == 4}
 
-def detect_input_mode(name, guid, axes):
-    """Detects protocol based on name, guid, and resting axes state."""
-    n, g = name.lower(), guid.lower()
-    if any(s in n for s in ("dualsense", "ps5", "edge", "dualshock", "ds4", "ps4", "playstation")):
+    if any(s in name_lower for s in ("dualsense", "ps5", "edge", "dualshock", "ds4", "ps4", "playstation")):
         return "Sony"
-    if any(s in n for s in ("joy-con", "joycon", "nintendo switch", "switch pro", "nintendo")) or "057e" in g:
-        return "Switch"
-    return "XInput" if any(abs(a + 1) < 0.1 for a in axes) else "DInput"
 
-# Axis pair groupings per protocol (used for partner-axis pairing)
-INPUT_MODE_AXIS_PAIRS = {
-    "DInput": [(0, 1), (3, 5)],
-    "Default": [(0, 1), (2, 3)]
-}
+    switch_name_markers = (
+        "joy-con",
+        "joycon",
+        "nintendo switch",
+        "switch pro",
+        "nintendo",
+    )
+    if any(s in name_lower for s in switch_name_markers):
+        return "Switch"
+    if "pro controller" in name_lower and ("nintendo" in name_lower or "057e" in guid_chunks):
+        return "Switch"
+    if "057e" in guid_chunks:
+        return "Switch"
+    if any(abs(a + 1) < 0.1 for a in axes_at_rest):
+        return "XInput"
+    return "DInput"
 
 def detect_gamepad_mode(joystick):
     """Detect gamepad mode (XInput, DInput, Sony, Switch) based on name and axes at rest"""
-    time.sleep(0.1)  # Wait for initialization
-    for _ in range(10):  # Warmup
+    MODES = {
+        "Sony": {"right_axes": (2, 3), "code": "dualsense"},
+        "XInput": {"right_axes": (2, 3), "code": "xinput"},
+        "Switch": {"right_axes": (2, 3), "code": "switch"},
+        "DInput": {"right_axes": (3, 5), "code": "dinput"},
+    }
+    
+    # Additional delay after init (some controllers need this)
+    time.sleep(0.1)
+    
+    # Warmup joystick (longer for better detection)
+    warmup_until = time.perf_counter() + 0.50  # 0.50 seconds warmup
+    while time.perf_counter() < warmup_until:
         pygame.event.pump()
-        [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
+        for i in range(joystick.get_numaxes()):
+            joystick.get_axis(i)
         time.sleep(0.01)
     
-    axes = [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
-    return detect_input_mode(joystick.get_name(), joystick.get_guid(), axes)
+    # Get axes at rest after warmup
+    axes_at_rest = [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
+    joystick_name = joystick.get_name()
+    joystick_guid = joystick.get_guid()
+    
+    # Detect mode based on name and axes
+    initial_mode = detect_input_mode(joystick_name, joystick_guid, axes_at_rest)
+    
+    return initial_mode
 
 # Short ID Generation
 def generate_short_id(length=12):
@@ -1195,46 +996,14 @@ if __name__ == "__main__":
             pygame.display.set_caption("Prometheus 82 - Testing")
             pygame.font.init()
         screen = pygame.display.get_surface()
-        
-        # UI Colors
-        ACCENT_BLUE = (0, 180, 255)
-        TEXT_WHITE = (255, 255, 255)
-        TEXT_GRAY = (180, 190, 210)
-
-        # Background gradient
-        for y in range(0, 600, 4):
-            c = (10 + y//100, 12 + y//80, 18 + y//60)
-            pygame.draw.rect(screen, c, (0, y, 800, 4))
-            
-        # Header
-        pygame.draw.rect(screen, (30, 35, 50), (0, 0, 800, 60))
-        pygame.draw.line(screen, (60, 70, 90), (0, 60), (800, 60), 1)
-        
-        title_font = pygame.font.Font(None, 32)
-        header_surf = title_font.render("PROMETHEUS 82 | SYSTEM INITIALIZATION", True, ACCENT_BLUE)
-        screen.blit(header_surf, (25, 30 - header_surf.get_height() // 2))
-
-        # Central Message
-        big_font = pygame.font.Font(None, 64)
-        info_font = pygame.font.Font(None, 36)
-        
-        msg1 = "WAITING FOR SETUP"
-        msg2 = "Please go to the console to manage the test."
-        msg3 = "Do not close this window."
-        
-        surf1 = big_font.render(msg1, True, ACCENT_BLUE)
-        surf2 = info_font.render(msg2, True, TEXT_WHITE)
-        surf3 = info_font.render(msg3, True, TEXT_GRAY)
-        
-        screen.blit(surf1, (400 - surf1.get_width() // 2, 220))
-        screen.blit(surf2, (400 - surf2.get_width() // 2, 300))
-        screen.blit(surf3, (400 - surf3.get_width() // 2, 350))
-        
-        # Bottom hint
-        hint_font = pygame.font.Font(None, 24)
-        hint_surf = hint_font.render("PROMETHEUS 82 - BY GAMEPADLA.COM", True, (80, 90, 110))
-        screen.blit(hint_surf, (400 - hint_surf.get_width() // 2, 560))
-
+        font = pygame.font.Font(None, 28)
+        screen.fill((0, 0, 0))
+        msg1 = "Do not close this window."
+        msg2 = "Go to the console to manage the test."
+        surf1 = font.render(msg1, True, (255, 255, 0))
+        surf2 = font.render(msg2, True, (200, 200, 200))
+        screen.blit(surf1, (20, 20))
+        screen.blit(surf2, (20, 60))
         pygame.display.flip()
     except Exception as e:
         print_error(f"Couldn't create window at startup: {e}")
@@ -1324,6 +1093,7 @@ if __name__ == "__main__":
             pygame.quit()
             sys.exit()
 
+        pass
 
     # Setup serial connection
     # --- MODIFICATION START ---
@@ -1420,7 +1190,7 @@ if __name__ == "__main__":
                 CONTACT_DELAY = avg_latency
                 print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
 
-            tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, TEST_ITERATIONS, detected_mode)
+            tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, TEST_ITERATIONS)
             if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
                 print_info("To start the test, switch to the program window and press Start.")
             
