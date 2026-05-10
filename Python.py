@@ -95,6 +95,7 @@ STICK_SETUP_FALLBACK_PULSE_DURATION = 80
 STICK_SETUP_FALLBACK_DEFLECTION_WAIT = 0.500
 STICK_SETUP_FALLBACK_MAX_ITERATIONS = 200
 STICK_MAX_CONSECUTIVE_TIMEOUTS = 8
+MAX_CONSECUTIVE_TIMEOUTS = 15        # Max missed inputs before stopping for any test
 
 # Variables that should not be changed without need
 COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
@@ -362,25 +363,53 @@ class LatencyTester:
     def render_test_window(self, average_latency=None):
         if not hasattr(self, "_screen") or self._screen is None:
             return
-        self._screen.fill((0, 0, 0))
-        header = "Keep this window on top during testing"
-        surf = self._font.render(header, True, (255, 255, 0))
-        self._screen.blit(surf, (10, 10))
-        
-        if self.test_type == TEST_TYPE_HARDWARE:
-            surf2 = self._font.render("Calculating...", True, (255, 255, 255))
-            self._screen.blit(surf2, (10, 40))
-        elif self.test_type == TEST_TYPE_STICK and getattr(self, "_started", False) and len(self.latency_results) == 0:
-            surf2 = self._font.render("Calibrating...", True, (255, 255, 255))
-            self._screen.blit(surf2, (10, 40))
-        else:
-            progress_text = f"Progress: {len(self.latency_results)}/{self.iterations}"
-            surf2 = self._font.render(progress_text, True, (200, 200, 200))
-            self._screen.blit(surf2, (10, 40))
             
+        # UI Colors
+        BG_COLOR = (15, 15, 20)
+        ACCENT_COLOR = (0, 150, 255)
+        TEXT_COLOR = (240, 240, 240)
+        WARN_COLOR = (255, 200, 0)
+        
+        self._screen.fill(BG_COLOR)
+        
+        # Draw header with a subtle background
+        pygame.draw.rect(self._screen, (30, 30, 40), (0, 0, 800, 40))
+        header = "Prometheus 82 - Performance Testing"
+        surf = self._font.render(header, True, WARN_COLOR)
+        self._screen.blit(surf, (20, 10))
+        
+        # Progress section
+        if self.test_type == TEST_TYPE_HARDWARE:
+            status_text = "HARDWARE TEST: Calculating..."
+        elif self.test_type == TEST_TYPE_STICK and getattr(self, "_started", False) and len(self.latency_results) == 0:
+            status_text = "STICK TEST: Calibrating..."
+        else:
+            status_text = f"{self.test_type.upper()} TEST: {len(self.latency_results)} / {self.iterations}"
+            
+        surf2 = self._font.render(status_text, True, TEXT_COLOR)
+        self._screen.blit(surf2, (20, 60))
+        
+        # Progress bar
+        bar_width = 760
+        bar_height = 20
+        pygame.draw.rect(self._screen, (50, 50, 60), (20, 90, bar_width, bar_height), border_radius=5)
+        if self.iterations > 0:
+            progress_width = int((len(self.latency_results) / self.iterations) * bar_width)
+            if progress_width > 0:
+                pygame.draw.rect(self._screen, ACCENT_COLOR, (20, 90, progress_width, bar_height), border_radius=5)
+            
+        # Latency display
         if average_latency is not None:
-            surf3 = self._font.render(f"Average latency: {average_latency:.2f} ms", True, (150, 200, 255))
-            self._screen.blit(surf3, (10, 70))
+            # Use a larger font for the result
+            big_font = pygame.font.Font(None, 48)
+            res_text = f"Avg Latency: {average_latency:.2f} ms"
+            surf3 = big_font.render(res_text, True, ACCENT_COLOR)
+            self._screen.blit(surf3, (20, 130))
+            
+        # Draw a "Live" indicator
+        pulse = int(abs(time.time() % 1.0 - 0.5) * 200) + 55
+        pygame.draw.circle(self._screen, (pulse, 50, 50), (770, 20), 6)
+        
         pygame.display.flip()
 
     def check_stick_setup(self, iterations=5):
@@ -852,10 +881,10 @@ class LatencyTester:
                 self._consecutive_timeouts += 1
                 print(f"Invalid measurement: no input detected within {self.max_latency_us/1000:.2f} ms")
                 self.measuring = False
-                if self.test_type == TEST_TYPE_STICK and self._consecutive_timeouts >= STICK_MAX_CONSECUTIVE_TIMEOUTS:
-                    print_error("Test stopped: too many consecutive missed stick inputs. Make sure the test window is focused and receiving gamepad input before restarting. Also check solenoid position and stick deflection to avoid overheating the solenoid.")
+                limit = STICK_MAX_CONSECUTIVE_TIMEOUTS if self.test_type == TEST_TYPE_STICK else MAX_CONSECUTIVE_TIMEOUTS
+                if self._consecutive_timeouts >= limit:
+                    print_error(f"Test stopped: too many consecutive missed inputs ({self._consecutive_timeouts}).\nMake sure the test window is focused and receiving input before restarting. Also check hardware setup to avoid overheating.")
                     self.test_aborted = True
-
                     return
                 if self.test_type == TEST_TYPE_STICK and not self._stick_runtime_fallback_used and self.pulse_duration_us < STICK_SETUP_FALLBACK_PULSE_DURATION * 1000:
                     self._stick_runtime_fallback_used = True
