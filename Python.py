@@ -523,6 +523,11 @@ class LatencyTester:
         badge_font = pygame.font.Font(None, 24)
         badge_surf = badge_font.render("LIVE", True, (255, 60, 80))
         self._screen.blit(badge_surf, (732, 23))
+
+        # Instruction at the bottom
+        hint_font = pygame.font.Font(None, 24)
+        hint_surf = hint_font.render("KEEP WINDOW ACTIVE AND ON TOP TO CAPTURE INPUTS", True, (150, 150, 50))
+        self._screen.blit(hint_surf, (400 - hint_surf.get_width() // 2, 575))
         
         pygame.display.flip()
 
@@ -1108,14 +1113,46 @@ if __name__ == "__main__":
             pygame.display.set_caption("Prometheus 82 - Testing")
             pygame.font.init()
         screen = pygame.display.get_surface()
-        font = pygame.font.Font(None, 28)
-        screen.fill((0, 0, 0))
-        msg1 = "Do not close this window."
-        msg2 = "Go to the console to manage the test."
-        surf1 = font.render(msg1, True, (255, 255, 0))
-        surf2 = font.render(msg2, True, (200, 200, 200))
-        screen.blit(surf1, (20, 20))
-        screen.blit(surf2, (20, 60))
+        
+        # UI Colors
+        ACCENT_BLUE = (0, 180, 255)
+        TEXT_WHITE = (255, 255, 255)
+        TEXT_GRAY = (180, 190, 210)
+
+        # Background gradient
+        for y in range(0, 600, 4):
+            c = (10 + y//100, 12 + y//80, 18 + y//60)
+            pygame.draw.rect(screen, c, (0, y, 800, 4))
+            
+        # Header
+        pygame.draw.rect(screen, (30, 35, 50), (0, 0, 800, 60))
+        pygame.draw.line(screen, (60, 70, 90), (0, 60), (800, 60), 1)
+        
+        title_font = pygame.font.Font(None, 32)
+        header_surf = title_font.render("PROMETHEUS 82 | SYSTEM INITIALIZATION", True, ACCENT_BLUE)
+        screen.blit(header_surf, (25, 30 - header_surf.get_height() // 2))
+
+        # Central Message
+        big_font = pygame.font.Font(None, 64)
+        info_font = pygame.font.Font(None, 36)
+        
+        msg1 = "WAITING FOR SETUP"
+        msg2 = "Please go to the console to manage the test."
+        msg3 = "Do not close this window."
+        
+        surf1 = big_font.render(msg1, True, ACCENT_BLUE)
+        surf2 = info_font.render(msg2, True, TEXT_WHITE)
+        surf3 = info_font.render(msg3, True, TEXT_GRAY)
+        
+        screen.blit(surf1, (400 - surf1.get_width() // 2, 220))
+        screen.blit(surf2, (400 - surf2.get_width() // 2, 300))
+        screen.blit(surf3, (400 - surf3.get_width() // 2, 350))
+        
+        # Bottom hint
+        hint_font = pygame.font.Font(None, 24)
+        hint_surf = hint_font.render("PROMETHEUS 82 - BY GAMEPADLA.COM", True, (80, 90, 110))
+        screen.blit(hint_surf, (400 - hint_surf.get_width() // 2, 560))
+
         pygame.display.flip()
     except Exception as e:
         print_error(f"Couldn't create window at startup: {e}")
