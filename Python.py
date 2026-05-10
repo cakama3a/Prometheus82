@@ -122,42 +122,20 @@ def check_cooling_period(test_type=None):
     try:
         if test_type is None:
             warnings = []
-            for label, path in (("BUTTON", LAST_TEST_TIME_FILE_BUTTON), ("STICK", LAST_TEST_TIME_FILE_STICK)):
-                if os.path.exists(path):
-                    with open(path) as f:
-                        content = f.read().strip()
-                        parts = content.split(',')
-                        if len(parts) == 2:
-                            last_time = float(parts[0])
-                            cooling_seconds = float(parts[1])
-                        else:
-                            last_time = float(content)
-                            cooling_seconds = COOLING_PERIOD_SECONDS
-                        remaining = max(0, int(cooling_seconds - (time.time() - last_time)))
-                        if remaining > 0:
-                            warnings.append(f"{label}: {remaining} seconds")
+            for t in (TEST_TYPE_BUTTON, TEST_TYPE_STICK):
+                rem = get_cooling_remaining_seconds(t)
+                if rem > 0:
+                    label = "STICK" if t == TEST_TYPE_STICK else "BUTTON"
+                    warnings.append(f"{label}: {rem} seconds")
             if warnings:
                 print(f"\n{Fore.YELLOW}WARNING: Cooling required — " + "; ".join(warnings) + f".{Fore.RESET}")
-            return True
         else:
-            path = LAST_TEST_TIME_FILE_STICK if test_type == TEST_TYPE_STICK else LAST_TEST_TIME_FILE_BUTTON
-            if not os.path.exists(path):
-                return True
-            with open(path) as f:
-                content = f.read().strip()
-                parts = content.split(',')
-                if len(parts) == 2:
-                    last_time = float(parts[0])
-                    cooling_seconds = float(parts[1])
-                else:
-                    last_time = float(content)
-                    cooling_seconds = COOLING_PERIOD_SECONDS
-                remaining = max(0, int(cooling_seconds - (time.time() - last_time)))
-                if remaining > 0:
-                    label = "STICK" if test_type == TEST_TYPE_STICK else "BUTTON"
-                    print(f"\n{Fore.YELLOW}WARNING: Cooling required ({label}): {remaining} seconds remaining.{Fore.RESET}")
-                return True
-    except (ValueError, IOError):
+            remaining = get_cooling_remaining_seconds(test_type)
+            if remaining > 0:
+                label = "STICK" if test_type == TEST_TYPE_STICK else "BUTTON"
+                print(f"\n{Fore.YELLOW}WARNING: Cooling required ({label}): {remaining} seconds remaining.{Fore.RESET}")
+        return True
+    except Exception:
         return True
 
 def get_cooling_remaining_seconds(test_type):
@@ -268,7 +246,7 @@ def load_window_icon():
     return None
 
 # ASCII Logo
-print(f" ")
+print()
 print("██████╗ ██████╗  ██████╗ ███╗   ███╗███████╗████████╗██╗  ██╗███████╗██╗   ██╗███████╗   " + Fore.LIGHTRED_EX + " █████╗ ██████╗ " + Fore.RESET + "")
 print("██╔══██╗██╔══██╗██╔═══██╗████╗ ████║██╔════╝╚══██╔══╝██║  ██║██╔════╝██║   ██║██╔════╝   " + Fore.LIGHTRED_EX + "██╔══██╗╚════██╗" + Fore.RESET + "")
 print("██████╔╝██████╔╝██║   ██║██╔████╔██║█████╗     ██║   ███████║█████╗  ██║   ██║███████╗   " + Fore.LIGHTRED_EX + "╚█████╔╝ █████╔╝" + Fore.RESET + "")
@@ -277,10 +255,10 @@ print("██║     ██║  ██║╚██████╔╝██║ �
 print("╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝   " + Fore.LIGHTRED_EX + " ╚════╝ ╚══════╝" + Fore.RESET + "")                                                                                                 
 print(f"v.{VERSION} by John Punch (" + Fore.LIGHTRED_EX + "https://gamepadla.com" + Fore.RESET + ")")
 print(f"{Fore.YELLOW}Commercial use requires a license: https://github.com/cakama3a/Prometheus82/blob/main/LICENSE.md{Fore.RESET}")
-print(f" ")
+print()
 print(f"{Fore.CYAN}Professional gamepad latency tester with microsecond precision.{Fore.RESET}")
 print(f"{Fore.CYAN}Measures button and stick response time using Prometheus 82 hardware tester.{Fore.RESET}")
-print(f" ")
+print()
 print(f"Support the project: " + Fore.LIGHTRED_EX + "https://ko-fi.com/gamepadla" + Fore.RESET + "")
 print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_tU-7VqA" + Fore.RESET + "")
 print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometheus82" + Fore.RESET + "")
@@ -379,8 +357,7 @@ class LatencyTester:
             pygame.display.flip()
             clock.tick(60)
 
-    def close_test_window(self):
-        return
+
 
     def render_test_window(self, average_latency=None):
         if not hasattr(self, "_screen") or self._screen is None:
@@ -764,7 +741,7 @@ class LatencyTester:
         else:
             print(f"{Fore.RED}Hardware test failed: Check solenoid and sensor connections or hardware integrity.{Fore.RESET}")
 
-        self.close_test_window()
+
         return successful_detections >= (iterations - 2), timing_warning
 
     def _calculate_latency(self):
@@ -878,7 +855,7 @@ class LatencyTester:
                 if self.test_type == TEST_TYPE_STICK and self._consecutive_timeouts >= STICK_MAX_CONSECUTIVE_TIMEOUTS:
                     print_error("Test stopped: too many consecutive missed stick inputs. Make sure the test window is focused and receiving gamepad input before restarting. Also check solenoid position and stick deflection to avoid overheating the solenoid.")
                     self.test_aborted = True
-                    self.close_test_window()
+
                     return
                 if self.test_type == TEST_TYPE_STICK and not self._stick_runtime_fallback_used and self.pulse_duration_us < STICK_SETUP_FALLBACK_PULSE_DURATION * 1000:
                     self._stick_runtime_fallback_used = True
@@ -899,7 +876,7 @@ class LatencyTester:
             except Exception:
                 pass
 
-        self.close_test_window()
+
 
 def detect_input_mode(name, guid, axes_at_rest):
     name_lower = name.lower()
@@ -928,13 +905,6 @@ def detect_input_mode(name, guid, axes_at_rest):
 
 def detect_gamepad_mode(joystick):
     """Detect gamepad mode (XInput, DInput, Sony, Switch) based on name and axes at rest"""
-    MODES = {
-        "Sony": {"right_axes": (2, 3), "code": "dualsense"},
-        "XInput": {"right_axes": (2, 3), "code": "xinput"},
-        "Switch": {"right_axes": (2, 3), "code": "switch"},
-        "DInput": {"right_axes": (3, 5), "code": "dinput"},
-    }
-    
     # Additional delay after init (some controllers need this)
     time.sleep(0.1)
     
@@ -952,9 +922,7 @@ def detect_gamepad_mode(joystick):
     joystick_guid = joystick.get_guid()
     
     # Detect mode based on name and axes
-    initial_mode = detect_input_mode(joystick_name, joystick_guid, axes_at_rest)
-    
-    return initial_mode
+    return detect_input_mode(joystick_name, joystick_guid, axes_at_rest)
 
 # Short ID Generation
 def generate_short_id(length=12):
@@ -1093,7 +1061,6 @@ if __name__ == "__main__":
             pygame.quit()
             sys.exit()
 
-        pass
 
     # Setup serial connection
     # --- MODIFICATION START ---
