@@ -49,28 +49,37 @@ Prometheus 82 uses a standardized **Center-to-Edge** measurement method for anal
    > **UPDATE (v5.2.4.3+):** Starting with the 2026 hardware revision (Reverse Solenoid), **manual offset subtraction is no longer required**. The new hardware design captures the end-of-travel event directly, providing a real-time hardware trigger.
 
 
-### Permissible Errors and Accuracy
-This section describes potential measurement deviations caused by the physical properties of controllers and the testing methodology.
+### Accuracy and Permissible Errors
+This section details the measurement precision and potential deviations caused by physical properties, system variability, and device assembly.
 
-#### Device Consistency
-The variation between different Prometheus 82 units is minimal (approximately **0.012 ms**), which ensures consistent results across different testers. This was verified in a comprehensive [test with 5 devices](https://www.reddit.com/r/GPDL/comments/1mdwp2c/testing_the_accuracy_of_5_prometheus_82_devices/) combined in various configurations.
+#### 1. Device-to-Device Consistency
+The discrepancy between different, correctly assembled Prometheus 82 units is minimal, typically around **0.2 ms**. 
+* Under ideal, highly optimized conditions, this variation can be as low as **0.012 ms**, as demonstrated in our [comparative study of 5 devices](https://www.reddit.com/r/GPDL/comments/1mdwp2c/testing_the_accuracy_of_5_prometheus_82_devices/).
 
-#### Real-world Verification (8000Hz Devices)
-The precision of Prometheus 82 is further confirmed by testing high-performance 8K devices. For example, the **GameSir G7 Pro 8K Aimlabs Edition** was tested by different independent users worldwide using the latest hardware revision, yielding results of **0.6 ms** and **0.68 ms**. This remarkably small discrepancy of only **0.08 ms** demonstrates the method's excellence and its ability to accurately measure sub-1ms latencies without being affected by high polling rates.
-
-#### Measurement Tolerances
-
+#### 2. System and Controller Tolerances
+While the P82 hardware is extremely consistent, total measurement error can increase due to the PC environment and gamepad design:
 * **Analog Sticks:** Permissible error **±1 ms**.
-    * **Reason:** Depending on the external dead zone of the gamepad, the signal may be sent before the sensor button is pressed.
-    * > **Note:** In the gamepad settings, it is recommended to minimize the external dead zone as much as possible (if possible).
-
+    * *Reason:* Depending on the controller's dead zone settings, the logical signal may trigger before the physical sensor button is fully pressed.
 * **Buttons:** Permissible error **±1 ms**.
-    * **Reason:** Mechanical button play (pre-travel) and design differences in switches from various manufacturers.
+    * *Reason:* Mechanical play (pre-travel), switch design variations, and slight positioning shifts on the stand.
 
-#### Recommendations
-To minimize errors, it is recommended to:
-1.  Use a fast Arduino board (with self-delay ≤ 0.5 ms).
-2.  Connect the P82 device directly to your PC motherboard's USB port (avoid front panel hubs).
+#### 3. Impact of Gamepad Settings & Format
+Software settings on the gamepad can significantly alter latency results.
+* **Raw Format:** It is highly recommended to test gamepads in **Raw format** (or the mode that provides the lowest and most stable results if Raw is not available).
+* **Dead Zones:** Always minimize the external dead zone in the controller's software to ensure the hardware trigger matches the logical signal as closely as possible.
+
+#### 4. Hardware Recommendations to Minimize Error
+* **Arduino Choice:** Use a high-quality Arduino board with a self-delay of **≤0.5 ms**. You can verify this using [this script](https://github.com/cakama3a/Prometheus82/tree/main/ArduinoSpeedTestScript).
+* **Connection:** Plug the P82 device directly into a USB port on the PC motherboard. Avoid front-panel hubs or external splitters, as they can introduce jitter.
+
+#### Real-world Consistency (Live Statistics)
+The reliability of Prometheus 82 is documented through continuous comparative testing between independent devices and users. You can access the live [Latency Consistency Report here](https://gamepadla.com/latency/).
+
+Based on our verified dataset of dozens of comparable groups:
+* **Average Tester-to-Tester Delta:** **0.92 ms** (confirming our **±1 ms** permissible error guideline).
+* **High Consistency:** **50.0%** of all test pairs match within a tight **0.50 ms** range.
+* **Top-tier Accuracy:** Optimized setups and high-quality hardware can achieve average deltas as low as **0.16 ms**.
+* **Controller Variance:** Discrepancies above 1.00 ms (occurring in ~33% of pairs) are typically linked to specific controller models or firmware versions that exhibit higher internal jitter or varied processing logic.
 
 ### Summary
 The testing process ensures accurate measurement of the Prometheus82 device's input latency. Running the test 200/400 times provides comprehensive data to evaluate the device's stability and performance under real-world conditions.
