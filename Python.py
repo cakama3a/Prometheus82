@@ -530,22 +530,42 @@ class LatencyTester:
                 self._screen.blit(max_surf, (330, 480))
                 self._screen.blit(jitter_surf, (550, 480))
             
-        # Redesigned "LIVE" Badge (vertically centered in header)
-        pulse = int(abs(math.sin(time.time() * 2)) * 50) + 100
-        badge_rect = pygame.Rect(710, 16, 65, 28)
-        pygame.draw.rect(self._screen, (30, 0, 0), badge_rect, border_radius=6)
-        pygame.draw.rect(self._screen, (pulse, 20, 40), badge_rect, width=1, border_radius=6)
+        # Check if test is finished
+        is_finished = len(self.latency_results) >= self.iterations and self.iterations > 0
         
-        # Red dot inside badge
-        pygame.draw.circle(self._screen, (255, 40, 60), (722, 30), 4)
-        
-        badge_font = pygame.font.Font(None, 24)
-        badge_surf = badge_font.render("LIVE", True, (255, 60, 80))
-        self._screen.blit(badge_surf, (732, 23))
+        # Status Badge (vertically centered in header)
+        if is_finished:
+            # FINISHED Badge
+            badge_rect = pygame.Rect(680, 16, 95, 28)
+            pygame.draw.rect(self._screen, (0, 30, 10), badge_rect, border_radius=6)
+            pygame.draw.rect(self._screen, (0, 150, 70), badge_rect, width=1, border_radius=6)
+            badge_font = pygame.font.Font(None, 24)
+            badge_surf = badge_font.render("FINISHED", True, (0, 255, 120))
+            self._screen.blit(badge_surf, (badge_rect.centerx - badge_surf.get_width()//2, 23))
+        else:
+            # LIVE Badge
+            pulse = int(abs(math.sin(time.time() * 2)) * 50) + 100
+            badge_rect = pygame.Rect(710, 16, 65, 28)
+            pygame.draw.rect(self._screen, (30, 0, 0), badge_rect, border_radius=6)
+            pygame.draw.rect(self._screen, (pulse, 20, 40), badge_rect, width=1, border_radius=6)
+            
+            # Red dot inside badge
+            pygame.draw.circle(self._screen, (255, 40, 60), (722, 30), 4)
+            
+            badge_font = pygame.font.Font(None, 24)
+            badge_surf = badge_font.render("LIVE", True, (255, 60, 80))
+            self._screen.blit(badge_surf, (732, 23))
 
         # Instruction at the bottom
         hint_font = pygame.font.Font(None, 24)
-        hint_surf = hint_font.render("KEEP WINDOW ACTIVE AND ON TOP TO CAPTURE INPUTS", True, (150, 150, 50))
+        if is_finished:
+            hint_text = "TEST COMPLETE - CLOSE THIS WINDOW TO CONTINUE"
+            hint_color = (0, 255, 180)
+        else:
+            hint_text = "KEEP WINDOW ACTIVE AND ON TOP TO CAPTURE INPUTS"
+            hint_color = (150, 150, 50)
+            
+        hint_surf = hint_font.render(hint_text, True, hint_color)
         self._screen.blit(hint_surf, (400 - hint_surf.get_width() // 2, 575))
         
         pygame.display.flip()
@@ -1449,7 +1469,8 @@ if __name__ == "__main__":
                         print(f"{Style.BRIGHT}{Fore.CYAN}" + f"{'Average latency:':<26}{stats['avg']:>8.2f} ms{Fore.RESET}" + f"{Style.RESET_ALL}")
                         print(f"{'Jitter:':<26}{stats['jitter']:>8.2f} ms")
                         print(f"{Style.BRIGHT}{Fore.CYAN}" + "="*37 + f"{Fore.RESET}{Style.RESET_ALL}")
-                        print(f"\n{Style.BRIGHT}Measurement Results{Style.RESET_ALL}")
+                        print(f"{Fore.LIGHTBLACK_EX}* Statistics are calculated using {int(LOWER_QUANTILE*100)}%-{int(UPPER_QUANTILE*100)}% quantile filtering.{Fore.RESET}")
+                        print(f"\n{Style.BRIGHT}Measurement Details{Style.RESET_ALL}")
                         print(f"{'Iterations:':<26}{tester.iterations:>8}")
                         print(f"{'Total measurements:':<26}{stats['total_samples']:>8}")
                         print(f"{'Valid measurements:':<26}{stats['valid_samples']:>8}")
