@@ -176,8 +176,9 @@ def get_cooling_remaining_seconds(test_type):
     except (ValueError, IOError):
         return 0
 
-# Function to record the test completion time
 def save_test_completion_time(iterations, test_type):
+    if iterations <= 0 or test_type == TEST_TYPE_KEYBOARD:
+        return
     try:
         cooling_minutes = (iterations / 400.0) * 10.0
         cooling_seconds = int(cooling_minutes * 60)
@@ -1129,9 +1130,11 @@ class LatencyTester:
         average_latency = self.latency_sum / len(self.latency_results) if self.latency_results else None
         self.render_test_window(average_latency)
 
-        # Start cooling period immediately after measurements finish
-        if not self.test_aborted and len(self.latency_results) > 0:
-            save_test_completion_time(self.iterations, self.test_type)
+        # Start cooling period immediately after measurements finish (even if aborted)
+        total_hits = len(self.latency_results) + self.invalid_measurements
+        if total_hits > 0:
+            # Use requested iterations if successful, or actual hits if aborted
+            save_test_completion_time(self.iterations if not self.test_aborted else total_hits, self.test_type)
         
         # Keep window open until user closes it
         if not self.test_aborted:
