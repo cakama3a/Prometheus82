@@ -37,6 +37,9 @@ This section outlines the testing process for the Prometheus82 device, designed 
 ### Joystick Latency Algorithm
 Prometheus 82 uses a standardized **Center-to-Edge** measurement method for analog sticks to ensure consistent comparisons between different controllers.
 
+> [!TIP]
+> **Proper Positioning:** For the most accurate results, the distance between the solenoid and the stick should be **~1 mm** before the test starts. This prevents "unrealistic overloads" caused by the solenoid's extreme speed (3x faster than a human finger), which a player could never replicate.
+
 1. **T0 (Start):** The solenoid is activated to strike the stick.
 2. **Physical Travel:** The solenoid arm pushes the stick from the center (0%) towards the edge (100%).
 3. **Sensor Trigger:** The sensor button (new Reverse Solenoid mod) is pressed exactly when the stick reaches its maximum physical deflection.
@@ -96,7 +99,7 @@ You have two options to obtain a Prometheus 82 device:
 2. Connect the power supply to the device (Lower port).
 3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
 4. Place the gamepad in the test stand and secure it (not too tightly).
-5. Adjust the solenoid for testing the gamepad's buttons or sticks as shown in the video (important!).
+5. Adjust the solenoid for testing the gamepad's buttons or sticks as shown in the video (important! For sticks, keep a **~1 mm** distance).
 7. Launch the testing program: https://github.com/cakama3a/Prometheus82/releases/
 8. Select the testing option for the gamepad's sticks or buttons in the program menu.
 9. Start the test and wait for it to complete.
@@ -197,7 +200,9 @@ For testing sticks according to the new standard
 - Video about the [solenoid's own delays](https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/) and how it is reflected in the measurements at 1000 FPS (outdated stick testing method)
 - Both ports of the control board use Type-C interfaces, so do not confuse them, remember that the lower port is used for power, and the upper port is used to connect to a PC.
 - The movement of the solenoid should be easy, it should not cling to the inner hole. Make sure that its leg is smooth and free of snags, as this can cause friction, which increases heat, wear and tear on the component and introduces an error in the measurement.
-- Distance matters. When positioning the gamepad during tests, you need to install the stick and button as far away from the sensor as possible so that the solenoid has time to accelerate sufficiently. If you install the solenoid too close, it will give incorrect measurement results.
+- **Distance matters:** 
+    - **For Buttons:** Position the solenoid far enough away to allow it to accelerate sufficiently. 
+    - **For Analog Sticks:** The distance between the solenoid and the stick should be **~1 mm** before starting the test. A larger distance can negatively affect the sharp acceleration from the dead zone and distort results. This updated method prevents "unrealistic overloads" that a player could never replicate (the solenoid is 3x faster than the fastest human finger). This information may contradict older video guides but is based on recent research for better accuracy.
 - Over time, the solenoid can degrade, especially if it is frequently overheated. Therefore, it is worth getting a separate control gamepad (with stable firmware) to periodically check if the delay has changed.
 - When conducting tests, you should do it at least 2 times. It is better to recalibrate the position of the gamepad on the stand before the second test to avoid positioning errors.
 - Some Chinese Arduino devices may not work well, if something does not work, it may be worth replacing the Arduino board.
