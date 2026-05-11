@@ -267,7 +267,7 @@ print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometh
 print(f"{Style.DIM}To open links, press CTRL+Click{Style.RESET_ALL}")
 
 class LatencyTester:
-    def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY, iterations=TEST_ITERATIONS):
+    def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY, iterations=TEST_ITERATIONS, protocol=None):
         self.joystick = gamepad
         self.serial = serial_port
         self.test_type = test_type
@@ -292,6 +292,7 @@ class LatencyTester:
         self._stick_runtime_fallback_used = False
         self._consecutive_timeouts = 0
         self.test_aborted = False
+        self._protocol = protocol
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
         self.iterations = iterations
         self._bg_surface = None  # Pre-rendered background
@@ -763,9 +764,7 @@ class LatencyTester:
             # Determine partner axis using protocol-aware pairs (Stick Tracer standard).
             # DInput uses pairs (0,1) and (3,5) — not the even/odd rule used for XInput.
             partner_axis = -1
-            axis_pairs = INPUT_MODE_AXIS_PAIRS.get(
-                getattr(self, '_detected_mode', None), [(0, 1), (2, 3)]
-            )
+            axis_pairs = INPUT_MODE_AXIS_PAIRS.get(self._protocol, INPUT_MODE_AXIS_PAIRS["Default"])
             for pair in axis_pairs:
                 if changed_axis in pair:
                     partner_axis = pair[0] if pair[1] == changed_axis else pair[1]
@@ -1130,68 +1129,31 @@ class LatencyTester:
 
 
 
-def detect_input_mode(name, guid, axes_at_rest):
-    name_lower = name.lower()
-    guid_lower = guid.lower()
-    guid_chunks = {guid_lower[i:i+4] for i in range(0, len(guid_lower), 4) if len(guid_lower[i:i+4]) == 4}
-
-    if any(s in name_lower for s in ("dualsense", "ps5", "edge", "dualshock", "ds4", "ps4", "playstation")):
+def detect_input_mode(name, guid, axes):
+    """Detects protocol based on name, guid, and resting axes state."""
+    n, g = name.lower(), guid.lower()
+    if any(s in n for s in ("dualsense", "ps5", "edge", "dualshock", "ds4", "ps4", "playstation")):
         return "Sony"
-
-    switch_name_markers = (
-        "joy-con",
-        "joycon",
-        "nintendo switch",
-        "switch pro",
-        "nintendo",
-    )
-    if any(s in name_lower for s in switch_name_markers):
+    if any(s in n for s in ("joy-con", "joycon", "nintendo switch", "switch pro", "nintendo")) or "057e" in g:
         return "Switch"
-    if "pro controller" in name_lower and ("nintendo" in name_lower or "057e" in guid_chunks):
-        return "Switch"
-    if "057e" in guid_chunks:
-        return "Switch"
-    if any(abs(a + 1) < 0.1 for a in axes_at_rest):
-        return "XInput"
-    return "DInput"
-
-# Axis mapping per protocol — must match Stick Tracer standard
-# Each entry: (right_x_axis, right_y_axis)
-INPUT_MODE_AXES = {
-    "Sony":   (2, 3),
-    "XInput": (2, 3),
-    "Switch": (2, 3),
-    "DInput": (3, 5),
-}
+    return "XInput" if any(abs(a + 1) < 0.1 for a in axes) else "DInput"
 
 # Axis pair groupings per protocol (used for partner-axis pairing)
 INPUT_MODE_AXIS_PAIRS = {
-    "Sony":   [(0, 1), (2, 3)],
-    "XInput": [(0, 1), (2, 3)],
-    "Switch": [(0, 1), (2, 3)],
     "DInput": [(0, 1), (3, 5)],
+    "Default": [(0, 1), (2, 3)]
 }
 
 def detect_gamepad_mode(joystick):
     """Detect gamepad mode (XInput, DInput, Sony, Switch) based on name and axes at rest"""
-    # Additional delay after init (some controllers need this)
-    time.sleep(0.1)
-    
-    # Warmup joystick (longer for better detection)
-    warmup_until = time.perf_counter() + 0.50  # 0.50 seconds warmup
-    while time.perf_counter() < warmup_until:
+    time.sleep(0.1)  # Wait for initialization
+    for _ in range(10):  # Warmup
         pygame.event.pump()
-        for i in range(joystick.get_numaxes()):
-            joystick.get_axis(i)
+        [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
         time.sleep(0.01)
     
-    # Get axes at rest after warmup
-    axes_at_rest = [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
-    joystick_name = joystick.get_name()
-    joystick_guid = joystick.get_guid()
-    
-    # Detect mode based on name and axes
-    return detect_input_mode(joystick_name, joystick_guid, axes_at_rest)
+    axes = [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
+    return detect_input_mode(joystick.get_name(), joystick.get_guid(), axes)
 
 # Short ID Generation
 def generate_short_id(length=12):
@@ -1458,7 +1420,7 @@ if __name__ == "__main__":
                 CONTACT_DELAY = avg_latency
                 print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
 
-            tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, TEST_ITERATIONS)
+            tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, TEST_ITERATIONS, detected_mode)
             if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
                 print_info("To start the test, switch to the program window and press Start.")
             
