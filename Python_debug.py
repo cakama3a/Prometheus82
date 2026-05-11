@@ -516,15 +516,18 @@ class LatencyTester:
                 min_lat = min(self.latency_results)
                 max_lat = max(self.latency_results)
                 
+                # Calculate jitter (standard deviation)
+                jitter = statistics.stdev(self.latency_results) if len(self.latency_results) > 1 else 0.0
+                
                 # Render each stat at a fixed offset
                 min_surf = label_font.render(f"MIN: {min_lat:.2f}ms", True, TEXT_GRAY)
                 max_surf = label_font.render(f"MAX: {max_lat:.2f}ms", True, TEXT_GRAY)
-                tot_surf = label_font.render(f"TOTAL: {len(self.latency_results)}", True, TEXT_GRAY)
+                jitter_surf = label_font.render(f"JITTER: {jitter:.2f}ms", True, TEXT_GRAY)
                 
                 # Positions based on thirds of the card
                 self._screen.blit(min_surf, (100, 480))
-                self._screen.blit(max_surf, (340, 480))
-                self._screen.blit(tot_surf, (580, 480))
+                self._screen.blit(max_surf, (330, 480))
+                self._screen.blit(jitter_surf, (550, 480))
             
         # Redesigned "LIVE" Badge (vertically centered in header)
         pulse = int(abs(math.sin(time.time() * 2)) * 50) + 100
