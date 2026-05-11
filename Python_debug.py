@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.8"                 # Updated version with microsecond support
+VERSION = "5.2.5.0"                 # Updated version with microsecond support
 MAX_CONSECUTIVE_TIMEOUTS = 15       # Global limit for missed hits
 
 import time
@@ -1043,10 +1043,24 @@ class LatencyTester:
                     self._last_render_time = now
             except Exception:
                 pass
-            try:
-                time.sleep(0)
-            except Exception:
-                pass
+        # Final render with results
+        average_latency = self.latency_sum / len(self.latency_results) if self.latency_results else None
+        self.render_test_window(average_latency)
+        
+        # Keep window open until user closes it
+        if not self.test_aborted:
+            async_log("\nTest finished! You can view the results in the window. Press any key in the window or close it to continue.")
+            waiting = True
+            while waiting:
+                for event in pygame.event.get():
+                    if event.type == QUIT:
+                        waiting = False
+                    if event.type == KEYDOWN and event.key in (K_ESCAPE, K_RETURN, K_SPACE):
+                        waiting = False
+                
+                # Keep rendering to handle window updates/movement
+                self.render_test_window(average_latency)
+                time.sleep(0.05)
 
         self.close_test_window()
 
