@@ -120,47 +120,42 @@ LAST_TEST_TIME_FILE_BUTTON = os.path.join(_TEMP_DIR, 'last_test_time_button.txt'
 LAST_TEST_TIME_FILE_STICK = os.path.join(_TEMP_DIR, 'last_test_time_stick.txt')
 
 # Function to check time since last test
-def check_cooling_period(test_type=None):
-    try:
-        if test_type is None:
-            warnings = []
-            for label, path in (("BUTTON", LAST_TEST_TIME_FILE_BUTTON), ("STICK", LAST_TEST_TIME_FILE_STICK)):
-                if os.path.exists(path):
-                    with open(path) as f:
-                        content = f.read().strip()
-                        parts = content.split(',')
-                        if len(parts) == 2:
-                            last_time = float(parts[0])
-                            cooling_seconds = float(parts[1])
-                        else:
-                            last_time = float(content)
-                            cooling_seconds = COOLING_PERIOD_SECONDS
-                        remaining = max(0, int(cooling_seconds - (time.time() - last_time)))
-                        if remaining > 0:
-                            warnings.append(f"{label}: {remaining} seconds")
-            if warnings:
-                print(f"\n{Fore.YELLOW}WARNING: Cooling required — " + "; ".join(warnings) + f".{Fore.RESET}")
-            return True
+def check_cooling_period():
+    """Displays a premium cooling status dashboard in the console."""
+    print(f"\n{Style.BRIGHT}{Fore.CYAN}┌" + "─" * 45 + "┐")
+    print(f"│ {Fore.WHITE}COOLING SYSTEM STATUS" + " " * 23 + f"{Fore.CYAN}│")
+    print(f"├" + "─" * 45 + f"┤{Style.RESET_ALL}")
+    
+    test_types = [
+        (TEST_TYPE_STICK, "Stick Solenoid"),
+        (TEST_TYPE_BUTTON, "Button Solenoid")
+    ]
+    
+    for t_type, label in test_types:
+        remaining = get_cooling_remaining_seconds(t_type)
+        if remaining > 0:
+            status_text = f"WAIT ({remaining}s)"
+            status_color = Fore.YELLOW
+            icon = "⏳"
         else:
-            path = LAST_TEST_TIME_FILE_STICK if test_type == TEST_TYPE_STICK else LAST_TEST_TIME_FILE_BUTTON
-            if not os.path.exists(path):
-                return True
-            with open(path) as f:
-                content = f.read().strip()
-                parts = content.split(',')
-                if len(parts) == 2:
-                    last_time = float(parts[0])
-                    cooling_seconds = float(parts[1])
-                else:
-                    last_time = float(content)
-                    cooling_seconds = COOLING_PERIOD_SECONDS
-                remaining = max(0, int(cooling_seconds - (time.time() - last_time)))
-                if remaining > 0:
-                    label = "STICK" if test_type == TEST_TYPE_STICK else "BUTTON"
-                    print(f"\n{Fore.YELLOW}WARNING: Cooling required ({label}): {remaining} seconds remaining.{Fore.RESET}")
-                return True
-    except (ValueError, IOError):
-        return True
+            status_text = "READY"
+            status_color = Fore.GREEN
+            icon = "✅"
+        
+        # Manually construct the line with precise spacing
+        # Label part is fixed length
+        line = f"{Fore.CYAN}│{Fore.RESET}  {icon} {label}:"
+        # Spacing to reach the status column
+        line += " " * (25 - len(label))
+        # Status part
+        line += f"{status_color}{status_text}{Fore.RESET}"
+        # Spacing to reach the right border (total box width is 45)
+        # Reduced by 1 to fix the shift observed in the terminal
+        line += " " * (14 - len(status_text))
+        line += f"{Fore.CYAN}│"
+        print(line)
+    
+    print(f"{Fore.CYAN}└" + "─" * 45 + f"┘{Fore.RESET}")
 
 def get_cooling_remaining_seconds(test_type):
     path = LAST_TEST_TIME_FILE_STICK if test_type == TEST_TYPE_STICK else LAST_TEST_TIME_FILE_BUTTON
