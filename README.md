@@ -81,8 +81,7 @@ Based on our verified dataset of dozens of comparable groups:
 * **Top-tier Accuracy:** Optimized setups and high-quality hardware can achieve average deltas as low as **0.16 ms**.
 * **Controller Variance:** Discrepancies above 1.00 ms (occurring in ~33% of pairs) are typically linked to specific controller models or firmware versions that exhibit higher internal jitter or varied processing logic.
 
-### Summary
-The testing process ensures accurate measurement of the Prometheus82 device's input latency. Running the test 200/400 times provides comprehensive data to evaluate the device's stability and performance under real-world conditions.
+
 
 ## How to Get Prometheus 82
 You have two options to obtain a Prometheus 82 device:  
@@ -204,20 +203,12 @@ For testing sticks according to the new standard
 | 34 | Wire Connector 4Pin XH2.54 mm (2/80pcs) | $3.10 | A set of ports and connectors for creating connections | [AliExpress](https://www.aliexpress.com/item/1005003422202370.html) |
 
 ## Notes and tips
-- Video comparison of [6V solenoid with 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) filmed at 1000 FPS and tips on power supply (outdated stick testing method)
-- For a 12V solenoid, you should set the power trigger to 15V, this guarantees stable results when testing.
-- Video about the [solenoid's own delays](https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/) and how it is reflected in the measurements at 1000 FPS (outdated stick testing method)
-- Both ports of the control board use Type-C interfaces, so do not confuse them, remember that the lower port is used for power, and the upper port is used to connect to a PC.
-- The movement of the solenoid should be easy, it should not cling to the inner hole. Make sure that its leg is smooth and free of snags, as this can cause friction, which increases heat, wear and tear on the component and introduces an error in the measurement.
-- **Distance matters:** 
-    - **For Buttons:** Position the solenoid far enough away to allow it to accelerate sufficiently. 
-    - **For Analog Sticks:** The distance between the solenoid and the stick should be **~1 mm** before starting the test. A larger distance can negatively affect the sharp acceleration from the dead zone and distort results. This updated method prevents "unrealistic overloads" that a player could never replicate (the solenoid is 3x faster than the fastest human finger). This information may contradict older video guides but is based on recent research for better accuracy.
-- Over time, the solenoid can degrade, especially if it is frequently overheated. Therefore, it is worth getting a separate control gamepad (with stable firmware) to periodically check if the delay has changed.
-- When conducting tests, you should do it at least 2 times. It is better to recalibrate the position of the gamepad on the stand before the second test to avoid positioning errors.
-- Some Chinese Arduino devices may not work well, if something does not work, it may be worth replacing the Arduino board.
-- Some Arduino boards are slower than others. For the Prometheus 82 tester, only boards with self-delay ≤0.6 ms should be used. You can check it with [this script](https://github.com/cakama3a/Prometheus82/tree/main/ArduinoSpeedTestScript)
-- You should not modify the device in your own way, as this can skew the test results and cause an error in the latency. Currently, the code is optimally adapted for the components listed above.
-- P82 device should be plugged directly into your PC's motherboard, as the ports on the front of the case can sometimes cause problems.
+- **Maintenance:** The movement of the solenoid should be easy and smooth. Ensure the leg is free of snags to avoid friction, which can introduce measurement errors and increase wear.
+- **Power Supply:** For a 12V solenoid, set the power trigger to **15V** to guarantee stable results. See this [comparison of 6V vs 12V](https://www.reddit.com/r/GPDL/comments/1laafjl/nerd_stuff_comparison_of_prometheus_82_on_6v_and/) and the video on [solenoid-only delays](https://www.reddit.com/r/GPDL/comments/1kv7ys9/i_finally_bought_a_camera_that_can_record_1000/).
+- **Connectivity:** The control board has two Type-C ports: the **lower** port is for power, and the **upper** port is for the PC connection.
+- **Testing Protocol:** Always run tests at least **2 times**. Recalibrate the gamepad position on the stand between runs to avoid positioning errors.
+- **Degradation:** Solenoids can degrade over time, especially if overheated. Use a "control" gamepad (with known stable firmware) to periodically check if the tester's results remain consistent.
+- **No Modifications:** Do not modify the hardware or code. The system is optimally calibrated for the components listed in this guide; unauthorized changes will skew results.
 
 ## License
 
