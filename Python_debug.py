@@ -1,7 +1,8 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.7"                 # Updated version with microsecond support
+VERSION = "5.2.4.8"                 # Updated version with microsecond support
+MAX_CONSECUTIVE_TIMEOUTS = 15       # Global limit for missed hits
 
 import time
 import platform
@@ -21,6 +22,7 @@ import csv
 import ctypes
 import threading
 import queue
+import math
 
 # Async logging helpers placed before main so they exist at startup
 ASYNC_LOG_QUEUE = None
@@ -347,11 +349,20 @@ class LatencyTester:
         if getattr(self, "_started", False):
             return
         self._started = False
-        start_rect = pygame.Rect(0, 0, 220, 64)
-        start_rect.center = (self._screen.get_width() // 2, self._screen.get_height() // 2)
-        info_font = pygame.font.Font(None, 32)
+        
+        # UI Colors
+        BG_COLOR = (10, 12, 18)
+        ACCENT_COLOR = (0, 200, 255)
+        
+        start_rect = pygame.Rect(0, 0, 240, 70)
+        start_rect.center = (self._screen.get_width() // 2, self._screen.get_height() // 2 + 50)
+        
+        title_font = pygame.font.Font(None, 72)
+        info_font = pygame.font.Font(None, 36)
+        
         clock = pygame.time.Clock()
         while not self._started:
+            time_val = time.time()
             for event in pygame.event.get():
                 if event.type == QUIT:
                     pygame.quit()
@@ -364,50 +375,185 @@ class LatencyTester:
                 if event.type == MOUSEBUTTONDOWN:
                     if start_rect.collidepoint(event.pos):
                         self._started = True
-            self._screen.fill((0, 0, 0))
-            banner = info_font.render("Keep this window on top during testing", True, (255, 255, 0))
-            self._screen.blit(banner, (20, 20))
+            
+            # Background gradient
+            for y in range(0, 600, 2):
+                c = (10 + y//60, 12 + y//50, 18 + y//30)
+                pygame.draw.rect(self._screen, c, (0, y, 800, 2))
+                
+            # Animated title glow
+            glow_alpha = int(abs(math.sin(time_val * 2)) * 100) + 155
+            title_surf = title_font.render("PROMETHEUS 82", True, (0, glow_alpha, 255))
+            title_rect = title_surf.get_rect(center=(400, 150))
+            self._screen.blit(title_surf, title_rect)
+            
+            # Subtitle
+            sub_text = "READY TO START"
+            sub_surf = info_font.render(sub_text, True, (200, 200, 200))
+            self._screen.blit(sub_surf, sub_surf.get_rect(center=(400, 210)))
+
             if self.test_type == TEST_TYPE_KEYBOARD:
-                msg = "Press the key to test, then press Start"
+                msg = "Press any key to test, then press Start"
                 if self.key_to_test is not None:
                     try:
                         key_name = pygame.key.name(self.key_to_test)
                     except Exception:
                         key_name = str(self.key_to_test)
-                    msg = f"Selected key: {key_name}. Press Start to begin"
-                self._screen.blit(info_font.render(msg, True, (200, 200, 200)), (20, 60))
-            pygame.draw.rect(self._screen, (50, 150, 50), start_rect, border_radius=12)
-            label = info_font.render("Start", True, (255, 255, 255))
+                    msg = f"Selected key: {key_name.upper()}"
+                msg_surf = info_font.render(msg, True, (0, 255, 150))
+                self._screen.blit(msg_surf, msg_surf.get_rect(center=(400, 280)))
+
+            # Button hover effect
+            mouse_pos = pygame.mouse.get_pos()
+            btn_color = (0, 180, 100) if start_rect.collidepoint(mouse_pos) else (0, 140, 70)
+            
+            # Draw button with glow
+            for i in range(5):
+                alpha_rect = start_rect.inflate(i*2, i*2)
+                pygame.draw.rect(self._screen, (0, 50, 20), alpha_rect, border_radius=15)
+                
+            pygame.draw.rect(self._screen, btn_color, start_rect, border_radius=12)
+            label = info_font.render("START TEST", True, (255, 255, 255))
             label_pos = label.get_rect(center=start_rect.center)
             self._screen.blit(label, label_pos)
+            
             pygame.display.flip()
             clock.tick(60)
 
     def close_test_window(self):
         return
 
+    def _pre_render_bg(self):
+        """Pre-renders the static background and header to save CPU"""
+        if self._bg_surface is not None:
+            return
+        self._bg_surface = pygame.Surface((800, 600))
+        # Background gradient
+        for y in range(0, 600, 4):
+            c = (10 + y//100, 12 + y//80, 18 + y//60)
+            pygame.draw.rect(self._bg_surface, c, (0, y, 800, 4))
+        # Header (Height 60)
+        pygame.draw.rect(self._bg_surface, (30, 35, 50), (0, 0, 800, 60))
+        pygame.draw.line(self._bg_surface, (60, 70, 90), (0, 60), (800, 60), 1)
+        title_font = pygame.font.Font(None, 32)
+        ACCENT_BLUE = (0, 180, 255)
+        header_surf = title_font.render("PROMETHEUS 82 | PERFORMANCE MONITOR", True, ACCENT_BLUE)
+        # Vertically center header text
+        self._bg_surface.blit(header_surf, (25, 30 - header_surf.get_height() // 2))
+
     def render_test_window(self, average_latency=None):
         if not hasattr(self, "_screen") or self._screen is None:
             return
-        self._screen.fill((0, 0, 0))
-        header = "Keep this window on top during testing"
-        surf = self._font.render(header, True, (255, 255, 0))
-        self._screen.blit(surf, (10, 10))
+            
+        # UI Colors
+        ACCENT_BLUE = (0, 180, 255)
+        ACCENT_CYAN = (0, 255, 220)
+        TEXT_WHITE = (255, 255, 255)
+        TEXT_GRAY = (180, 190, 210)
+        
+        # Draw pre-rendered background
+        self._pre_render_bg()
+        self._screen.blit(self._bg_surface, (0, 0))
+        
+        title_font = pygame.font.Font(None, 32)
+        
+        # Test Status Card
+        card_rect = pygame.Rect(25, 80, 750, 100)
+        pygame.draw.rect(self._screen, (20, 25, 35), card_rect, border_radius=15)
+        pygame.draw.rect(self._screen, (50, 60, 80), card_rect, width=1, border_radius=15)
         
         if self.test_type == TEST_TYPE_HARDWARE:
-            surf2 = self._font.render("Calculating...", True, (255, 255, 255))
-            self._screen.blit(surf2, (10, 40))
+            status_text = "HARDWARE TEST: RUNNING..."
+            status_color = (255, 180, 0)
         elif self.test_type == TEST_TYPE_STICK and getattr(self, "_started", False) and len(self.latency_results) == 0:
-            surf2 = self._font.render("Calibrating...", True, (255, 255, 255))
-            self._screen.blit(surf2, (10, 40))
+            status_text = "STICK CALIBRATION IN PROGRESS..."
+            status_color = ACCENT_CYAN
         else:
-            progress_text = f"Progress: {len(self.latency_results)}/{self.iterations}"
-            surf2 = self._font.render(progress_text, True, (200, 200, 200))
-            self._screen.blit(surf2, (10, 40))
+            status_text = f"{self.test_type.upper()} TEST: {len(self.latency_results)} / {self.iterations}"
+            status_color = TEXT_WHITE
             
+        status_surf = title_font.render(status_text, True, status_color)
+        self._screen.blit(status_surf, (50, 105))
+        
+        # Progress Bar with Glow and Animation
+        bar_x, bar_y = 50, 145
+        bar_w, bar_h = 700, 12
+        pygame.draw.rect(self._screen, (40, 45, 55), (bar_x, bar_y, bar_w, bar_h), border_radius=6)
+        
+        if self.iterations > 0:
+            progress_pct = len(self.latency_results) / self.iterations
+            progress_w = int(progress_pct * bar_w)
+            if progress_w > 0:
+                # Gradient for progress bar
+                pygame.draw.rect(self._screen, ACCENT_BLUE, (bar_x, bar_y, progress_w, bar_h), border_radius=6)
+                # Moving light effect (fixed period to prevent jumping)
+                light_pos = int((time.time() * 400) % (bar_w + 150)) - 100
+                if 0 < light_pos < progress_w:
+                    light_rect = pygame.Rect(bar_x + light_pos, bar_y, 40, bar_h)
+                    pygame.draw.rect(self._screen, (100, 220, 255), light_rect.clip(pygame.Rect(bar_x, bar_y, progress_w, bar_h)), border_radius=6)
+
+        # Latency Dashboard
         if average_latency is not None:
-            surf3 = self._font.render(f"Average latency: {average_latency:.2f} ms", True, (150, 200, 255))
-            self._screen.blit(surf3, (10, 70))
+            dash_rect = pygame.Rect(25, 200, 750, 360)
+            pygame.draw.rect(self._screen, (15, 20, 28), dash_rect, border_radius=20)
+            pygame.draw.rect(self._screen, (40, 50, 70), dash_rect, width=1, border_radius=20)
+            
+            # Glow for latency text
+            label_font = pygame.font.Font(None, 36)
+            lat_label = label_font.render("AVERAGE RESPONSE TIME", True, TEXT_GRAY)
+            self._screen.blit(lat_label, (dash_rect.centerx - lat_label.get_width()//2, 250))
+            
+            val_font = pygame.font.Font(None, 120)
+            val_text = f"{average_latency:.2f}"
+            unit_text = "ms"
+            
+            val_surf = val_font.render(val_text, True, ACCENT_CYAN)
+            unit_font = pygame.font.Font(None, 48)
+            unit_surf = unit_font.render(unit_text, True, ACCENT_BLUE)
+            
+            total_w = val_surf.get_width() + unit_surf.get_width() + 8
+            start_x = dash_rect.centerx - total_w // 2
+            
+            # Align ms precisely to the baseline of the large digits
+            val_y = 320
+            unit_y = val_y + (val_surf.get_height() - unit_surf.get_height()) - 5 # Manual adjustment for font padding
+            
+            self._screen.blit(val_surf, (start_x, val_y))
+            self._screen.blit(unit_surf, (start_x + val_surf.get_width() + 8, unit_y))
+            
+            # Stats breakdown with fixed positions to prevent jumping
+            if self.latency_results:
+                min_lat = min(self.latency_results)
+                max_lat = max(self.latency_results)
+                
+                # Render each stat at a fixed offset
+                min_surf = label_font.render(f"MIN: {min_lat:.2f}ms", True, TEXT_GRAY)
+                max_surf = label_font.render(f"MAX: {max_lat:.2f}ms", True, TEXT_GRAY)
+                tot_surf = label_font.render(f"TOTAL: {len(self.latency_results)}", True, TEXT_GRAY)
+                
+                # Positions based on thirds of the card
+                self._screen.blit(min_surf, (100, 480))
+                self._screen.blit(max_surf, (340, 480))
+                self._screen.blit(tot_surf, (580, 480))
+            
+        # Redesigned "LIVE" Badge (vertically centered in header)
+        pulse = int(abs(math.sin(time.time() * 2)) * 50) + 100
+        badge_rect = pygame.Rect(710, 16, 65, 28)
+        pygame.draw.rect(self._screen, (30, 0, 0), badge_rect, border_radius=6)
+        pygame.draw.rect(self._screen, (pulse, 20, 40), badge_rect, width=1, border_radius=6)
+        
+        # Red dot inside badge
+        pygame.draw.circle(self._screen, (255, 40, 60), (722, 30), 4)
+        
+        badge_font = pygame.font.Font(None, 24)
+        badge_surf = badge_font.render("LIVE", True, (255, 60, 80))
+        self._screen.blit(badge_surf, (732, 23))
+
+        # Instruction at the bottom
+        hint_font = pygame.font.Font(None, 24)
+        hint_surf = hint_font.render("KEEP WINDOW ACTIVE AND ON TOP TO CAPTURE INPUTS", True, (150, 150, 50))
+        self._screen.blit(hint_surf, (400 - hint_surf.get_width() // 2, 575))
+        
         pygame.display.flip()
 
     def check_stick_setup(self, iterations=5):
@@ -879,8 +1025,10 @@ class LatencyTester:
                 self._consecutive_timeouts += 1
                 print(f"Invalid measurement: no input detected within {self.max_latency_us/1000:.2f} ms")
                 self.measuring = False
-                if self.test_type == TEST_TYPE_STICK and self._consecutive_timeouts >= STICK_MAX_CONSECUTIVE_TIMEOUTS:
-                    print_error("Test stopped: too many consecutive missed stick inputs. Make sure the test window is focused and receiving gamepad input before restarting. Also check solenoid position and stick deflection to avoid overheating the solenoid.")
+                
+                limit = STICK_MAX_CONSECUTIVE_TIMEOUTS if self.test_type == TEST_TYPE_STICK else MAX_CONSECUTIVE_TIMEOUTS
+                if self._consecutive_timeouts >= limit:
+                    print_error(f"Test stopped: too many consecutive missed inputs ({self._consecutive_timeouts}).\nMake sure the test window is focused and receiving input before restarting. Also check solenoid position and stick deflection to avoid overheating.")
                     self.test_aborted = True
                     self.close_test_window()
                     return
@@ -892,7 +1040,11 @@ class LatencyTester:
             pygame.event.pump()
             try:
                 now = time.perf_counter()
-                if now - self._last_render_time >= 1.0 / 30.0:
+                # ONLY render if we are not actively measuring to ensure 100% accuracy.
+                # We also check if we are not waiting for the 'S' signal after triggering.
+                is_waiting_for_sensor = (current_time_us - self.last_trigger_time_us < self.max_latency_us) and not self.measuring
+                
+                if not self.measuring and not is_waiting_for_sensor and now - self._last_render_time >= 1.0 / 30.0:
                     average_latency = self.latency_sum / len(self.latency_results) if self.latency_results else None
                     self.render_test_window(average_latency)
                     self._last_render_time = now
