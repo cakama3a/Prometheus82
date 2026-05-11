@@ -773,8 +773,21 @@ class LatencyTester:
         async_log(f"[{progress / self.iterations * 100:3.0f}%] {latency:.2f} ms")
 
     def is_stick_at_extreme(self):
-        """Checks if stick is at extreme position"""
-        return self.stick_axes and self.joystick and any(abs(self.joystick.get_axis(axis)) >= STICK_THRESHOLD for axis in self.stick_axes)
+        """Checks if stick is at extreme position, auto-locking to the primary axis on first hit."""
+        if not self.stick_axes or not self.joystick:
+            return False
+        
+        # If we already know which axis is being hit, check only that one
+        if self.primary_axis is not None:
+            return abs(self.joystick.get_axis(self.primary_axis)) >= STICK_THRESHOLD
+            
+        # On the first hit, detect which axis of the pair reached the threshold first
+        for axis in self.stick_axes:
+            if abs(self.joystick.get_axis(axis)) >= STICK_THRESHOLD:
+                self.primary_axis = axis
+                print(f"Primary axis detected and locked: Axis {axis}")
+                return True
+        return False
 
     def trigger_solenoid(self):
         """Sends command to Prometheus to activate the solenoid"""
