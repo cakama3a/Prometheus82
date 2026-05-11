@@ -230,6 +230,7 @@ Each license is verified and has a specific validity period.
 | **GuliKit** | `Enterprise` | ✅ Active   | `July 31, 2026`  |
 | `8a4b1c9e-7d2f-4b0a-8c1f-9e6a5b3d7c0f`         | `Professional` | ✅ Active   | `October 15, 2026` |
 | **GameSir**         | `Professional` | ✅ Active   | `December 15, 2026` |
+| `f3b4d2e1-a0c9-4b8a-9d7e-6f5a4b3c2d1e`         | `Professional` | ✅ Active   | `May 11, 2031` |
 
 ---
 ### How to Get Your License
