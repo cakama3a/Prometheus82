@@ -486,11 +486,6 @@ class LatencyTester:
             if progress_w > 0:
                 # Gradient for progress bar
                 pygame.draw.rect(self._screen, ACCENT_BLUE, (bar_x, bar_y, progress_w, bar_h), border_radius=6)
-                # Moving light effect (fixed period to prevent jumping)
-                light_pos = int((time.time() * 400) % (bar_w + 150)) - 100
-                if 0 < light_pos < progress_w:
-                    light_rect = pygame.Rect(bar_x + light_pos, bar_y, 40, bar_h)
-                    pygame.draw.rect(self._screen, (100, 220, 255), light_rect.clip(pygame.Rect(bar_x, bar_y, progress_w, bar_h)), border_radius=6)
 
         # Latency Dashboard
         if average_latency is not None:
@@ -1122,15 +1117,27 @@ if __name__ == "__main__":
             pygame.display.set_mode((800, 600))
             pygame.display.set_caption("Prometheus 82 - Testing")
             pygame.font.init()
+        # Show premium initial instructions in the Pygame window
         screen = pygame.display.get_surface()
-        font = pygame.font.Font(None, 28)
-        screen.fill((0, 0, 0))
-        msg1 = "Do not close this window."
-        msg2 = "Go to the console to manage the test."
-        surf1 = font.render(msg1, True, (255, 255, 0))
-        surf2 = font.render(msg2, True, (200, 200, 200))
-        screen.blit(surf1, (20, 20))
-        screen.blit(surf2, (20, 60))
+        font_large = pygame.font.Font(None, 48)
+        font_small = pygame.font.Font(None, 32)
+        
+        # Background gradient
+        for y in range(0, 600, 4):
+            c = (15 + y//100, 20 + y//80, 30 + y//60)
+            pygame.draw.rect(screen, c, (0, y, 800, 4))
+            
+        msg1 = "PROMETHEUS 82 IS READY"
+        msg2 = "Please go to the console to configure the test."
+        msg3 = "Do not close this window."
+        
+        surf1 = font_large.render(msg1, True, (0, 200, 255))
+        surf2 = font_small.render(msg2, True, (200, 200, 200))
+        surf3 = font_small.render(msg3, True, (150, 150, 50))
+        
+        screen.blit(surf1, (400 - surf1.get_width()//2, 240))
+        screen.blit(surf2, (400 - surf2.get_width()//2, 300))
+        screen.blit(surf3, (400 - surf3.get_width()//2, 550))
         pygame.display.flip()
     except Exception as e:
         print_error(f"Couldn't create window at startup: {e}")
@@ -1169,58 +1176,58 @@ if __name__ == "__main__":
 
     # Select test type
     print("\nSelect test type:\n1: Gamepad\t- Test analog stick\n2: Gamepad\t- Test button\n3: Keyboard\t- Test key\n4: Hardware\t- Test solenoid and sensor")
-    try:
-        test_choice = int(input("Enter your choice (1-4): "))
-        test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE}.get(test_choice)
-        if not test_type:
-            raise ValueError
-        if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) and not joystick:
-            print_error(f"No gamepad found! Can't run {test_type} test.")
-            input("Press Enter to close...")
-            pygame.quit()
-            sys.exit()
-        remaining = get_cooling_remaining_seconds(test_type)
-        if remaining > 0 and (test_type != TEST_TYPE_STICK or remaining >= 40):
-            print(f"\n{Fore.YELLOW}WARNING: Device has not cooled yet. Running this test now may cause degradation. Remaining cooling time: {remaining} seconds.{Fore.RESET}")
-            while True:
-                choice = input("Continue anyway? (Y/N): ").upper()
-                if choice in ('Y', 'N'):
-                    break
-                print("Invalid choice. Please enter Y or N.")
-            if choice == 'N':
-                print("Test cancelled.")
-                input("Press Enter to close...")
-                pygame.quit()
-                sys.exit()
-    except ValueError:
-        print_error("Invalid input!")
-        input("Press Enter to close...")
-        pygame.quit()
-        sys.exit()
+    while True:
+        try:
+            choice_input = input("Enter your choice (1-4): ").strip()
+            test_choice = int(choice_input)
+            test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE}.get(test_choice)
+            if not test_type:
+                print_error("Invalid choice! Please select 1-4.")
+                continue
+                
+            if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) and not joystick:
+                print_error(f"No gamepad found! Can't run {test_type} test.")
+                continue # Allow selecting another type or connecting gamepad? Actually joystick was detected earlier.
+            
+            remaining = get_cooling_remaining_seconds(test_type)
+            if remaining > 0 and (test_type != TEST_TYPE_STICK or remaining >= 40):
+                print(f"\n{Fore.YELLOW}WARNING: Device has not cooled yet. Running this test now may cause degradation. Remaining cooling time: {remaining} seconds.{Fore.RESET}")
+                inner_choice = ""
+                while inner_choice not in ('Y', 'N'):
+                    inner_choice = input("Continue anyway? (Y/N): ").upper().strip()
+                if inner_choice == 'N':
+                    print("Please wait for cooling or select another test.")
+                    continue
+            
+            # If we reach here, selection is valid
+            break
+        except ValueError:
+            print_error("Invalid input! Please enter a number.")
 
     # Select iterations (affects cooling timeout)
     if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
         print("\nSelect number of iterations:\n1: 400 (For Gamepadla.com validation)\n2: 200\n3: 100\nOr enter a custom number between 10 and 400.")
-        try:
-            iter_input = input("Enter your choice (1/2/3 or custom 10-400): ").strip()
-            if iter_input == '1':
-                TEST_ITERATIONS = 400
-            elif iter_input == '2':
-                TEST_ITERATIONS = 200
-            elif iter_input == '3':
-                TEST_ITERATIONS = 100
-            else:
-                custom_iters = int(iter_input)
-                if custom_iters < 10 or custom_iters > 400:
-                    raise ValueError
-                TEST_ITERATIONS = custom_iters
-        except ValueError:
-            print("Invalid iterations input! Please enter 1, 2, 3, or a number between 10 and 400.")
-            input("Press Enter to close...")
-            pygame.quit()
-            sys.exit()
-
-        pass
+        while True:
+            try:
+                iter_input = input("Enter your choice (1/2/3 or custom 10-400): ").strip()
+                if iter_input == '1':
+                    TEST_ITERATIONS = 400
+                    break
+                elif iter_input == '2':
+                    TEST_ITERATIONS = 200
+                    break
+                elif iter_input == '3':
+                    TEST_ITERATIONS = 100
+                    break
+                else:
+                    custom_iters = int(iter_input)
+                    if 10 <= custom_iters <= 400:
+                        TEST_ITERATIONS = custom_iters
+                        break
+                    else:
+                        print_error("Invalid number! Please enter a value between 10 and 400.")
+            except ValueError:
+                print_error("Invalid input! Please enter 1, 2, 3, or a number.")
 
     # Setup serial connection
     # --- MODIFICATION START ---
@@ -1241,18 +1248,17 @@ if __name__ == "__main__":
         print("\nAvailable COM ports:")
         for i, p in enumerate(ports):
             print(f"{i + 1}: {p.device} - {p.description}")
-        try:
-            selection = int(input(f"Select COM port (1-{len(ports)}): ")) - 1
-            if 0 <= selection < len(ports):
-                port = ports[selection]
-            else:
-                # Trigger the except block for out-of-range numbers
-                raise IndexError("Selection out of range")
-        except (ValueError, IndexError):
-            print("Invalid selection!")
-            input("Press Enter to close...")
-            pygame.quit()
-            sys.exit()
+        while True:
+            try:
+                selection_input = input(f"Select COM port (1-{len(ports)}): ").strip()
+                selection = int(selection_input) - 1
+                if 0 <= selection < len(ports):
+                    port = ports[selection]
+                    break
+                else:
+                    print_error(f"Please select a number between 1 and {len(ports)}.")
+            except ValueError:
+                print_error("Invalid input! Please enter a number.")
     # --- MODIFICATION END ---
 
     try:
