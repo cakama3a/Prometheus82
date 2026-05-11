@@ -719,6 +719,7 @@ class LatencyTester:
         """Uses first solenoid strike to determine which axis corresponds to the tested direction.
         This solves the issue where physical direction (e.g., left) might not match
         programmatic axis mapping (e.g., axis 0 might be programmed as down).
+        Uses protocol-aware axis pairing to match Stick Tracer standard.
         """
         if not self.joystick or not self.serial:
             return False
@@ -759,12 +760,22 @@ class LatencyTester:
             self.primary_axis = changed_axis
             self.axis_direction = axis_dir
             
-            # Determine partner axis (standard XInput/DInput pairing: even/odd)
+            # Determine partner axis using protocol-aware pairs (Stick Tracer standard).
+            # DInput uses pairs (0,1) and (3,5) — not the even/odd rule used for XInput.
             partner_axis = -1
-            if changed_axis % 2 == 0:
-                partner_axis = changed_axis + 1
-            else:
-                partner_axis = changed_axis - 1
+            axis_pairs = INPUT_MODE_AXIS_PAIRS.get(
+                getattr(self, '_detected_mode', None), [(0, 1), (2, 3)]
+            )
+            for pair in axis_pairs:
+                if changed_axis in pair:
+                    partner_axis = pair[0] if pair[1] == changed_axis else pair[1]
+                    break
+            # Fallback: even/odd heuristic if no pair matched
+            if partner_axis < 0:
+                if changed_axis % 2 == 0:
+                    partner_axis = changed_axis + 1
+                else:
+                    partner_axis = changed_axis - 1
             
             if 0 <= partner_axis < self.joystick.get_numaxes():
                 self.stick_axes = sorted([changed_axis, partner_axis])
@@ -1143,6 +1154,23 @@ def detect_input_mode(name, guid, axes_at_rest):
     if any(abs(a + 1) < 0.1 for a in axes_at_rest):
         return "XInput"
     return "DInput"
+
+# Axis mapping per protocol — must match Stick Tracer standard
+# Each entry: (right_x_axis, right_y_axis)
+INPUT_MODE_AXES = {
+    "Sony":   (2, 3),
+    "XInput": (2, 3),
+    "Switch": (2, 3),
+    "DInput": (3, 5),
+}
+
+# Axis pair groupings per protocol (used for partner-axis pairing)
+INPUT_MODE_AXIS_PAIRS = {
+    "Sony":   [(0, 1), (2, 3)],
+    "XInput": [(0, 1), (2, 3)],
+    "Switch": [(0, 1), (2, 3)],
+    "DInput": [(0, 1), (3, 5)],
+}
 
 def detect_gamepad_mode(joystick):
     """Detect gamepad mode (XInput, DInput, Sony, Switch) based on name and axes at rest"""
