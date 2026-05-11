@@ -6,6 +6,7 @@ MAX_CONSECUTIVE_TIMEOUTS = 15       # Global limit for missed hits
 
 import time
 import platform
+import gc
 import serial
 import requests
 import webbrowser
@@ -999,63 +1000,111 @@ class LatencyTester:
         }
 
     def test_loop(self):
-        """Main test loop for stick or button tests"""
+        """Main test loop for stick or button tests with high-precision optimizations"""
         print("\nPreparing test window...")
         self.open_test_window()
         print("Test window ready. Press Start to begin.")
         self.wait_for_start()
+        
         if self.test_type == TEST_TYPE_STICK:
             ok = self.check_stick_setup(iterations=5)
             if not ok:
                 if pygame.display.get_init() and pygame.display.get_surface() is not None:
                     pygame.display.quit()
                 return
+                
         print(f"\nStarting {self.iterations} measurements with microsecond precision...\n")
-        self.trigger_solenoid()
-        while len(self.latency_results) < self.iterations:
-            current_time_us = time.perf_counter() * 1000000
-            if (not self.measuring and current_time_us - self.last_trigger_time_us >= self.test_interval_us):
-                self.trigger_solenoid()
-            if self.serial and self.serial.in_waiting:
-                found = False
-                while self.serial.in_waiting:
-                    if self.serial.read() == b'S':
-                        found = True
-                        break
-                if found:
-                    self.start_time_us = time.perf_counter() * 1000000
-                    self.measuring = True
-            self.check_input()
-            if self.measuring and current_time_us - self.start_time_us > self.max_latency_us:
-                self.invalid_measurements += 1
-                self._consecutive_timeouts += 1
-                print(f"Invalid measurement: no input detected within {self.max_latency_us/1000:.2f} ms")
-                self.measuring = False
-                
-                limit = STICK_MAX_CONSECUTIVE_TIMEOUTS if self.test_type == TEST_TYPE_STICK else MAX_CONSECUTIVE_TIMEOUTS
-                if self._consecutive_timeouts >= limit:
-                    print_error(f"Test stopped: too many consecutive missed inputs ({self._consecutive_timeouts}).\nMake sure the test window is focused and receiving input before restarting. Also check solenoid position and stick deflection to avoid overheating.")
-                    self.test_aborted = True
-                    self.close_test_window()
-                    return
-                if self.test_type == TEST_TYPE_STICK and not self._stick_runtime_fallback_used and self.pulse_duration_us < STICK_SETUP_FALLBACK_PULSE_DURATION * 1000:
-                    self._stick_runtime_fallback_used = True
-                    print_info(f"Switching to stronger solenoid pulse ({STICK_SETUP_FALLBACK_PULSE_DURATION} ms) for remaining measurements.")
-                    self.set_pulse_duration(STICK_SETUP_FALLBACK_PULSE_DURATION)
-                    self.limit_iterations_for_fallback_pulse()
-            pygame.event.pump()
+        
+        # --- High Precision Mode: Start ---
+        # 1. Set High Process Priority (Windows)
+        if platform.system() == 'Windows':
             try:
-                now = time.perf_counter()
-                # ONLY render if we are not actively measuring to ensure 100% accuracy.
-                # We also check if we are not waiting for the 'S' signal after triggering.
-                is_waiting_for_sensor = (current_time_us - self.last_trigger_time_us < self.max_latency_us) and not self.measuring
-                
-                if not self.measuring and not is_waiting_for_sensor and now - self._last_render_time >= 1.0 / 30.0:
-                    average_latency = self.latency_sum / len(self.latency_results) if self.latency_results else None
-                    self.render_test_window(average_latency)
-                    self._last_render_time = now
+                # HIGH_PRIORITY_CLASS = 0x00000080
+                ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x00000080)
             except Exception:
                 pass
+        
+        # 2. Disable Garbage Collector
+        gc.collect()
+        gc.disable()
+        
+        try:
+            self.trigger_solenoid()
+            while len(self.latency_results) < self.iterations:
+                current_time_us = time.perf_counter() * 1000000
+                
+                # Trigger handling
+                if not self.measuring:
+                    time_since_trigger = current_time_us - self.last_trigger_time_us
+                    if time_since_trigger >= self.test_interval_us:
+                        self.trigger_solenoid()
+                        current_time_us = time.perf_counter() * 1000000 # Update after trigger
+                
+                # Serial handling (waiting for 'S')
+                if self.serial and self.serial.in_waiting:
+                    found = False
+                    while self.serial.in_waiting:
+                        if self.serial.read() == b'S':
+                            found = True
+                            break
+                    if found:
+                        self.start_time_us = time.perf_counter() * 1000000
+                        self.measuring = True
+                
+                # Input handling (waiting for gamepad)
+                self.check_input()
+                
+                # Timeout handling
+                if self.measuring and current_time_us - self.start_time_us > self.max_latency_us:
+                    self.invalid_measurements += 1
+                    self._consecutive_timeouts += 1
+                    print(f"Invalid measurement: no input detected within {self.max_latency_us/1000:.2f} ms")
+                    self.measuring = False
+                    
+                    limit = STICK_MAX_CONSECUTIVE_TIMEOUTS if self.test_type == TEST_TYPE_STICK else MAX_CONSECUTIVE_TIMEOUTS
+                    if self._consecutive_timeouts >= limit:
+                        print_error(f"Test stopped: too many consecutive missed inputs ({self._consecutive_timeouts}).\nMake sure the test window is focused and receiving input before restarting.")
+                        self.test_aborted = True
+                        break
+                    
+                    if self.test_type == TEST_TYPE_STICK and not self._stick_runtime_fallback_used and self.pulse_duration_us < STICK_SETUP_FALLBACK_PULSE_DURATION * 1000:
+                        self._stick_runtime_fallback_used = True
+                        print_info(f"Switching to stronger solenoid pulse ({STICK_SETUP_FALLBACK_PULSE_DURATION} ms) for remaining measurements.")
+                        self.set_pulse_duration(STICK_SETUP_FALLBACK_PULSE_DURATION)
+                        self.limit_iterations_for_fallback_pulse()
+                
+                # Optimized Pygame pumping
+                pygame.event.pump()
+                
+                # System and UI responsiveness (only when not in critical measurement phase)
+                is_active_phase = self.measuring or (current_time_us - self.last_trigger_time_us < self.max_latency_us)
+                
+                if not is_active_phase:
+                    # Resting phase: we can yield to the system and render UI
+                    time.sleep(0.001)
+                    
+                    try:
+                        now = time.perf_counter()
+                        if now - self._last_render_time >= 1.0 / 30.0:
+                            average_latency = self.latency_sum / len(self.latency_results) if self.latency_results else None
+                            self.render_test_window(average_latency)
+                            self._last_render_time = now
+                    except Exception:
+                        pass
+                        
+        finally:
+            # --- High Precision Mode: End ---
+            # 1. Enable Garbage Collector
+            gc.enable()
+            
+            # 2. Restore Normal Process Priority (Windows)
+            if platform.system() == 'Windows':
+                try:
+                    # NORMAL_PRIORITY_CLASS = 0x00000020
+                    ctypes.windll.kernel32.SetPriorityClass(ctypes.windll.kernel32.GetCurrentProcess(), 0x00000020)
+                except Exception:
+                    pass
+                    
         # Final render with results
         average_latency = self.latency_sum / len(self.latency_results) if self.latency_results else None
         self.render_test_window(average_latency)
@@ -1071,7 +1120,6 @@ class LatencyTester:
                     if event.type == KEYDOWN and event.key in (K_ESCAPE, K_RETURN, K_SPACE):
                         waiting = False
                 
-                # Keep rendering to handle window updates/movement
                 self.render_test_window(average_latency)
                 time.sleep(0.05)
 
