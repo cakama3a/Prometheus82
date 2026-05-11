@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.4.6"                 # Updated version with microsecond support
+VERSION = "5.2.4.8"                 # Updated version with microsecond support
 
 import time
 import platform
@@ -276,6 +276,8 @@ class LatencyTester:
         self.start_time_us = 0  # Start time in microseconds
         self.last_trigger_time_us = 0  # Last trigger time in microseconds
         self.stick_axes = None
+        self.primary_axis = None  # Calibrated primary axis from first solenoid strike
+        self.axis_direction = None  # Direction of primary axis (1 for positive, -1 for negative)
         self.button_to_test = None
         self.key_to_test = None
         self.invalid_measurements = 0
@@ -537,6 +539,12 @@ class LatencyTester:
         if not self.serial:
             return None
 
+        # Calibrate axis orientation using first solenoid strike
+        if self.primary_axis is None:
+            cal_ok = self.calibrate_axis_orientation()
+            if not cal_ok:
+                print_error("Axis calibration failed. Attempting to continue with auto-detection.")
+
         ok = self._check_stick_setup_once(iterations, STICK_SETUP_DEFLECTION_WAIT, report_errors=False)
         if ok:
             return True
@@ -578,17 +586,24 @@ class LatencyTester:
                     pygame.event.pump()
                     
                 if self.joystick:
-                    axes = self.stick_axes if self.stick_axes else range(self.joystick.get_numaxes())
-                    for axis in axes:
-                        current_val = self.joystick.get_axis(axis)
-                        if self.stick_axes:
-                            val = abs(current_val)
-                            if val > max_deflection:
-                                max_deflection = val
-                        elif axis < len(baseline_axes) and abs(current_val - baseline_axes[axis]) > 0.05:
-                            val = abs(current_val)
-                            if val > max_deflection:
-                                max_deflection = val
+                    # Use calibrated primary axis if available, otherwise check all stick axes
+                    if self.primary_axis is not None:
+                        current_val = self.joystick.get_axis(self.primary_axis)
+                        val = abs(current_val)
+                        if val > max_deflection:
+                            max_deflection = val
+                    else:
+                        axes = self.stick_axes if self.stick_axes else range(self.joystick.get_numaxes())
+                        for axis in axes:
+                            current_val = self.joystick.get_axis(axis)
+                            if self.stick_axes:
+                                val = abs(current_val)
+                                if val > max_deflection:
+                                    max_deflection = val
+                            elif axis < len(baseline_axes) and abs(current_val - baseline_axes[axis]) > 0.05:
+                                val = abs(current_val)
+                                if val > max_deflection:
+                                    max_deflection = val
 
             if self.serial:
                 self.serial.write(b'T')
@@ -700,10 +715,83 @@ class LatencyTester:
         print_error("Failed to set pulse duration after 3 attempts. Continuing with default value.")
         return False
 
+    def calibrate_axis_orientation(self):
+        """Uses first solenoid strike to determine which axis corresponds to the tested direction.
+        This solves the issue where physical direction (e.g., left) might not match
+        programmatic axis mapping (e.g., axis 0 might be programmed as down).
+        """
+        if not self.joystick or not self.serial:
+            return False
+        
+        print("\nCalibrating axis orientation with first solenoid strike...")
+        
+        # Get baseline axis values before strike
+        pygame.event.pump()
+        baseline_axes = [self.joystick.get_axis(a) for a in range(self.joystick.get_numaxes())]
+        
+        # Fire solenoid
+        try:
+            self.serial.reset_input_buffer()
+            self.serial.reset_output_buffer()
+            self.serial.write(b'T')
+            self.serial.flush()
+        except Exception:
+            return False
+        
+        # Monitor axes for changes after strike
+        max_change = 0.0
+        changed_axis = -1
+        axis_dir = 0
+        
+        start_time = time.perf_counter()
+        while time.perf_counter() - start_time < 0.5:  # Monitor for 500ms
+            pygame.event.pump()
+            for axis in range(self.joystick.get_numaxes()):
+                current_val = self.joystick.get_axis(axis)
+                change = abs(current_val - baseline_axes[axis])
+                if change > max_change:
+                    max_change = change
+                    changed_axis = axis
+                    axis_dir = 1 if current_val > baseline_axes[axis] else -1
+            time.sleep(0.001)
+        
+        if changed_axis >= 0 and max_change > 0.1:
+            self.primary_axis = changed_axis
+            self.axis_direction = axis_dir
+            
+            # Determine partner axis (standard XInput/DInput pairing: even/odd)
+            partner_axis = -1
+            if changed_axis % 2 == 0:
+                partner_axis = changed_axis + 1
+            else:
+                partner_axis = changed_axis - 1
+            
+            if 0 <= partner_axis < self.joystick.get_numaxes():
+                self.stick_axes = sorted([changed_axis, partner_axis])
+            else:
+                self.stick_axes = [changed_axis]
+            
+            direction_str = "positive" if axis_dir > 0 else "negative"
+            print(f"Axis calibration complete: Primary axis {changed_axis} (direction: {direction_str})")
+            print(f"Stick axes: {self.stick_axes}")
+            return True
+        else:
+            print_error("Axis calibration failed: No significant axis change detected.")
+            return False
+
     def detect_active_stick(self):
         """Detects active stick movement beyond threshold and dynamically determines the axis pair."""
         if not self.joystick:
             return False
+        
+        # If we have calibrated axis info, use it to determine the axis pair
+        if self.primary_axis is not None:
+            # Verify the calibrated axis is still active
+            if abs(self.joystick.get_axis(self.primary_axis)) > STICK_THRESHOLD:
+                return True
+            return False
+        
+        # Fallback to original detection logic
         for event in pygame.event.get():
             if event.type == JOYAXISMOTION and event.joy == self.joystick.get_id():
                 if abs(self.joystick.get_axis(event.axis)) > STICK_THRESHOLD:
@@ -756,6 +844,10 @@ class LatencyTester:
 
     def is_stick_at_extreme(self):
         """Checks if stick is at extreme position"""
+        # If we have calibrated axis info, check the primary axis specifically
+        if self.primary_axis is not None and self.joystick:
+            return abs(self.joystick.get_axis(self.primary_axis)) >= STICK_THRESHOLD
+        # Fallback to checking all stick axes
         return self.stick_axes and self.joystick and any(abs(self.joystick.get_axis(axis)) >= STICK_THRESHOLD for axis in self.stick_axes)
 
     def trigger_solenoid(self):
