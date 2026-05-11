@@ -1128,6 +1128,10 @@ class LatencyTester:
         # Final render with results
         average_latency = self.latency_sum / len(self.latency_results) if self.latency_results else None
         self.render_test_window(average_latency)
+
+        # Start cooling period immediately after measurements finish
+        if not self.test_aborted and len(self.latency_results) > 0:
+            save_test_completion_time(self.iterations, self.test_type)
         
         # Keep window open until user closes it
         if not self.test_aborted:
@@ -1461,7 +1465,6 @@ if __name__ == "__main__":
                     
                     stats = tester.get_statistics()
                     if stats:
-                        save_test_completion_time(tester.iterations, test_type)
                         print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
                         print(f"\n{Style.BRIGHT}{Fore.CYAN}" + "="*15 + f"LATENCY" + "="*15 + f"{Fore.RESET}{Style.RESET_ALL}")
                         print(f"{'Min latency:':<26}{stats['min']:>8.2f} ms")
