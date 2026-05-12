@@ -12,7 +12,8 @@ import requests
 import webbrowser
 import os
 from serial.tools import list_ports
-from colorama import Fore, Style
+from colorama import Fore, Style, init
+import msvcrt
 import pygame
 from pygame.locals import *
 import statistics
@@ -121,11 +122,13 @@ LAST_TEST_TIME_FILE_BUTTON = os.path.join(_TEMP_DIR, 'last_test_time_button.txt'
 LAST_TEST_TIME_FILE_STICK = os.path.join(_TEMP_DIR, 'last_test_time_stick.txt')
 
 # Function to check time since last test
-def check_cooling_period():
+def check_cooling_period(leading_newline=True):
     """Displays a premium cooling status dashboard in the console."""
-    print(f"\n{Style.BRIGHT}{Fore.CYAN}┌" + "─" * 45 + "┐")
-    print(f"│ {Fore.WHITE}COOLING SYSTEM STATUS" + " " * 23 + f"{Fore.CYAN}│")
-    print(f"├" + "─" * 45 + f"┤{Style.RESET_ALL}")
+    CYAN = Fore.CYAN + Style.BRIGHT
+    prefix = "\n" if leading_newline else ""
+    print(f"{prefix}{CYAN}┌" + "─" * 45 + "┐")
+    print(f"{CYAN}│ {Fore.WHITE}COOLING SYSTEM STATUS" + " " * 23 + f"{CYAN}│")
+    print(f"{CYAN}├" + "─" * 45 + f"┤{Style.RESET_ALL}")
     
     test_types = [
         (TEST_TYPE_STICK, "Stick Solenoid"),
@@ -144,19 +147,14 @@ def check_cooling_period():
             icon = "✅"
         
         # Manually construct the line with precise spacing
-        # Label part is fixed length
-        line = f"{Fore.CYAN}│{Fore.RESET}  {icon} {label}:"
-        # Spacing to reach the status column
+        line = f"{CYAN}│{Style.RESET_ALL}  {icon} {label}:"
         line += " " * (25 - len(label))
-        # Status part
-        line += f"{status_color}{status_text}{Fore.RESET}"
-        # Spacing to reach the right border (total box width is 45)
-        # Reduced by 1 to fix the shift observed in the terminal
+        line += f"{status_color}{status_text}{Style.RESET_ALL}"
         line += " " * (14 - len(status_text))
-        line += f"{Fore.CYAN}│"
+        line += f"{CYAN}│"
         print(line)
     
-    print(f"{Fore.CYAN}└" + "─" * 45 + f"┘{Fore.RESET}")
+    print(f"{CYAN}└" + "─" * 45 + f"┘{Style.RESET_ALL}")
 
 def get_cooling_remaining_seconds(test_type):
     path = LAST_TEST_TIME_FILE_STICK if test_type == TEST_TYPE_STICK else LAST_TEST_TIME_FILE_BUTTON
@@ -284,6 +282,79 @@ print(f"Support the project: " + Fore.LIGHTRED_EX + "https://ko-fi.com/gamepadla
 print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_tU-7VqA" + Fore.RESET + "")
 print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometheus82" + Fore.RESET + "")
 print(f"{Style.DIM}To open links, press CTRL+Click{Style.RESET_ALL}")
+
+def get_input_with_countdown(prompt, menu_text=None):
+    """Reads user input while updating the cooling status in real-time."""
+    if platform.system() != 'Windows':
+        if menu_text:
+            print(menu_text)
+        return input(prompt)
+
+    import msvcrt
+    user_input = ""
+    last_update = time.time()
+    
+    # Calculate lines in menu
+    menu_lines = menu_text.count('\n') + 1 if menu_text else 0
+    # Cooling box takes 7 lines total (including the leading \n)
+    # Menu takes menu_lines, plus the newline added by print()
+    # Total lines to move up from prompt line: 7 + menu_lines
+    total_up = 7 + menu_lines 
+    
+    # Initial display
+    check_cooling_period(leading_newline=True)
+    if menu_text:
+        print(menu_text)
+    
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    
+    try:
+        while True:
+            now = time.time()
+            if now - last_update >= 1.0:
+                # Move up
+                sys.stdout.write("\033[?25l") # Hide cursor
+                sys.stdout.write("\r" + "\033[A" * total_up)
+                
+                # Redraw
+                check_cooling_period(leading_newline=True)
+                if menu_text:
+                    print(menu_text)
+                
+                sys.stdout.write(f"\r{prompt}{user_input}\033[K")
+                sys.stdout.write("\033[?25h") # Show cursor
+                sys.stdout.flush()
+                last_update = now
+            
+            if msvcrt.kbhit():
+                ch = msvcrt.getch()
+                if ch in (b'\r', b'\n'):
+                    sys.stdout.write("\n")
+                    return user_input.strip()
+                elif ch == b'\x08': # Backspace
+                    if len(user_input) > 0:
+                        user_input = user_input[:-1]
+                        # Clear line and redraw prompt + input
+                        sys.stdout.write("\r\033[K" + f"{prompt}{user_input}")
+                        sys.stdout.flush()
+                elif ch == b'\x03': # Ctrl+C
+                    raise KeyboardInterrupt
+                elif ch == b'\xe0' or ch == b'\x00': # Special keys
+                    msvcrt.getch()
+                else:
+                    try:
+                        char = ch.decode('utf-8', errors='ignore')
+                        if char.isprintable():
+                            user_input += char
+                            sys.stdout.write(char)
+                            sys.stdout.flush()
+                    except:
+                        pass
+            time.sleep(0.01)
+    except KeyboardInterrupt:
+        sys.stdout.write("\n")
+        raise
 
 class LatencyTester:
     def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY, iterations=TEST_ITERATIONS, protocol=None):
@@ -1204,6 +1275,7 @@ def restart_current_program():
 if __name__ == "__main__":
     wait_on_exit = True
     pygame.init()
+    init(autoreset=True) # Initialize colorama
     pygame.joystick.init()
     start_async_logger()
     try:
@@ -1250,16 +1322,16 @@ if __name__ == "__main__":
     joystick_count = pygame.joystick.get_count()
     if joystick_count:
         if joystick_count > 1:
-            print("\nAvailable gamepads:")
-            for i in range(joystick_count):
-                joy = pygame.joystick.Joystick(i)
-                joy.init()
-                print(f"{i + 1}: {joy.get_name()}")
-            try:
-                joystick = pygame.joystick.Joystick(int(input(f"Select gamepad (1-{joystick_count}): ")) - 1)
-                print(f"\nSelected gamepad: {joystick.get_name()}")
-            except (ValueError, IndexError):
-                print("Invalid selection! No gamepad will be used.")
+            menu_gamepads = "Available gamepads:\n" + "\n".join([f"{i + 1}: {pygame.joystick.Joystick(i).get_name()}" for i in range(joystick_count)])
+            while True:
+                try:
+                    choice_input = get_input_with_countdown(f"Select gamepad (1-{joystick_count}): ", menu_gamepads).strip()
+                    if not choice_input: continue
+                    joystick = pygame.joystick.Joystick(int(choice_input) - 1)
+                    print(f"\nSelected gamepad: {joystick.get_name()}")
+                    break
+                except (ValueError, IndexError):
+                    print_error(f"Invalid selection! Please enter 1-{joystick_count}.")
         else:
             joystick = pygame.joystick.Joystick(0)
             print(f"\nAutoselected gamepad: {joystick.get_name()}")
@@ -1271,14 +1343,13 @@ if __name__ == "__main__":
     else:
         print_error("No gamepad found! Some features will be unavailable.")
 
-    # Cooling status before selecting test type
-    check_cooling_period()
-
     # Select test type
-    print("\nSelect test type:\n1: Gamepad\t- Test analog stick\n2: Gamepad\t- Test button\n3: Keyboard\t- Test key\n4: Hardware\t- Test solenoid and sensor")
+    menu_test_type = "Select test type:\n1: Gamepad\t- Test analog stick\n2: Gamepad\t- Test button\n3: Keyboard\t- Test key\n4: Hardware\t- Test solenoid and sensor"
     while True:
         try:
-            choice_input = input("Enter your choice (1-4): ").strip()
+            choice_input = get_input_with_countdown("Enter your choice (1-4): ", menu_test_type).strip()
+            if not choice_input:
+                continue
             test_choice = int(choice_input)
             test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE}.get(test_choice)
             if not test_type:
@@ -1306,10 +1377,10 @@ if __name__ == "__main__":
 
     # Select iterations (affects cooling timeout)
     if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
-        print("\nSelect number of iterations:\n1: 400 (For Gamepadla.com validation)\n2: 200\n3: 100\nOr enter a custom number between 10 and 400.")
+        menu_iters = "Select number of iterations:\n1: 400 (For Gamepadla.com validation)\n2: 200\n3: 100\nOr enter a custom number between 10 and 400."
         while True:
             try:
-                iter_input = input("Enter your choice (1/2/3 or custom 10-400): ").strip()
+                iter_input = get_input_with_countdown("Enter your choice (1/2/3 or custom 10-400): ", menu_iters).strip()
                 if iter_input == '1':
                     TEST_ITERATIONS = 400
                     break
@@ -1345,12 +1416,11 @@ if __name__ == "__main__":
     if len(ports) == 1:
         port = ports[0]
     else:
-        print("\nAvailable COM ports:")
-        for i, p in enumerate(ports):
-            print(f"{i + 1}: {p.device} - {p.description}")
+        menu_ports = "Available COM ports:\n" + "\n".join([f"{i + 1}: {p.device} - {p.description}" for i, p in enumerate(ports)])
         while True:
             try:
-                selection_input = input(f"Select COM port (1-{len(ports)}): ").strip()
+                selection_input = get_input_with_countdown(f"Select COM port (1-{len(ports)}): ", menu_ports).strip()
+                if not selection_input: continue
                 selection = int(selection_input) - 1
                 if 0 <= selection < len(ports):
                     port = ports[selection]
