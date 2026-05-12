@@ -283,78 +283,34 @@ print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_t
 print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometheus82" + Fore.RESET + "")
 print(f"{Style.DIM}To open links, press CTRL+Click{Style.RESET_ALL}")
 
-def get_input_with_countdown(prompt, menu_text=None):
+def get_input_with_countdown(prompt, menu=None):
     """Reads user input while updating the cooling status in real-time."""
     if platform.system() != 'Windows':
-        if menu_text:
-            print(menu_text)
+        if menu: print(menu)
         return input(prompt)
-
-    import msvcrt
-    user_input = ""
-    last_update = time.time()
-    
-    # Calculate lines in menu
-    menu_lines = menu_text.count('\n') + 1 if menu_text else 0
-    # Cooling box takes 7 lines total (including the leading \n)
-    # Menu takes menu_lines, plus the newline added by print()
-    # Total lines to move up from prompt line: 7 + menu_lines
-    total_up = 7 + menu_lines 
-    
-    # Initial display
-    check_cooling_period(leading_newline=True)
-    if menu_text:
-        print(menu_text)
-    
-    sys.stdout.write(prompt)
-    sys.stdout.flush()
-    
+    inp, last, up = "", 0, 7 + (menu.count('\n') + 1 if menu else 0)
     try:
         while True:
-            now = time.time()
-            if now - last_update >= 1.0:
-                # Move up
-                sys.stdout.write("\033[?25l") # Hide cursor
-                sys.stdout.write("\r" + "\033[A" * total_up)
-                
-                # Redraw
-                check_cooling_period(leading_newline=True)
-                if menu_text:
-                    print(menu_text)
-                
-                sys.stdout.write(f"\r{prompt}{user_input}\033[K")
-                sys.stdout.write("\033[?25h") # Show cursor
-                sys.stdout.flush()
-                last_update = now
-            
+            if time.time() - last >= 1:
+                if last: sys.stdout.write(f"\033[?25l\r\033[A" * up)
+                check_cooling_period(True)
+                if menu: print(menu)
+                sys.stdout.write(f"\r{prompt}{inp}\033[K\033[?25h")
+                sys.stdout.flush(); last = time.time()
             if msvcrt.kbhit():
-                ch = msvcrt.getch()
-                if ch in (b'\r', b'\n'):
-                    sys.stdout.write("\n")
-                    return user_input.strip()
-                elif ch == b'\x08': # Backspace
-                    if len(user_input) > 0:
-                        user_input = user_input[:-1]
-                        # Clear line and redraw prompt + input
-                        sys.stdout.write("\r\033[K" + f"{prompt}{user_input}")
-                        sys.stdout.flush()
-                elif ch == b'\x03': # Ctrl+C
-                    raise KeyboardInterrupt
-                elif ch == b'\xe0' or ch == b'\x00': # Special keys
-                    msvcrt.getch()
+                c = msvcrt.getch()
+                if c in b'\r\n': print(); return inp.strip()
+                if c == b'\x08': inp = inp[:-1]; sys.stdout.write(f"\r\033[K{prompt}{inp}")
+                elif c == b'\x03': raise KeyboardInterrupt
+                elif c in b'\xe0\x00': msvcrt.getch()
                 else:
                     try:
-                        char = ch.decode('utf-8', errors='ignore')
-                        if char.isprintable():
-                            user_input += char
-                            sys.stdout.write(char)
-                            sys.stdout.flush()
-                    except:
-                        pass
+                        char = c.decode('utf-8', errors='ignore')
+                        if char.isprintable(): inp += char; sys.stdout.write(char)
+                    except: pass
+                sys.stdout.flush()
             time.sleep(0.01)
-    except KeyboardInterrupt:
-        sys.stdout.write("\n")
-        raise
+    except KeyboardInterrupt: print(); raise
 
 class LatencyTester:
     def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY, iterations=TEST_ITERATIONS, protocol=None):
