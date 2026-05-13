@@ -1179,14 +1179,36 @@ class LatencyTester:
 
         self.close_test_window()
 
-def detect_input_mode(name, guid, axes):
-    """Detects protocol based on name, guid, and resting axes state."""
+def detect_input_mode(name, guid, axes, num_hats, num_buttons):
+    """Detects protocol based on name, guid, resting axes state, and structural features."""
     n, g = name.lower(), guid.lower()
-    if any(s in n for s in ("dualsense", "ps5", "edge", "dualshock", "ds4", "ps4", "playstation")):
+    guid_chunks = {g[i:i+4] for i in range(0, len(g), 4) if len(g[i:i+4]) == 4}
+
+    # 1. Official Sony markers and licensed brands
+    sony_markers = ("dualsense", "ps5", "edge", "dualshock", "ds4", "ps4", "playstation", "astro")
+    if any(s in n for s in sony_markers):
         return "Sony"
+
+    # 2. Sony family vendor IDs (extracted from GUID chunks)
+    # 054c: Sony, 9886: Astro, 146b: Nacon, 1532: Razer, 294b: Scuf, 0c12: Zeroplus, 0f0d: Hori
+    sony_vids = {"4c05", "8698", "6b14", "3215", "4b29", "120c", "0d0f"}
+    if any(vid in guid_chunks for vid in sony_vids):
+        return "Sony"
+
+    # 3. Structural heuristic: Sony-layout controllers (D-pad is buttons, so 0 hats)
+    # Standard XInput (Xbox) ALWAYS has 1 hat (Hat 0) in the standard Windows driver.
+    # If it has 0 hats but is a full gamepad (14+ buttons), it's highly likely a Sony-style layout.
+    if num_hats == 0 and num_buttons >= 14 and "xbox" not in n:
+        return "Sony"
+
     if any(s in n for s in ("joy-con", "joycon", "nintendo switch", "switch pro", "nintendo")) or "057e" in g:
         return "Switch"
-    return "XInput" if any(abs(a + 1) < 0.1 for a in axes) else "DInput"
+    
+    # 4. XInput protocol check (Triggers rest at -1.0)
+    if any(abs(a + 1) < 0.1 for a in axes):
+        return "XInput"
+        
+    return "DInput"
 
 # Axis pair groupings per protocol (used for partner-axis pairing)
 INPUT_MODE_AXIS_PAIRS = {
@@ -1203,7 +1225,7 @@ def detect_gamepad_mode(joystick):
         time.sleep(0.01)
     
     axes = [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
-    return detect_input_mode(joystick.get_name(), joystick.get_guid(), axes)
+    return detect_input_mode(joystick.get_name(), joystick.get_guid(), axes, joystick.get_numhats(), joystick.get_numbuttons())
 
 # Short ID Generation
 def generate_short_id(length=12):
