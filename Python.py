@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.5.0"                 # Updated version with microsecond support
+VERSION = "5.2.5.1"                 # Updated version with microsecond support
 MAX_CONSECUTIVE_TIMEOUTS = 15       # Global limit for missed hits
 
 import time
@@ -30,6 +30,7 @@ import math
 ASYNC_LOG_QUEUE = None
 ASYNC_LOG_STOP = None
 ASYNC_LOG_THREAD = None
+LAST_RENDER_CALL = None
 
 def _printer_loop():
     last_flush = time.perf_counter()
@@ -283,24 +284,47 @@ print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_t
 print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometheus82" + Fore.RESET + "")
 print(f"{Style.DIM}To open links, press CTRL+Click{Style.RESET_ALL}")
 
-def get_input_with_countdown(prompt, menu=None):
-    """Reads user input while updating the cooling status in real-time."""
+def get_input_with_countdown(prompt, menu=None, show_cooling=True):
+    """Reads user input while updating the cooling status in real-time and keeping the Pygame window responsive."""
     if platform.system() != 'Windows':
         if menu: print(menu)
         return input(prompt)
-    inp, last, up = "", 0, 7 + (menu.count('\n') + 1 if menu else 0)
+    inp, last, up = "", 0, (7 if show_cooling else 0) + (menu.count('\n') + 1 if menu else 0)
     try:
         while True:
-            if time.time() - last >= 1:
+            # Keep Pygame window responsive if it's open
+            if pygame.display.get_init() and pygame.display.get_surface() is not None:
+                for event in pygame.event.get():
+                    if event.type == QUIT:
+                        pygame.display.quit()
+                global LAST_RENDER_CALL
+                if LAST_RENDER_CALL:
+                    try:
+                        LAST_RENDER_CALL()
+                    except:
+                        pass
+            
+            now = time.time()
+            if show_cooling and now - last >= 1:
                 if last: sys.stdout.write(f"\033[?25l\r\033[A" * up)
                 check_cooling_period(True)
                 if menu: print(menu)
                 sys.stdout.write(f"\r{prompt}{inp}\033[K\033[?25h")
-                sys.stdout.flush(); last = time.time()
+                sys.stdout.flush(); last = now
+            elif not show_cooling and last == 0:
+                if menu: print(menu)
+                sys.stdout.write(f"\r{prompt}{inp}")
+                sys.stdout.flush(); last = now
+
             if msvcrt.kbhit():
                 c = msvcrt.getch()
                 if c in b'\r\n': print(); return inp.strip()
-                if c == b'\x08': inp = inp[:-1]; sys.stdout.write(f"\r\033[K{prompt}{inp}")
+                if c == b'\x08':
+                    inp = inp[:-1]
+                    if show_cooling:
+                        sys.stdout.write(f"\r\033[K{prompt}{inp}")
+                    else:
+                        sys.stdout.write("\b \b")
                 elif c == b'\x03': raise KeyboardInterrupt
                 elif c in b'\xe0\x00': msvcrt.getch()
                 else:
@@ -587,7 +611,7 @@ class LatencyTester:
         # Instruction at the bottom
         hint_font = pygame.font.Font(None, 24)
         if is_finished:
-            hint_text = "TEST COMPLETE - CLOSE THIS WINDOW TO CONTINUE"
+            hint_text = "TEST COMPLETE - CONTINUE IN CONSOLE TO SAVE RESULTS"
             hint_color = (0, 255, 180)
         else:
             hint_text = "KEEP WINDOW ACTIVE AND ON TOP TO CAPTURE INPUTS"
@@ -1049,6 +1073,8 @@ class LatencyTester:
 
     def test_loop(self):
         """Main test loop for stick or button tests with high-precision optimizations"""
+        global LAST_RENDER_CALL
+        LAST_RENDER_CALL = None
         print("\nPreparing test window...")
         self.open_test_window()
         print("Test window ready. Press Start to begin.")
@@ -1156,6 +1182,9 @@ class LatencyTester:
         # Final render with results
         average_latency = self.latency_sum / len(self.latency_results) if self.latency_results else None
         self.render_test_window(average_latency)
+        
+        # Set background render call for the console input loops
+        LAST_RENDER_CALL = lambda: self.render_test_window(average_latency)
 
         # Start cooling period immediately after measurements finish (even if aborted)
         total_hits = len(self.latency_results) + self.invalid_measurements
@@ -1163,19 +1192,9 @@ class LatencyTester:
             # Use requested iterations if successful, or actual hits if aborted
             save_test_completion_time(self.iterations if not self.test_aborted else total_hits, self.test_type)
         
-        # Keep window open until user closes it
         if not self.test_aborted:
-            async_log("\nTest finished! You can view the results in the window. Press any key in the window or close it to continue.")
-            waiting = True
-            while waiting:
-                for event in pygame.event.get():
-                    if event.type == QUIT:
-                        waiting = False
-                    if event.type == KEYDOWN and event.key in (K_ESCAPE, K_RETURN, K_SPACE):
-                        waiting = False
-                
-                self.render_test_window(average_latency)
-                time.sleep(0.05)
+            async_log(f"\n{Fore.GREEN}Test finished!{Fore.RESET} You can view the results in the window.")
+            async_log("The console is now ready for further actions. You don't need to close the window.")
 
         self.close_test_window()
 
@@ -1343,7 +1362,7 @@ if __name__ == "__main__":
                 print(f"\n{Fore.YELLOW}WARNING: Device has not cooled yet. Running this test now may cause degradation. Remaining cooling time: {remaining} seconds.{Fore.RESET}")
                 inner_choice = ""
                 while inner_choice not in ('Y', 'N'):
-                    inner_choice = input("Continue anyway? (Y/N): ").upper().strip()
+                    inner_choice = get_input_with_countdown("Continue anyway? (Y/N): ", show_cooling=False).upper().strip()
                 if inner_choice == 'N':
                     print("Please wait for cooling or select another test.")
                     continue
@@ -1386,7 +1405,7 @@ if __name__ == "__main__":
 
     if not ports:
         print_error("No suitable COM ports found. Perhaps you have not connected Prometheus 82 to your computer.")
-        input("Press Enter to close...")
+        get_input_with_countdown("Press Enter to close...", show_cooling=False)
         pygame.quit()
         sys.exit()
     
@@ -1457,7 +1476,7 @@ if __name__ == "__main__":
                     return (0,)
             if _ver_tuple(fw_version) < _ver_tuple(REQUIRED_ARDUINO_VERSION):
                 print_error(f"Arduino firmware v{fw_version} is outdated. Please update to at least v{REQUIRED_ARDUINO_VERSION}.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
-                input("Press Enter to close...")
+                get_input_with_countdown("Press Enter to close...", show_cooling=False)
                 pygame.quit()
                 sys.exit()
             print(f"\nPrometheus 82 connected on {port.device} ({port.description}), Arduino FW v{fw_version}")
@@ -1479,9 +1498,7 @@ if __name__ == "__main__":
                 if test_type == TEST_TYPE_HARDWARE:
                     test_passed, timing_warning = tester.test_hardware()
                     
-                    # Close test window after hardware test completes
-                    if pygame.display.get_init() and pygame.display.get_surface() is not None:
-                        pygame.display.quit()
+                    # Hardware test completed
                     
                     if test_passed:
                         if timing_warning:
@@ -1506,11 +1523,9 @@ if __name__ == "__main__":
                     
                     tester.test_loop()
                     
-                    # Close test window after test completes
-                    if pygame.display.get_init() and pygame.display.get_surface() is not None:
-                        pygame.display.quit()
+                    # Test completed
                     if getattr(tester, "test_aborted", False):
-                        input("Press Enter to exit...")
+                        get_input_with_countdown("Press Enter to exit...", show_cooling=False)
                         pygame.quit()
                         sys.exit()
                     
@@ -1544,7 +1559,9 @@ if __name__ == "__main__":
                             export_label = f"{Fore.LIGHTBLACK_EX}Export to CSV (already used){Fore.RESET}" if exported_to_csv else "Export to CSV"
                             print(f"\nSelect action:\n1: {open_label}\n2: {export_label}\n3: Restart test\n4: Exit")
                             try:
-                                choice = int(input("Enter your choice (1-4): "))
+                                choice_val = get_input_with_countdown("Enter your choice (1-4): ", show_cooling=False)
+                                if not choice_val: continue
+                                choice = int(choice_val)
                                 if choice not in [1, 2, 3, 4]:
                                     print("Invalid selection! Please enter 1, 2, 3, or 4.")
                                     continue
@@ -1558,9 +1575,9 @@ if __name__ == "__main__":
                                     continue
                                 while True:
                                     test_key = generate_short_id()
-                                    gamepad_name = input("Enter gamepad name: ")
+                                    gamepad_name = get_input_with_countdown("Enter gamepad name: ", show_cooling=False)
                                     connection = {"1": "Cable", "2": "Dongle", "3": "Bluetooth"}.get(
-                                        input("Current connection (1. Cable, 2. Dongle, 3. Bluetooth): "), "Unset")
+                                        get_input_with_countdown("Current connection (1. Cable, 2. Dongle, 3. Bluetooth): ", show_cooling=False), "Unset")
                                     data = {
                                         'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
                                         'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
@@ -1584,7 +1601,7 @@ if __name__ == "__main__":
                                         print(f"\nServer error. Status code: {response.status_code}")
                                     except requests.exceptions.RequestException:
                                         print("\nNo internet connection or server is unreachable")
-                                    if input("\nDo you want to try sending the data again? (Y/N): ").upper() != 'Y':
+                                    if get_input_with_countdown("\nDo you want to try sending the data again? (Y/N): ", show_cooling=False).upper() != 'Y':
                                         break
                             elif choice == 2:
                                 if exported_to_csv:
@@ -1611,4 +1628,4 @@ if __name__ == "__main__":
         stop_async_logger()
         pygame.quit()
         if wait_on_exit:
-            input("Press Enter to exit...")
+            get_input_with_countdown("Press Enter to exit...", show_cooling=False)
