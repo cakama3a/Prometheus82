@@ -1088,7 +1088,7 @@ class LatencyTester:
         LAST_RENDER_CALL = None
         print("\nPreparing test window...")
         self.open_test_window()
-        print("Test window ready. Press Start to begin.")
+        print("Test window ready. Switch to the graphical window and press START TEST to begin.")
         self.wait_for_start()
         
         if self.test_type == TEST_TYPE_STICK:
@@ -1566,7 +1566,12 @@ if __name__ == "__main__":
                         exported_to_csv = False
                         # Action selection with retry on invalid input
                         while True:
-                            open_label = f"{Fore.LIGHTBLACK_EX}Open on Gamepadla.com (already used){Fore.RESET}" if uploaded_to_gamepadla else "Open on Gamepadla.com"
+                            if uploaded_to_gamepadla:
+                                open_label = f"{Fore.LIGHTBLACK_EX}Open on Gamepadla.com (already used){Fore.RESET}"
+                            elif stats['valid_samples'] < 200:
+                                open_label = f"{Fore.LIGHTBLACK_EX}Open on Gamepadla.com (min 200 req.){Fore.RESET}"
+                            else:
+                                open_label = "Open on Gamepadla.com"
                             export_label = f"{Fore.LIGHTBLACK_EX}Export to CSV (already used){Fore.RESET}" if exported_to_csv else "Export to CSV"
                             print(f"\nSelect action:\n1: {open_label}\n2: {export_label}\n3: Restart test\n4: Exit")
                             try:
@@ -1581,6 +1586,10 @@ if __name__ == "__main__":
                                 continue
 
                             if choice == 1:
+                                if stats['valid_samples'] < 200:
+                                    print_error(f"Test results cannot be uploaded to Gamepadla.com because they contain fewer than 200 measurements (current: {stats['valid_samples']}).")
+                                    print("Please run a test with at least 200 iterations to share your results.")
+                                    continue
                                 if uploaded_to_gamepadla:
                                     print(f"{Fore.YELLOW}Warning: This result has already been opened on Gamepadla.com. Restart the test to send a new result.{Fore.RESET}")
                                     continue
