@@ -179,14 +179,25 @@ def save_test_completion_time(iterations, test_type):
     if iterations <= 0 or test_type == TEST_TYPE_KEYBOARD:
         return
     try:
-        cooling_minutes = (iterations / 400.0) * 10.0
-        cooling_seconds = int(cooling_minutes * 60)
+        # Calculate new cooling time based on iterations (10 min per 400 iterations)
+        new_cooling = int((iterations / 400.0) * 10.0 * 60)
+        
+        # Get remaining time from previous test
+        remaining = get_cooling_remaining_seconds(test_type)
+        
+        # Total cooling time is remaining + new
+        total_cooling = remaining + new_cooling
+        
         path = LAST_TEST_TIME_FILE_STICK if test_type == TEST_TYPE_STICK else LAST_TEST_TIME_FILE_BUTTON
         with open(path, 'w') as f:
-            f.write(f"{time.time()},{cooling_seconds}")
+            f.write(f"{time.time()},{total_cooling}")
+            
         print(f"\n{Fore.GREEN}Test completion time recorded.{Fore.RESET}")
         label = "STICK" if test_type == TEST_TYPE_STICK else "BUTTON"
-        print(f"{Fore.YELLOW}Cooling timer ({label}) set to {cooling_seconds} seconds.{Fore.RESET}")
+        if remaining > 0:
+            print(f"{Fore.YELLOW}Added {new_cooling}s to remaining {remaining}s. Total cooling timer ({label}): {total_cooling}s.{Fore.RESET}")
+        else:
+            print(f"{Fore.YELLOW}Cooling timer ({label}) set to {total_cooling} seconds.{Fore.RESET}")
     except IOError as e:
         print_error(f"Recording test completion time: {e}")
 
