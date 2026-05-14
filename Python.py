@@ -295,11 +295,12 @@ print(f"How to use Prometheus 82: " + Fore.LIGHTRED_EX + "https://youtu.be/NBS_t
 print(f"GitHub page: " + Fore.LIGHTRED_EX + "https://github.com/cakama3a/Prometheus82" + Fore.RESET + "")
 print(f"{Style.DIM}To open links, press CTRL+Click{Style.RESET_ALL}")
 
-def get_input_with_countdown(prompt, menu=None, show_cooling=True):
+def get_input_with_countdown(prompt, menu=None, show_cooling=True, max_len=None):
     """Reads user input while updating the cooling status in real-time and keeping the Pygame window responsive."""
     if platform.system() != 'Windows':
         if menu: print(menu)
-        return input(prompt)
+        res = input(prompt)
+        return res[:max_len] if max_len else res
     inp, last, up = "", 0, (7 if show_cooling else 0) + (menu.count('\n') + 1 if menu else 0)
     try:
         while True:
@@ -351,7 +352,9 @@ def get_input_with_countdown(prompt, menu=None, show_cooling=True):
                 else:
                     try:
                         char = c.decode('utf-8', errors='ignore')
-                        if char.isprintable(): inp += char; sys.stdout.write(char)
+                        if char.isprintable():
+                            if max_len is None or len(inp) < max_len:
+                                inp += char; sys.stdout.write(char); sys.stdout.flush()
                     except: pass
                 sys.stdout.flush()
             time.sleep(0.01)
@@ -1098,7 +1101,7 @@ class LatencyTester:
         LAST_RENDER_CALL = None
         print("\nPreparing test window...")
         self.open_test_window()
-        print("Test window ready. Switch to the graphical window and press START TEST to begin.")
+        print_info("Test window ready. Switch to the graphical window and press START TEST to begin.")
         self.wait_for_start()
         
         if self.test_type == TEST_TYPE_STICK:
@@ -1511,9 +1514,6 @@ if __name__ == "__main__":
                 print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
 
             tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, TEST_ITERATIONS, detected_mode)
-            if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
-                print_info("To start the test, switch to the program window and press Start.")
-            
             try:
                 if test_type == TEST_TYPE_HARDWARE:
                     test_passed, timing_warning = tester.test_hardware()
@@ -1529,9 +1529,7 @@ if __name__ == "__main__":
                     else:
                         print(f"{Fore.RED}Hardware issues detected. Please check connections and try again.{Fore.RESET}")
                 else:
-                    if test_type == TEST_TYPE_BUTTON:
-                        print("\nIn the test window, press Start, then press the gamepad button you want to measure.")
-                    elif test_type == TEST_TYPE_STICK:
+                    if test_type == TEST_TYPE_STICK:
                         print(f"\n{Fore.YELLOW}Stick test setup:{Fore.RESET}")
                         print("Use a reverse sensor for stick latency testing.")
                         print("Set the solenoid tip about 1-2 mm from the stick in the neutral position.")
@@ -1604,9 +1602,14 @@ if __name__ == "__main__":
                                     continue
                                 while True:
                                     test_key = generate_short_id()
-                                    gamepad_name = get_input_with_countdown("Enter gamepad name: ", show_cooling=False)
-                                    connection = {"1": "Cable", "2": "Dongle", "3": "Bluetooth"}.get(
-                                        get_input_with_countdown("Current connection (1. Cable, 2. Dongle, 3. Bluetooth): ", show_cooling=False), "Unset")
+                                    gamepad_name = get_input_with_countdown("Enter gamepad name (max 60 chars): ", show_cooling=False, max_len=60).strip()
+                                    
+                                    if not gamepad_name:
+                                        print_error("Gamepad name cannot be empty!")
+                                        continue
+                                        
+                                    conn_choice = get_input_with_countdown("Current connection (1. Cable, 2. Dongle, 3. Bluetooth): ", show_cooling=False)
+                                    connection = {"1": "Cable", "2": "Dongle", "3": "Bluetooth"}.get(conn_choice, "Unset")
                                     data = {
                                         'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
                                         'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
