@@ -333,7 +333,8 @@ def get_input_with_countdown(prompt, menu=None, show_cooling=True):
                     if show_cooling and last > 0:
                         # Move up to the start of the whole block (cooling + menu)
                         sys.stdout.write(f"\r\033[A" * up + "\033[J")
-                        # Restore only the menu text, leaving the cooling dashboard removed
+                        # Restore the leading gap and menu text, leaving the cooling dashboard removed
+                        print()
                         if menu: print(menu)
                         sys.stdout.write(f"{prompt}{inp.strip()}\n")
                     else:
