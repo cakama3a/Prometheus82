@@ -329,7 +329,16 @@ def get_input_with_countdown(prompt, menu=None, show_cooling=True):
 
             if msvcrt.kbhit():
                 c = msvcrt.getch()
-                if c in b'\r\n': print(); return inp.strip()
+                if c in b'\r\n':
+                    if show_cooling and last > 0:
+                        # Move up to the start of the whole block (cooling + menu)
+                        sys.stdout.write(f"\r\033[A" * up + "\033[J")
+                        # Restore only the menu text, leaving the cooling dashboard removed
+                        if menu: print(menu)
+                        sys.stdout.write(f"{prompt}{inp.strip()}\n")
+                    else:
+                        print()
+                    return inp.strip()
                 if c == b'\x08':
                     inp = inp[:-1]
                     if show_cooling:
@@ -1204,8 +1213,7 @@ class LatencyTester:
             save_test_completion_time(self.iterations if not self.test_aborted else total_hits, self.test_type)
         
         if not self.test_aborted:
-            async_log(f"\n{Fore.GREEN}Test finished!{Fore.RESET} You can view the results in the window.")
-            async_log("The console is now ready for further actions. You don't need to close the window.")
+            pass
 
         self.close_test_window()
 
