@@ -342,11 +342,12 @@ def get_input_with_countdown(prompt, menu=None, show_cooling=True, max_len=None)
                         print()
                     return inp.strip()
                 if c == b'\x08':
-                    inp = inp[:-1]
-                    if show_cooling:
-                        sys.stdout.write(f"\r\033[K{prompt}{inp}")
-                    else:
-                        sys.stdout.write("\b \b")
+                    if len(inp) > 0:
+                        inp = inp[:-1]
+                        if show_cooling:
+                            sys.stdout.write(f"\r\033[K{prompt}{inp}")
+                        else:
+                            sys.stdout.write("\b \b")
                 elif c == b'\x03': raise KeyboardInterrupt
                 elif c in b'\xe0\x00': msvcrt.getch()
                 else:
@@ -1381,7 +1382,7 @@ if __name__ == "__main__":
                 continue # Allow selecting another type or connecting gamepad? Actually joystick was detected earlier.
             
             remaining = get_cooling_remaining_seconds(test_type)
-            if remaining > 0 and (test_type != TEST_TYPE_STICK or remaining >= 40):
+            if remaining >= 40:
                 print(f"\n{Fore.YELLOW}WARNING: Device has not cooled yet. Running this test now may cause degradation. Remaining cooling time: {remaining} seconds.{Fore.RESET}")
                 inner_choice = ""
                 while inner_choice not in ('Y', 'N'):
