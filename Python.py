@@ -1237,14 +1237,14 @@ def detect_input_mode(name, guid, axes, num_hats, num_buttons):
     if any(vid in guid_chunks for vid in sony_vids):
         return "Sony"
 
+    if any(s in n for s in ("joy-con", "joycon", "nintendo switch", "switch pro", "nintendo")) or "057e" in g:
+        return "Switch"
+
     # 3. Structural heuristic: Sony-layout controllers (D-pad is buttons, so 0 hats)
     # Standard XInput (Xbox) ALWAYS has 1 hat (Hat 0) in the standard Windows driver.
     # If it has 0 hats but is a full gamepad (14+ buttons), it's highly likely a Sony-style layout.
     if num_hats == 0 and num_buttons >= 14 and "xbox" not in n:
         return "Sony"
-
-    if any(s in n for s in ("joy-con", "joycon", "nintendo switch", "switch pro", "nintendo")) or "057e" in g:
-        return "Switch"
     
     # 4. XInput protocol check (Triggers rest at -1.0)
     if any(abs(a + 1) < 0.1 for a in axes):
