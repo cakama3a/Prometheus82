@@ -38,7 +38,7 @@ This section outlines the testing process for the Prometheus82 device, designed 
 Prometheus 82 uses a standardized **Center-to-Edge** measurement method for analog sticks to ensure consistent comparisons between different controllers.
 
 > [!TIP]
-> **Proper Positioning:** For the most accurate results, the distance between the solenoid and the stick should be **~1 mm** before the test starts. This prevents "unrealistic overloads" caused by the solenoid's extreme speed (3x faster than a human finger), which a player could never replicate.
+> **Proper Positioning:** For the most accurate results, the distance between the solenoid and the stick should be **~1 mm** before the test starts. This prevents "[unrealistic overloads](https://www.reddit.com/r/GPDL/comments/1tayl2v/standardization_of_stick_testing_on_gamepadlacom/)" caused by the solenoid's extreme speed (3x faster than a human finger), which a player could never replicate.
 
 1. **T0 (Start):** The solenoid is activated to strike the stick.
 2. **Physical Travel:** The solenoid arm pushes the stick from the center (0%) towards the edge (100%).
