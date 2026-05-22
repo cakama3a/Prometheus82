@@ -893,9 +893,11 @@ class LatencyTester:
 
     def trigger_solenoid(self):
         """Sends command to Prometheus to activate the solenoid.
-        Captures last_trigger_time_us for interval scheduling only.
-        s_time_us (latency reference) is set later when 'S' is received."""
+        Flushes the serial input buffer before sending 'T' to discard any stale 'S'
+        bytes left from the previous cycle (contact bounce, etc.).
+        s_time_us (latency reference) is set later when the fresh 'S' is received."""
         if self.serial:
+            self.serial.reset_input_buffer()  # Discard stale 'S' bytes from previous cycle
             self.serial.write(b'T')
         self.last_trigger_time_us = time.perf_counter() * 1_000_000  # T: timestamp for interval control
         self._cycle_active = True    # Open measurement window
