@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.2.5.1"                 # Updated version with microsecond support
+VERSION = "5.3.0.0"                 # Updated version with microsecond support
 MAX_CONSECUTIVE_TIMEOUTS = 15       # Global limit for missed hits
 
 import time
@@ -367,8 +367,11 @@ class LatencyTester:
         self.serial = serial_port
         self.test_type = test_type
         self.contact_delay = contact_delay  # Use calibrated contact delay
-        self.measuring = False
-        self.start_time_us = 0  # Start time in microseconds
+        self.s_time_us = 0           # Timestamp (µs) captured when 'S' signal is received from Arduino
+        self.g_time_us = 0           # Timestamp (µs) captured when gamepad input is detected
+        self._cycle_active = False   # True after T sent — waiting for S and/or G
+        self._s_received = False     # S received in current measurement cycle
+        self._g_received = False     # G received in current measurement cycle
         self.last_trigger_time_us = 0  # Last trigger time in microseconds
         self.stick_axes = None
         self.primary_axis = None  # Calibrated primary axis from first solenoid strike
@@ -679,7 +682,7 @@ class LatencyTester:
             pass
             
         for i in range(iterations):
-            pygame.event.pump()
+            pygame.event.clear()
             baseline_axes = []
             if self.joystick:
                 baseline_axes = [self.joystick.get_axis(a) for a in range(self.joystick.get_numaxes())]
@@ -691,7 +694,7 @@ class LatencyTester:
                 if not self.stick_axes:
                     self.detect_active_stick()
                 else:
-                    pygame.event.pump()
+                    pygame.event.clear()
                     
                 if self.joystick:
                     axes = self.stick_axes if self.stick_axes else range(self.joystick.get_numaxes())
@@ -822,35 +825,39 @@ class LatencyTester:
             return False
         for event in pygame.event.get():
             if event.type == JOYAXISMOTION and event.joy == self.joystick.get_id():
-                if abs(self.joystick.get_axis(event.axis)) > STICK_THRESHOLD:
-                    activated_axis = event.axis
-                    partner_axis = -1
-
-                    if activated_axis % 2 == 0:
-                        partner_axis = activated_axis + 1
+                axis = event.axis
+                val = event.value
+                if abs(val) > STICK_THRESHOLD:
+                    self.primary_axis = axis
+                    
+                    if axis % 2 == 0:
+                        partner_axis = axis + 1
                     else:
-                        partner_axis = activated_axis - 1
-
+                        partner_axis = axis - 1
+                    
                     if 0 <= partner_axis < self.joystick.get_numaxes():
-                        self.stick_axes = sorted([activated_axis, partner_axis])
-                        return True
+                        self.stick_axes = sorted([axis, partner_axis])
+                    else:
+                        self.stick_axes = [axis]
+                    return True
         return False
 
     def detect_active_button(self):
         """Detects button press events"""
         if not self.joystick:
             return False
-        for event in pygame.event.get():
-            if event.type == JOYBUTTONDOWN and event.joy == self.joystick.get_id() and event.button < 4:
-                self.button_to_test = event.button
+        for i in range(min(4, self.joystick.get_numbuttons())):
+            if self.joystick.get_button(i):
+                self.button_to_test = i
                 return True
         return False
 
     def detect_active_key(self):
         """Detects keyboard key press events"""
-        for event in pygame.event.get():
-            if event.type == KEYDOWN:
-                self.key_to_test = event.key
+        keys = pygame.key.get_pressed()
+        for k in (K_SPACE, K_RETURN):
+            if keys[k]:
+                self.key_to_test = k
                 return True
         return False
 
@@ -865,10 +872,11 @@ class LatencyTester:
         keys = pygame.key.get_pressed()
         return keys[self.key_to_test]
 
-    def log_progress(self, latency):
-        """Logs test progress with percentage"""
+    def log_progress(self, latency, early_g=False):
+        """Logs test progress with percentage. Appends ⚡ if gamepad responded before Arduino 'S'."""
         progress = len(self.latency_results)
-        async_log(f"[{progress / self.iterations * 100:3.0f}%] {latency:.2f} ms")
+        marker = "  ⚡" if early_g else ""
+        async_log(f"[{progress / self.iterations * 100:3.0f}%] {latency:.2f} ms{marker}")
 
     def is_stick_at_extreme(self):
         """Checks if stick is at extreme position, auto-locking to the primary axis on first hit."""
@@ -888,11 +896,17 @@ class LatencyTester:
         return False
 
     def trigger_solenoid(self):
-        """Sends command to Prometheus to activate the solenoid"""
+        """Sends command to Prometheus to activate the solenoid.
+        Flushes the serial input buffer before sending 'T' to discard any stale 'S'
+        bytes left from the previous cycle (contact bounce, etc.).
+        s_time_us (latency reference) is set later when the fresh 'S' is received."""
         if self.serial:
+            self.serial.reset_input_buffer()  # Discard stale 'S' bytes from previous cycle
             self.serial.write(b'T')
-        self.measuring = False  # Not starting measurement yet, waiting for 'S'
-        self.last_trigger_time_us = time.perf_counter() * 1000000  # Time in microseconds
+        self.last_trigger_time_us = time.perf_counter() * 1_000_000  # T: timestamp for interval control
+        self._cycle_active = True    # Open measurement window
+        self._s_received = False     # Reset cycle flags
+        self._g_received = False
 
     def test_hardware(self):
         """Tests the solenoid and sensor functionality"""
@@ -1021,61 +1035,42 @@ class LatencyTester:
         self.close_test_window()
         return successful_detections >= (iterations - 2), timing_warning
 
-    def _calculate_latency(self):
-        """Calculates current latency including contact delay"""
-        current_time_us = time.perf_counter() * 1000000
-        # Calculate raw latency in milliseconds
-        latency_ms = (current_time_us - self.start_time_us) / 1000.0
-        # Add contact delay
+    def _calculate_latency(self, input_time_us):
+        """Calculates latency from timestamps: input_time_us minus s_time_us.
+        Both values are captured with time.perf_counter() * 1_000_000 (microseconds)."""
+        # Subtract the two absolute timestamps and convert µs → ms
+        latency_ms = (input_time_us - self.s_time_us) / 1000.0
+        # Add contact delay correction
         latency_ms += self.contact_delay
         return latency_ms
 
-    def check_input(self):
-        """Processes input for stick, button, or keyboard tests"""
-        if self.test_type not in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD) or not self.measuring:
-            return False
-        
-        input_detected = False
-        
+    def _poll_gamepad_input(self):
+        """Polls for gamepad/keyboard input.
+        Returns timestamp in µs (G) the moment input is detected, or None if no input.
+        Called every loop iteration once _cycle_active is True — independently of 'S' arrival.
+        """
+        if self.test_type not in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
+            return None
+
         if self.test_type == TEST_TYPE_STICK:
             if not self.stick_axes and self.detect_active_stick():
-                return False
+                return None  # axis just identified, not a measurement hit
             if self.is_stick_at_extreme():
-                input_detected = True
-                
+                return time.perf_counter() * 1_000_000  # G timestamp
+
         elif self.test_type == TEST_TYPE_BUTTON:
             if self.button_to_test is None and self.detect_active_button():
-                return False
+                return None
             if self.is_button_pressed():
-                input_detected = True
-                
+                return time.perf_counter() * 1_000_000  # G timestamp
+
         elif self.test_type == TEST_TYPE_KEYBOARD:
             if self.key_to_test is None and self.detect_active_key():
-                return False
+                return None
             if self.is_key_pressed():
-                input_detected = True
-        
-        if input_detected:
-            latency_ms = self._calculate_latency()
-            
-            if self._skip_first_measurement:
-                self._skip_first_measurement = False
-                self.measuring = False
-                return True
-                
-            if latency_ms <= self.max_latency_us / 1000.0:
-                self.latency_results.append(latency_ms)
-                self.latency_sum += latency_ms
-                self._consecutive_timeouts = 0
-                self.log_progress(latency_ms)
-            else:
-                self.invalid_measurements += 1
-                print(f"Invalid measurement: {latency_ms:.2f} ms (> {self.max_latency_us/1000:.2f} ms)")
-                
-            self.measuring = False
-            return True
-            
-        return False
+                return time.perf_counter() * 1_000_000  # G timestamp
+
+        return None
 
     def get_statistics(self):
         """Calculates test statistics"""
@@ -1129,59 +1124,102 @@ class LatencyTester:
         
         try:
             self.trigger_solenoid()
+            self._last_loop_time_us = time.perf_counter() * 1_000_000
             while len(self.latency_results) < self.iterations:
-                current_time_us = time.perf_counter() * 1000000
-                
-                # Trigger handling
-                if not self.measuring:
-                    time_since_trigger = current_time_us - self.last_trigger_time_us
-                    if time_since_trigger >= self.test_interval_us:
+                current_time_us = time.perf_counter() * 1_000_000
+                loop_delta_us = current_time_us - self._last_loop_time_us
+                self._last_loop_time_us = current_time_us
+
+                # --- Trigger: fire next solenoid when interval elapsed and cycle is idle ---
+                if not self._cycle_active:
+                    if current_time_us - self.last_trigger_time_us >= self.test_interval_us:
                         self.trigger_solenoid()
-                        current_time_us = time.perf_counter() * 1000000 # Update after trigger
-                
-                # Serial handling (waiting for 'S')
-                if self.serial and self.serial.in_waiting:
-                    found = False
-                    while self.serial.in_waiting:
-                        if self.serial.read() == b'S':
-                            found = True
+                        current_time_us = time.perf_counter() * 1_000_000
+                        self._last_loop_time_us = current_time_us
+
+                if self._cycle_active:
+                    # --- S: capture Arduino contact timestamp (independently) ---
+                    s_found_now = False
+                    if not self._s_received and self.serial and self.serial.in_waiting:
+                        while self.serial.in_waiting:
+                            if self.serial.read() == b'S':
+                                self.s_time_us = time.perf_counter() * 1_000_000  # S timestamp
+                                self._s_received = True
+                                s_found_now = True
+                                break
+
+                    # --- G: capture gamepad timestamp (independently, no waiting for S) ---
+                    g_found_now = False
+                    if not self._g_received:
+                        g_ts = self._poll_gamepad_input()
+                        if g_ts is not None:
+                            self.g_time_us = g_ts  # G timestamp
+                            self._g_received = True
+                            g_found_now = True
+
+                    # --- Both S and G received: compute latency and record ---
+                    if self._s_received and self._g_received:
+                        latency_ms = (self.g_time_us - self.s_time_us) / 1000.0 + self.contact_delay
+
+                        is_simultaneous = s_found_now and g_found_now
+                        is_glitch = False
+                        
+                        if is_simultaneous:
+                            if len(self.latency_results) >= 3:
+                                running_avg = self.latency_sum / len(self.latency_results)
+                                running_jitter = statistics.stdev(self.latency_results) if len(self.latency_results) > 1 else 0.0
+                                # Dynamic threshold: 3x standard deviation (jitter), minimum 0.2 ms for 8000Hz precision
+                                threshold = max(0.2, 3.0 * running_jitter)
+                                if abs(latency_ms - running_avg) > threshold:
+                                    is_glitch = True
+                            elif loop_delta_us > 1000:
+                                is_glitch = True
+
+                        if self._skip_first_measurement:
+                            self._skip_first_measurement = False
+                        elif is_glitch:
+                            self.invalid_measurements += 1
+                            # OS jitter / USB batching caused simultaneous timestamps that don't fit the gamepad's profile
+                        elif latency_ms <= self.max_latency_us / 1000.0:
+                            self.latency_results.append(latency_ms)
+                            self.latency_sum += latency_ms
+                            self._consecutive_timeouts = 0
+                            self.log_progress(latency_ms, early_g=(self.g_time_us < self.s_time_us))
+                        else:
+                            self.invalid_measurements += 1
+                            print(f"Invalid measurement: {latency_ms:.2f} ms (> {self.max_latency_us/1000:.2f} ms)")
+
+                        self._cycle_active = False  # Close cycle
+
+                    # --- Timeout: cycle window expired without both signals ---
+                    elif current_time_us - self.last_trigger_time_us > self.test_interval_us:
+                        missing = []
+                        if not self._s_received: missing.append("S (Arduino)")
+                        if not self._g_received: missing.append("G (gamepad)")
+                        self.invalid_measurements += 1
+                        self._consecutive_timeouts += 1
+                        print(f"Invalid measurement: timeout — missing {', '.join(missing)}")
+                        self._cycle_active = False
+
+                        limit = STICK_MAX_CONSECUTIVE_TIMEOUTS if self.test_type == TEST_TYPE_STICK else MAX_CONSECUTIVE_TIMEOUTS
+                        if self._consecutive_timeouts >= limit:
+                            print_error(f"Test stopped: too many consecutive missed inputs ({self._consecutive_timeouts}).\nMake sure the test window is focused and receiving input before restarting.")
+                            self.test_aborted = True
                             break
-                    if found:
-                        self.start_time_us = time.perf_counter() * 1000000
-                        self.measuring = True
-                
-                # Input handling (waiting for gamepad)
-                self.check_input()
-                
-                # Timeout handling
-                if self.measuring and current_time_us - self.start_time_us > self.max_latency_us:
-                    self.invalid_measurements += 1
-                    self._consecutive_timeouts += 1
-                    print(f"Invalid measurement: no input detected within {self.max_latency_us/1000:.2f} ms")
-                    self.measuring = False
-                    
-                    limit = STICK_MAX_CONSECUTIVE_TIMEOUTS if self.test_type == TEST_TYPE_STICK else MAX_CONSECUTIVE_TIMEOUTS
-                    if self._consecutive_timeouts >= limit:
-                        print_error(f"Test stopped: too many consecutive missed inputs ({self._consecutive_timeouts}).\nMake sure the test window is focused and receiving input before restarting.")
-                        self.test_aborted = True
-                        break
-                    
-                    if self.test_type == TEST_TYPE_STICK and not self._stick_runtime_fallback_used and self.pulse_duration_us < STICK_SETUP_FALLBACK_PULSE_DURATION * 1000:
-                        self._stick_runtime_fallback_used = True
-                        print_info(f"Switching to stronger solenoid pulse ({STICK_SETUP_FALLBACK_PULSE_DURATION} ms) for remaining measurements.")
-                        self.set_pulse_duration(STICK_SETUP_FALLBACK_PULSE_DURATION)
-                        self.limit_iterations_for_fallback_pulse()
-                
-                # Optimized Pygame pumping
-                pygame.event.pump()
-                
-                # System and UI responsiveness (only when not in critical measurement phase)
-                is_active_phase = self.measuring or (current_time_us - self.last_trigger_time_us < self.max_latency_us)
-                
+
+                        if self.test_type == TEST_TYPE_STICK and not self._stick_runtime_fallback_used and self.pulse_duration_us < STICK_SETUP_FALLBACK_PULSE_DURATION * 1000:
+                            self._stick_runtime_fallback_used = True
+                            print_info(f"Switching to stronger solenoid pulse ({STICK_SETUP_FALLBACK_PULSE_DURATION} ms) for remaining measurements.")
+                            self.set_pulse_duration(STICK_SETUP_FALLBACK_PULSE_DURATION)
+                            self.limit_iterations_for_fallback_pulse()
+
+                # Pygame event pump - use clear to prevent queue overflow
+                pygame.event.clear()
+
+                # UI rendering (only during idle phase to avoid timing interference)
+                is_active_phase = self._cycle_active or (current_time_us - self.last_trigger_time_us < self.max_latency_us)
                 if not is_active_phase:
-                    # Resting phase: we can yield to the system and render UI
                     time.sleep(0.001)
-                    
                     try:
                         now = time.perf_counter()
                         if now - self._last_render_time >= 1.0 / 30.0:
