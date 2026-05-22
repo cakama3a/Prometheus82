@@ -368,7 +368,7 @@ class LatencyTester:
         self.test_type = test_type
         self.contact_delay = contact_delay  # Use calibrated contact delay
         self.measuring = False
-        self.start_time_us = 0  # Start time in microseconds
+        self.s_time_us = 0  # Timestamp (µs) captured when 'S' signal is received from Arduino
         self.last_trigger_time_us = 0  # Last trigger time in microseconds
         self.stick_axes = None
         self.primary_axis = None  # Calibrated primary axis from first solenoid strike
@@ -888,11 +888,13 @@ class LatencyTester:
         return False
 
     def trigger_solenoid(self):
-        """Sends command to Prometheus to activate the solenoid"""
+        """Sends command to Prometheus to activate the solenoid.
+        Captures last_trigger_time_us for interval scheduling only.
+        s_time_us (latency reference) is set later when 'S' is received."""
         if self.serial:
             self.serial.write(b'T')
+        self.last_trigger_time_us = time.perf_counter() * 1_000_000  # T: timestamp for interval control
         self.measuring = False  # Not starting measurement yet, waiting for 'S'
-        self.last_trigger_time_us = time.perf_counter() * 1000000  # Time in microseconds
 
     def test_hardware(self):
         """Tests the solenoid and sensor functionality"""
@@ -1022,10 +1024,10 @@ class LatencyTester:
         return successful_detections >= (iterations - 2), timing_warning
 
     def _calculate_latency(self, input_time_us):
-        """Calculates latency from timestamps: input_time_us minus start_time_us.
+        """Calculates latency from timestamps: input_time_us minus s_time_us.
         Both values are captured with time.perf_counter() * 1_000_000 (microseconds)."""
         # Subtract the two absolute timestamps and convert µs → ms
-        latency_ms = (input_time_us - self.start_time_us) / 1000.0
+        latency_ms = (input_time_us - self.s_time_us) / 1000.0
         # Add contact delay correction
         latency_ms += self.contact_delay
         return latency_ms
@@ -1035,7 +1037,7 @@ class LatencyTester:
         
         Timing approach: upon detecting input, immediately capture input_time_us
         (time.perf_counter() * 1_000_000). The latency is then calculated as
-        (input_time_us - self.start_time_us), where start_time_us was recorded
+        (input_time_us - self.s_time_us), where s_time_us was recorded
         the moment the 'S' signal arrived from Arduino. Both are absolute
         microsecond timestamps — no timers, just subtraction.
         """
@@ -1068,7 +1070,7 @@ class LatencyTester:
         
         if input_detected:
             # Calculate latency as difference of two absolute µs timestamps:
-            #   start_time_us  — captured when Arduino sent 'S' (solenoid contact)
+            #   s_time_us  — captured when Arduino sent 'S' (solenoid contact)
             #   input_time_us  — captured immediately when gamepad input was detected
             latency_ms = self._calculate_latency(input_time_us)
             
@@ -1158,17 +1160,17 @@ class LatencyTester:
                     found = False
                     while self.serial.in_waiting:
                         if self.serial.read() == b'S':
-                            self.start_time_us = time.perf_counter() * 1_000_000  # Timestamp: solenoid contact
+                            self.s_time_us = time.perf_counter() * 1_000_000  # S: timestamp solenoid physically fired
                             found = True
                             break
                     if found:
-                        self.measuring = True
+                        self.measuring = True  # start polling for gamepad input
                 
                 # Input handling (waiting for gamepad)
                 self.check_input()
                 
                 # Timeout handling
-                if self.measuring and current_time_us - self.start_time_us > self.max_latency_us:
+                if self.measuring and current_time_us - self.s_time_us > self.max_latency_us:
                     self.invalid_measurements += 1
                     self._consecutive_timeouts += 1
                     print(f"Invalid measurement: no input detected within {self.max_latency_us/1000:.2f} ms")
