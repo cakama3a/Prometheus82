@@ -1131,19 +1131,23 @@ class LatencyTester:
 
                 if self._cycle_active:
                     # --- S: capture Arduino contact timestamp (independently) ---
+                    s_found_now = False
                     if not self._s_received and self.serial and self.serial.in_waiting:
                         while self.serial.in_waiting:
                             if self.serial.read() == b'S':
                                 self.s_time_us = time.perf_counter() * 1_000_000  # S timestamp
                                 self._s_received = True
+                                s_found_now = True
                                 break
 
                     # --- G: capture gamepad timestamp (independently, no waiting for S) ---
+                    g_found_now = False
                     if not self._g_received:
                         g_ts = self._poll_gamepad_input()
                         if g_ts is not None:
                             self.g_time_us = g_ts  # G timestamp
                             self._g_received = True
+                            g_found_now = True
 
                     # --- Both S and G received: compute latency and record ---
                     if self._s_received and self._g_received:
@@ -1151,6 +1155,10 @@ class LatencyTester:
 
                         if self._skip_first_measurement:
                             self._skip_first_measurement = False
+                        elif s_found_now and g_found_now:
+                            self.invalid_measurements += 1
+                            # Both signals detected in the exact same loop iteration.
+                            # This indicates thread preemption by the OS where the actual timing is lost.
                         elif latency_ms <= self.max_latency_us / 1000.0:
                             self.latency_results.append(latency_ms)
                             self.latency_sum += latency_ms
@@ -1184,8 +1192,8 @@ class LatencyTester:
                             self.set_pulse_duration(STICK_SETUP_FALLBACK_PULSE_DURATION)
                             self.limit_iterations_for_fallback_pulse()
 
-                # Pygame event pump
-                pygame.event.pump()
+                # Pygame event pump - use clear to prevent queue overflow
+                pygame.event.clear()
 
                 # UI rendering (only during idle phase to avoid timing interference)
                 is_active_phase = self._cycle_active or (current_time_us - self.last_trigger_time_us < self.max_latency_us)
