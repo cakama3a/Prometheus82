@@ -1647,8 +1647,13 @@ if __name__ == "__main__":
                                         print_error("Gamepad name cannot be empty!")
                                         continue
                                         
-                                    conn_choice = get_input_with_countdown("Current connection (1. Cable, 2. Dongle, 3. Bluetooth): ", show_cooling=False)
-                                    connection = {"1": "Cable", "2": "Dongle", "3": "Bluetooth"}.get(conn_choice, "Unset")
+                                    while True:
+                                        conn_choice = get_input_with_countdown("Current connection (1. Cable, 2. Dongle, 3. Bluetooth): ", show_cooling=False).strip()
+                                        if conn_choice in ("1", "2", "3"):
+                                            break
+                                        print_error("Invalid choice. Please enter 1, 2, or 3.")
+                                        
+                                    connection = {"1": "Cable", "2": "Dongle", "3": "Bluetooth"}[conn_choice]
                                     data = {
                                         'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
                                         'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
