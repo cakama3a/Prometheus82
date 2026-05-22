@@ -1163,7 +1163,10 @@ class LatencyTester:
                         if is_simultaneous:
                             if len(self.latency_results) >= 3:
                                 running_avg = self.latency_sum / len(self.latency_results)
-                                if abs(latency_ms - running_avg) > 0.4:
+                                running_jitter = statistics.stdev(self.latency_results) if len(self.latency_results) > 1 else 0.0
+                                # Dynamic threshold: 3x standard deviation (jitter), minimum 0.2 ms for 8000Hz precision
+                                threshold = max(0.2, 3.0 * running_jitter)
+                                if abs(latency_ms - running_avg) > threshold:
                                     is_glitch = True
                             elif loop_delta_us > 1000:
                                 is_glitch = True
