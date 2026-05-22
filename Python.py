@@ -868,10 +868,11 @@ class LatencyTester:
         keys = pygame.key.get_pressed()
         return keys[self.key_to_test]
 
-    def log_progress(self, latency):
-        """Logs test progress with percentage"""
+    def log_progress(self, latency, early_g=False):
+        """Logs test progress with percentage. Appends [G<S] if gamepad responded before Arduino 'S'."""
         progress = len(self.latency_results)
-        async_log(f"[{progress / self.iterations * 100:3.0f}%] {latency:.2f} ms")
+        marker = "  ⚡ [G<S]" if early_g else ""
+        async_log(f"[{progress / self.iterations * 100:3.0f}%] {latency:.2f} ms{marker}")
 
     def is_stick_at_extreme(self):
         """Checks if stick is at extreme position, auto-locking to the primary axis on first hit."""
@@ -1152,7 +1153,7 @@ class LatencyTester:
                             self.latency_results.append(latency_ms)
                             self.latency_sum += latency_ms
                             self._consecutive_timeouts = 0
-                            self.log_progress(latency_ms)
+                            self.log_progress(latency_ms, early_g=(self.g_time_us < self.s_time_us))
                         else:
                             self.invalid_measurements += 1
                             print(f"Invalid measurement: {latency_ms:.2f} ms (> {self.max_latency_us/1000:.2f} ms)")
