@@ -1120,14 +1120,18 @@ class LatencyTester:
         
         try:
             self.trigger_solenoid()
+            self._last_loop_time_us = time.perf_counter() * 1_000_000
             while len(self.latency_results) < self.iterations:
                 current_time_us = time.perf_counter() * 1_000_000
+                loop_delta_us = current_time_us - self._last_loop_time_us
+                self._last_loop_time_us = current_time_us
 
                 # --- Trigger: fire next solenoid when interval elapsed and cycle is idle ---
                 if not self._cycle_active:
                     if current_time_us - self.last_trigger_time_us >= self.test_interval_us:
                         self.trigger_solenoid()
                         current_time_us = time.perf_counter() * 1_000_000
+                        self._last_loop_time_us = current_time_us
 
                 if self._cycle_active:
                     # --- S: capture Arduino contact timestamp (independently) ---
@@ -1155,9 +1159,9 @@ class LatencyTester:
 
                         if self._skip_first_measurement:
                             self._skip_first_measurement = False
-                        elif s_found_now and g_found_now:
+                        elif s_found_now and g_found_now and loop_delta_us > 1000:
                             self.invalid_measurements += 1
-                            # Both signals detected in the exact same loop iteration.
+                            # Both signals detected in the exact same loop iteration, AND loop was stalled.
                             # This indicates thread preemption by the OS where the actual timing is lost.
                         elif latency_ms <= self.max_latency_us / 1000.0:
                             self.latency_results.append(latency_ms)
