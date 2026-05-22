@@ -682,7 +682,7 @@ class LatencyTester:
             pass
             
         for i in range(iterations):
-            pygame.event.pump()
+            pygame.event.clear()
             baseline_axes = []
             if self.joystick:
                 baseline_axes = [self.joystick.get_axis(a) for a in range(self.joystick.get_numaxes())]
@@ -694,7 +694,7 @@ class LatencyTester:
                 if not self.stick_axes:
                     self.detect_active_stick()
                 else:
-                    pygame.event.pump()
+                    pygame.event.clear()
                     
                 if self.joystick:
                     axes = self.stick_axes if self.stick_axes else range(self.joystick.get_numaxes())
