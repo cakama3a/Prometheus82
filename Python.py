@@ -825,35 +825,39 @@ class LatencyTester:
             return False
         for event in pygame.event.get():
             if event.type == JOYAXISMOTION and event.joy == self.joystick.get_id():
-                if abs(self.joystick.get_axis(event.axis)) > STICK_THRESHOLD:
-                    activated_axis = event.axis
-                    partner_axis = -1
-
-                    if activated_axis % 2 == 0:
-                        partner_axis = activated_axis + 1
+                axis = event.axis
+                val = event.value
+                if abs(val) > STICK_THRESHOLD:
+                    self.primary_axis = axis
+                    
+                    if axis % 2 == 0:
+                        partner_axis = axis + 1
                     else:
-                        partner_axis = activated_axis - 1
-
+                        partner_axis = axis - 1
+                    
                     if 0 <= partner_axis < self.joystick.get_numaxes():
-                        self.stick_axes = sorted([activated_axis, partner_axis])
-                        return True
+                        self.stick_axes = sorted([axis, partner_axis])
+                    else:
+                        self.stick_axes = [axis]
+                    return True
         return False
 
     def detect_active_button(self):
         """Detects button press events"""
         if not self.joystick:
             return False
-        for event in pygame.event.get():
-            if event.type == JOYBUTTONDOWN and event.joy == self.joystick.get_id() and event.button < 4:
-                self.button_to_test = event.button
+        for i in range(min(4, self.joystick.get_numbuttons())):
+            if self.joystick.get_button(i):
+                self.button_to_test = i
                 return True
         return False
 
     def detect_active_key(self):
         """Detects keyboard key press events"""
-        for event in pygame.event.get():
-            if event.type == KEYDOWN:
-                self.key_to_test = event.key
+        keys = pygame.key.get_pressed()
+        for k in (K_SPACE, K_RETURN):
+            if keys[k]:
+                self.key_to_test = k
                 return True
         return False
 
