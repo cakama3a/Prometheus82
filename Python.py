@@ -869,9 +869,9 @@ class LatencyTester:
         return keys[self.key_to_test]
 
     def log_progress(self, latency, early_g=False):
-        """Logs test progress with percentage. Appends [G<S] if gamepad responded before Arduino 'S'."""
+        """Logs test progress with percentage. Appends ⚡ if gamepad responded before Arduino 'S'."""
         progress = len(self.latency_results)
-        marker = "  ⚡ [G<S]" if early_g else ""
+        marker = "  ⚡" if early_g else ""
         async_log(f"[{progress / self.iterations * 100:3.0f}%] {latency:.2f} ms{marker}")
 
     def is_stick_at_extreme(self):
@@ -1157,12 +1157,22 @@ class LatencyTester:
                     if self._s_received and self._g_received:
                         latency_ms = (self.g_time_us - self.s_time_us) / 1000.0 + self.contact_delay
 
+                        is_simultaneous = s_found_now and g_found_now
+                        is_glitch = False
+                        
+                        if is_simultaneous:
+                            if len(self.latency_results) >= 3:
+                                running_avg = self.latency_sum / len(self.latency_results)
+                                if abs(latency_ms - running_avg) > 0.4:
+                                    is_glitch = True
+                            elif loop_delta_us > 1000:
+                                is_glitch = True
+
                         if self._skip_first_measurement:
                             self._skip_first_measurement = False
-                        elif s_found_now and g_found_now and loop_delta_us > 1000:
+                        elif is_glitch:
                             self.invalid_measurements += 1
-                            # Both signals detected in the exact same loop iteration, AND loop was stalled.
-                            # This indicates thread preemption by the OS where the actual timing is lost.
+                            # OS jitter / USB batching caused simultaneous timestamps that don't fit the gamepad's profile
                         elif latency_ms <= self.max_latency_us / 1000.0:
                             self.latency_results.append(latency_ms)
                             self.latency_sum += latency_ms
