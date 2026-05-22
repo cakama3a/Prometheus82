@@ -1021,42 +1021,56 @@ class LatencyTester:
         self.close_test_window()
         return successful_detections >= (iterations - 2), timing_warning
 
-    def _calculate_latency(self):
-        """Calculates current latency including contact delay"""
-        current_time_us = time.perf_counter() * 1000000
-        # Calculate raw latency in milliseconds
-        latency_ms = (current_time_us - self.start_time_us) / 1000.0
-        # Add contact delay
+    def _calculate_latency(self, input_time_us):
+        """Calculates latency from timestamps: input_time_us minus start_time_us.
+        Both values are captured with time.perf_counter() * 1_000_000 (microseconds)."""
+        # Subtract the two absolute timestamps and convert µs → ms
+        latency_ms = (input_time_us - self.start_time_us) / 1000.0
+        # Add contact delay correction
         latency_ms += self.contact_delay
         return latency_ms
 
     def check_input(self):
-        """Processes input for stick, button, or keyboard tests"""
+        """Processes input for stick, button, or keyboard tests.
+        
+        Timing approach: upon detecting input, immediately capture input_time_us
+        (time.perf_counter() * 1_000_000). The latency is then calculated as
+        (input_time_us - self.start_time_us), where start_time_us was recorded
+        the moment the 'S' signal arrived from Arduino. Both are absolute
+        microsecond timestamps — no timers, just subtraction.
+        """
         if self.test_type not in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD) or not self.measuring:
             return False
         
         input_detected = False
+        input_time_us = 0  # Will be set immediately when input is detected
         
         if self.test_type == TEST_TYPE_STICK:
             if not self.stick_axes and self.detect_active_stick():
                 return False
             if self.is_stick_at_extreme():
+                input_time_us = time.perf_counter() * 1_000_000  # Timestamp: gamepad response
                 input_detected = True
                 
         elif self.test_type == TEST_TYPE_BUTTON:
             if self.button_to_test is None and self.detect_active_button():
                 return False
             if self.is_button_pressed():
+                input_time_us = time.perf_counter() * 1_000_000  # Timestamp: gamepad response
                 input_detected = True
                 
         elif self.test_type == TEST_TYPE_KEYBOARD:
             if self.key_to_test is None and self.detect_active_key():
                 return False
             if self.is_key_pressed():
+                input_time_us = time.perf_counter() * 1_000_000  # Timestamp: gamepad response
                 input_detected = True
         
         if input_detected:
-            latency_ms = self._calculate_latency()
+            # Calculate latency as difference of two absolute µs timestamps:
+            #   start_time_us  — captured when Arduino sent 'S' (solenoid contact)
+            #   input_time_us  — captured immediately when gamepad input was detected
+            latency_ms = self._calculate_latency(input_time_us)
             
             if self._skip_first_measurement:
                 self._skip_first_measurement = False
@@ -1144,10 +1158,10 @@ class LatencyTester:
                     found = False
                     while self.serial.in_waiting:
                         if self.serial.read() == b'S':
+                            self.start_time_us = time.perf_counter() * 1_000_000  # Timestamp: solenoid contact
                             found = True
                             break
                     if found:
-                        self.start_time_us = time.perf_counter() * 1000000
                         self.measuring = True
                 
                 # Input handling (waiting for gamepad)
