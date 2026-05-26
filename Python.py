@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.3.0.0"                 # Updated version with microsecond support
+VERSION = "5.3.0.1"                 # Updated version with microsecond support
 MAX_CONSECUTIVE_TIMEOUTS = 15       # Global limit for missed hits
 
 import time
@@ -106,7 +106,7 @@ COOLING_PERIOD_MINUTES = 10         # Cooling period in minutes
 COOLING_PERIOD_SECONDS = COOLING_PERIOD_MINUTES * 60  # Cooling period in seconds
 LOWER_QUANTILE = 0.02               # Lower quantile for filtering
 UPPER_QUANTILE = 0.98               # Upper quantile for filtering
-STICK_THRESHOLD = 0.99              # Stick activation threshold
+STICK_THRESHOLD = 0.50              # Stick activation threshold for axis detection
 RATIO = 5                           # Delay to pulse duration ratio
 CONTACT_DELAY = 0.2                 # Contact sensor delay (ms) for correction (will be updated after calibration)
 REQUIRED_ARDUINO_VERSION = "1.1.1"
@@ -673,8 +673,10 @@ class LatencyTester:
         print(f"\nVerifying setup: {iterations} hits")
         
         invalid_hold_count = 0
-        invalid_deflection_count = 0
         invalid_contact_count = 0
+        invalid_too_close = 0
+        invalid_too_far = 0
+        valid_deflections = []
         try:
             self.serial.reset_input_buffer()
             self.serial.reset_output_buffer()
@@ -691,11 +693,29 @@ class LatencyTester:
             
             def update_deflection():
                 nonlocal max_deflection
+                
+                # If we don't know the stick yet, let detect_active_stick parse events
                 if not self.stick_axes:
                     self.detect_active_stick()
-                else:
-                    pygame.event.clear()
-                    
+                
+                # Now parse all events to catch every single sub-millisecond report
+                # This ensures we never miss a peak even if the stick bounces back instantly
+                for event in pygame.event.get():
+                    if event.type == pygame.JOYAXISMOTION and event.joy == self.joystick.get_id():
+                        axis = event.axis
+                        val = abs(event.value)
+                        
+                        # If we know the stick axes, only update for them
+                        if self.stick_axes:
+                            if axis in self.stick_axes and val > max_deflection:
+                                max_deflection = val
+                        # Otherwise, update if it moved significantly from baseline
+                        elif axis < len(baseline_axes) and abs(event.value - baseline_axes[axis]) > 0.05:
+                            if val > max_deflection:
+                                max_deflection = val
+                                
+                # Also do a state-based check just in case the event queue was empty
+                # but the stick is currently held at a high value
                 if self.joystick:
                     axes = self.stick_axes if self.stick_axes else range(self.joystick.get_numaxes())
                     for axis in axes:
@@ -757,22 +777,30 @@ class LatencyTester:
 
                 # Wait a bit longer to capture max deflection (delay for stick peak)
                 t_deflect = time.perf_counter()
-                while time.perf_counter() - t_deflect < deflection_wait:
+                while time.perf_counter() - t_deflect < 0.050:  # Increased from deflection_wait (0.020) to 50ms to ensure we catch the peak
                     update_deflection()
                     time.sleep(0.001)
                 
             deflection_pct = min(int(max_deflection * 100), 100)
             
-            if deflection_pct < 99:
+            if deflection_pct < 85:
                 deflection_str = f"{Fore.RED}{deflection_pct}%{Fore.RESET}"
-                invalid_deflection_count += 1
+                invalid_too_close += 1
+            elif deflection_pct > 98:
+                deflection_str = f"{Fore.RED}{deflection_pct}%{Fore.RESET}"
+                invalid_too_far += 1
             else:
-                deflection_str = f"{deflection_pct}%"
+                deflection_str = f"{Fore.GREEN}{deflection_pct}%{Fore.RESET}"
+                valid_deflections.append(max_deflection)
 
             if not contact_time_us or hold_ok is False:
                 if hold_ok is False:
                     invalid_hold_count += 1
                 print(f"Hit {i+1}/{iterations}: {Fore.RED}FAIL{Fore.RESET} | Deflection {deflection_str}")
+            elif deflection_pct < 85:
+                print(f"Hit {i+1}/{iterations}: {Fore.RED}FAIL{Fore.RESET} | Deflection {deflection_str} (Too close! Move sensor FURTHER)")
+            elif deflection_pct > 98:
+                print(f"Hit {i+1}/{iterations}: {Fore.RED}FAIL{Fore.RESET} | Deflection {deflection_str} (Too far! Move sensor CLOSER)")
             else:
                 print(f"Hit {i+1}/{iterations}: OK | Deflection {deflection_str}")
                 
@@ -782,13 +810,20 @@ class LatencyTester:
             except Exception:
                 pass
 
-        if any([invalid_contact_count > 0, invalid_deflection_count > 0, invalid_hold_count > 0]):
+        if any([invalid_contact_count > 0, invalid_hold_count > 0, invalid_too_close > 0, invalid_too_far > 0]):
             sensor_errors = invalid_contact_count + invalid_hold_count
             if report_errors and sensor_errors > 0:
                 print_error(f"Setup check failed: Sensor button did not register the hit properly ({sensor_errors} invalid hits).\nPlease move the gamepad closer to the sensor. Instruction: https://youtu.be/MLsXo8Si730")
-            if report_errors and invalid_deflection_count > 0:
-                print_error(f"Setup check failed: Stick is not fully deflecting ({invalid_deflection_count} hits < 99%).\nPlease reinstall the gamepad on the stand or adjust the sensor position with a screwdriver.")
+            if report_errors and invalid_too_close > 0:
+                print_error(f"Setup check failed: Sensor is TOO CLOSE ({invalid_too_close} hits < 85%).\nPlease move the sensor FURTHER from the stick.")
+            if report_errors and invalid_too_far > 0:
+                print_error(f"Setup check failed: Sensor is TOO FAR ({invalid_too_far} hits > 98%). The stick is hitting the software deadzone.\nPlease move the sensor CLOSER to the stick.")
             return False
+        
+        if valid_deflections:
+            # Subtract 1.5% safety margin to prevent test timeouts due to microscopic physical variations
+            self.dynamic_stick_threshold = max(0.50, min(valid_deflections) - 0.015)
+            print_info(f"Dynamic stick threshold established: {self.dynamic_stick_threshold*100:.1f}% (includes 1.5% safety margin)")
         
         print(f"{Fore.GREEN}Setup verification passed.{Fore.RESET}")
         return True
@@ -883,13 +918,15 @@ class LatencyTester:
         if not self.stick_axes or not self.joystick:
             return False
         
+        threshold = getattr(self, 'dynamic_stick_threshold', 0.95)
+        
         # If we already know which axis is being hit, check only that one
         if self.primary_axis is not None:
-            return abs(self.joystick.get_axis(self.primary_axis)) >= STICK_THRESHOLD
+            return abs(self.joystick.get_axis(self.primary_axis)) >= threshold
             
         # On the first hit, detect which axis of the pair reached the threshold first
         for axis in self.stick_axes:
-            if abs(self.joystick.get_axis(axis)) >= STICK_THRESHOLD:
+            if abs(self.joystick.get_axis(axis)) >= threshold:
                 self.primary_axis = axis
                 print(f"Primary axis detected and locked: Axis {axis}")
                 return True
