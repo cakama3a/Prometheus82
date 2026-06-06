@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.3.0.0"                 # Updated version with microsecond support
+VERSION = "5.3.0.1"                 # Updated version with microsecond support
 MAX_CONSECUTIVE_TIMEOUTS = 15       # Global limit for missed hits
 
 import time
@@ -25,6 +25,11 @@ import ctypes
 import threading
 import queue
 import math
+
+try:
+    import hid
+except ImportError:
+    hid = None
 
 # Async logging helpers placed before main so they exist at startup
 ASYNC_LOG_QUEUE = None
@@ -78,6 +83,15 @@ def async_log(message):
             print(str(message))
         except Exception:
             pass
+
+def clear_console_key_buffer():
+    if platform.system() != 'Windows':
+        return
+    try:
+        while msvcrt.kbhit():
+            msvcrt.getch()
+    except Exception:
+        pass
 # Enable DPI awareness for Windows to ensure sharp window rendering
 if platform.system() == 'Windows':
     try:
@@ -360,6 +374,281 @@ def get_input_with_countdown(prompt, menu=None, show_cooling=True, max_len=None)
                 sys.stdout.flush()
             time.sleep(0.01)
     except KeyboardInterrupt: print(); raise
+
+class SteamControllerDirect:
+    """Steam Controller 2026 direct HID adapter compatible with Pygame joystick calls."""
+
+    VALVE_VID = 0x28DE
+    SC2026_WIRED_PID = 0x1302
+    SC2026_DONGLE_PID = 0x1304
+    SUPPORTED_PIDS = {SC2026_WIRED_PID, SC2026_DONGLE_PID}
+    VENDOR_USAGE_PAGE = 0xFF00
+    REPORT_STATE = 0x42
+    REPORT_EXTENDED_STATE = 0x45
+    REPORT_PUCK_STATE = 0x7B
+    FEATURE_REPORT_CMD = 0x01
+    FEATURE_REPORT_CMD_FALLBACK = 0x02
+    CMD_CLEAR_DIGITAL_MAPPINGS = 0x81
+    CMD_SET_DEFAULT_MAPPINGS = 0x85
+    CMD_SET_SETTINGS = 0x87
+    SETTING_RIGHT_TRACKPAD_MODE = 0x07
+    SETTING_LEFT_TRACKPAD_MODE = 0x08
+    TRACKPAD_NONE = 0x00
+
+    BUTTON_BITS = (
+        (2, 0x01),  # A
+        (2, 0x02),  # B
+        (2, 0x04),  # X
+        (2, 0x08),  # Y
+        (4, 0x08),  # LB
+        (3, 0x02),  # RB
+        (3, 0x40),  # View
+        (2, 0x40),  # Menu
+        (3, 0x80),  # LS click
+        (2, 0x20),  # RS click
+        (4, 0x01),  # Steam
+        (4, 0x02),  # L4
+        (2, 0x80),  # R4
+        (4, 0x04),  # L5
+        (3, 0x01),  # R5
+        (3, 0x20),  # D-pad up
+        (3, 0x04),  # D-pad down
+        (3, 0x10),  # D-pad left
+        (3, 0x08),  # D-pad right
+    )
+
+    def __init__(self, path):
+        self.path = path
+        self.device = None
+        self.device_info = None
+        self.axes = [0.0] * 6
+        self.buttons = [0] * len(self.BUTTON_BITS)
+        self._running = False
+        self._heartbeat = None
+
+    @classmethod
+    def available_devices(cls):
+        if hid is None:
+            return []
+        input_interfaces = []
+        for dev in cls.valve_devices():
+            product_id = dev.get("product_id")
+            product = (dev.get("product_string") or "").lower()
+            usage_page = dev.get("usage_page")
+            usage = dev.get("usage")
+            is_known_pid = product_id in cls.SUPPORTED_PIDS
+            is_steam_controller = "steam" in product and "controller" in product
+            is_input_interface = usage_page == cls.VENDOR_USAGE_PAGE and usage == 1
+            if (is_known_pid or is_steam_controller) and is_input_interface:
+                input_interfaces.append(dev)
+        if not input_interfaces:
+            return []
+        input_interfaces.sort(key=cls._device_rank)
+        return [input_interfaces[0]]
+
+    @classmethod
+    def _device_rank(cls, dev):
+        usage_page = dev.get("usage_page")
+        usage = dev.get("usage")
+        iface = dev.get("interface_number")
+        product_id = dev.get("product_id")
+        return (
+            0 if product_id == cls.SC2026_WIRED_PID else 1,
+            0 if usage_page == cls.VENDOR_USAGE_PAGE else 1,
+            0 if usage == 1 else 1,
+            0 if product_id == cls.SC2026_DONGLE_PID and iface == 2 else 1,
+            iface if isinstance(iface, int) and iface >= 0 else 99,
+            usage if isinstance(usage, int) else 99,
+        )
+
+    @classmethod
+    def device_label(cls, dev, index=None):
+        product_id = dev.get("product_id") or 0
+        if product_id == cls.SC2026_DONGLE_PID:
+            prefix = "Steam Controller 2026 (Direct HID Puck)"
+        else:
+            prefix = "Steam Controller 2026 (Direct HID USB)"
+        usage_page = dev.get("usage_page")
+        usage = dev.get("usage")
+        iface = dev.get("interface_number")
+        role = ""
+        if product_id == cls.SC2026_DONGLE_PID:
+            if usage == 1 and isinstance(iface, int) and 2 <= iface <= 5:
+                role = f", slot {iface - 1}"
+            elif usage == 2:
+                role = ", service"
+        return f"{prefix}{role} [PID {product_id:04X}, iface {iface}]"
+
+    @classmethod
+    def valve_devices(cls):
+        if hid is None:
+            return []
+        return [dev for dev in hid.enumerate() if dev.get("vendor_id") == cls.VALVE_VID]
+
+    @classmethod
+    def diagnostic_lines(cls):
+        if hid is None:
+            return ["Python 'hid' package is not installed."]
+        devices = cls.valve_devices()
+        if not devices:
+            return ["No Valve HID devices found (VID 28DE). Check cable, USB port, and whether Windows sees the controller."]
+        lines = ["Valve HID devices detected:"]
+        for dev in devices:
+            lines.append(
+                "  VID {vid:04X} PID {pid:04X} usage_page {usage_page} usage {usage} iface {iface}: {product}".format(
+                    vid=dev.get("vendor_id") or 0,
+                    pid=dev.get("product_id") or 0,
+                    usage_page=dev.get("usage_page"),
+                    usage=dev.get("usage"),
+                    iface=dev.get("interface_number"),
+                    product=dev.get("product_string") or dev.get("manufacturer_string") or "Unknown",
+                )
+            )
+        return lines
+
+    @classmethod
+    def open_first(cls):
+        devices = cls.available_devices()
+        if not devices:
+            return None
+        return cls.open_device(0)
+
+    @classmethod
+    def open_device(cls, index):
+        devices = cls.available_devices()
+        if index >= len(devices):
+            return None
+        controller = cls(devices[index]["path"])
+        controller.device_info = devices[index]
+        controller.init()
+        return controller
+
+    def init(self):
+        if self.device:
+            return
+        if hid is None:
+            raise RuntimeError("Python HID package is not installed")
+        self.device = hid.device()
+        self.device.open_path(self.path)
+        try:
+            self.device.set_nonblocking(True)
+        except Exception:
+            pass
+        self.disable_lizard_mode()
+
+    def close(self):
+        self._running = False
+        if self._heartbeat:
+            self._heartbeat.join(timeout=0.2)
+            self._heartbeat = None
+        try:
+            self._send_command(self.CMD_SET_DEFAULT_MAPPINGS)
+        except Exception:
+            pass
+        try:
+            if self.device:
+                self.device.close()
+        except Exception:
+            pass
+        self.device = None
+
+    def disable_lizard_mode(self):
+        if self._send_command(self.CMD_CLEAR_DIGITAL_MAPPINGS):
+            payload = [
+                self.SETTING_RIGHT_TRACKPAD_MODE, self.TRACKPAD_NONE, 0,
+                self.SETTING_LEFT_TRACKPAD_MODE, self.TRACKPAD_NONE, 0,
+            ]
+            self._send_command(self.CMD_SET_SETTINGS, payload)
+        if not self._running:
+            self._running = True
+            self._heartbeat = threading.Thread(target=self._heartbeat_loop, daemon=True)
+            self._heartbeat.start()
+
+    def _heartbeat_loop(self):
+        while self._running:
+            try:
+                self._send_command(self.CMD_CLEAR_DIGITAL_MAPPINGS)
+            except Exception:
+                pass
+            time.sleep(0.8)
+
+    def _send_command(self, command, payload=None):
+        payload = payload or []
+        for report_id in (self.FEATURE_REPORT_CMD, self.FEATURE_REPORT_CMD_FALLBACK):
+            buf = [0] * 65
+            buf[0] = report_id
+            buf[1] = command
+            buf[2] = len(payload)
+            buf[3:3 + len(payload)] = payload
+            try:
+                if self.device.send_feature_report(buf) > 0:
+                    return True
+            except Exception:
+                continue
+        return False
+
+    def update(self):
+        if not self.device:
+            return
+        for _ in range(8):
+            try:
+                data = self.device.read(64, 0)
+            except TypeError:
+                data = self.device.read(64)
+            except Exception:
+                return
+            if not data:
+                return
+            if data[0] not in (self.REPORT_STATE, self.REPORT_EXTENDED_STATE, self.REPORT_PUCK_STATE) or len(data) < 18:
+                continue
+            self._parse_state_report(data)
+
+    def _parse_state_report(self, data):
+        def s16(offset):
+            return int.from_bytes(bytes(data[offset:offset + 2]), "little", signed=True)
+
+        def axis(offset, invert=False):
+            value = s16(offset)
+            if invert:
+                value = -value
+            return max(-1.0, min(1.0, value / 32767.0))
+
+        self.buttons = [1 if data[offset] & mask else 0 for offset, mask in self.BUTTON_BITS]
+        self.axes[0] = axis(10)
+        self.axes[1] = axis(12, invert=True)
+        self.axes[2] = axis(14)
+        self.axes[3] = axis(16, invert=True)
+        self.axes[4] = max(0.0, min(1.0, s16(6) / 32767.0))
+        self.axes[5] = max(0.0, min(1.0, s16(8) / 32767.0))
+
+    def get_name(self):
+        if self.device_info and self.device_info.get("product_id") == self.SC2026_DONGLE_PID:
+            return "Steam Controller 2026 (Direct HID Puck)"
+        return "Steam Controller 2026 (Direct HID USB)"
+
+    def get_guid(self):
+        product_id = self.device_info.get("product_id") if self.device_info else None
+        product_id = product_id or self.SC2026_WIRED_PID
+        return f"28de{product_id:04x}-steam-controller-direct-hid"
+
+    def get_id(self):
+        return -1
+
+    def get_numaxes(self):
+        return len(self.axes)
+
+    def get_axis(self, index):
+        return self.axes[index]
+
+    def get_numbuttons(self):
+        return len(self.buttons)
+
+    def get_button(self, index):
+        return self.buttons[index]
+
+    def get_numhats(self):
+        return 0
+
 
 class LatencyTester:
     def __init__(self, gamepad, serial_port, test_type, contact_delay=CONTACT_DELAY, iterations=TEST_ITERATIONS, protocol=None):
@@ -823,6 +1112,22 @@ class LatencyTester:
         """Detects active stick movement beyond threshold and dynamically determines the axis pair."""
         if not self.joystick:
             return False
+        if isinstance(self.joystick, SteamControllerDirect):
+            self.joystick.update()
+            for axis in range(self.joystick.get_numaxes()):
+                val = self.joystick.get_axis(axis)
+                if abs(val) > STICK_THRESHOLD:
+                    self.primary_axis = axis
+                    if axis % 2 == 0:
+                        partner_axis = axis + 1
+                    else:
+                        partner_axis = axis - 1
+                    if 0 <= partner_axis < self.joystick.get_numaxes():
+                        self.stick_axes = sorted([axis, partner_axis])
+                    else:
+                        self.stick_axes = [axis]
+                    return True
+            return False
         for event in pygame.event.get():
             if event.type == JOYAXISMOTION and event.joy == self.joystick.get_id():
                 axis = event.axis
@@ -846,6 +1151,8 @@ class LatencyTester:
         """Detects button press events"""
         if not self.joystick:
             return False
+        if isinstance(self.joystick, SteamControllerDirect):
+            self.joystick.update()
         for i in range(min(4, self.joystick.get_numbuttons())):
             if self.joystick.get_button(i):
                 self.button_to_test = i
@@ -863,6 +1170,8 @@ class LatencyTester:
 
     def is_button_pressed(self):
         """Checks if the selected button is pressed"""
+        if isinstance(self.joystick, SteamControllerDirect):
+            self.joystick.update()
         return self.button_to_test is not None and self.joystick and self.joystick.get_button(self.button_to_test)
 
     def is_key_pressed(self):
@@ -882,6 +1191,8 @@ class LatencyTester:
         """Checks if stick is at extreme position, auto-locking to the primary axis on first hit."""
         if not self.stick_axes or not self.joystick:
             return False
+        if isinstance(self.joystick, SteamControllerDirect):
+            self.joystick.update()
         
         # If we already know which axis is being hit, check only that one
         if self.primary_axis is not None:
@@ -1265,6 +1576,9 @@ def detect_input_mode(name, guid, axes, num_hats, num_buttons):
     n, g = name.lower(), guid.lower()
     guid_chunks = {g[i:i+4] for i in range(0, len(g), 4) if len(g[i:i+4]) == 4}
 
+    if "steam controller" in n or "28de" in g:
+        return "Steam Direct"
+
     # 1. Official Sony markers and licensed brands
     sony_markers = ("dualsense", "ps5", "edge", "dualshock", "ds4", "ps4", "playstation", "astro")
     if any(s in n for s in sony_markers):
@@ -1307,6 +1621,11 @@ def detect_gamepad_mode(joystick):
     
     axes = [joystick.get_axis(i) for i in range(joystick.get_numaxes())]
     return detect_input_mode(joystick.get_name(), joystick.get_guid(), axes, joystick.get_numhats(), joystick.get_numbuttons())
+
+def server_protocol_name(protocol):
+    if protocol == "Steam Direct":
+        return "Steam"
+    return protocol if protocol else "Unknown"
 
 # Short ID Generation
 def generate_short_id(length=12):
@@ -1378,29 +1697,48 @@ if __name__ == "__main__":
     # Select gamepad
     joystick = None
     detected_mode = None
-    joystick_count = pygame.joystick.get_count()
-    if joystick_count:
-        if joystick_count > 1:
-            menu_gamepads = "Available gamepads:\n" + "\n".join([f"{i + 1}: {pygame.joystick.Joystick(i).get_name()}" for i in range(joystick_count)])
-            while True:
-                try:
-                    choice_input = get_input_with_countdown(f"Select gamepad (1-{joystick_count}): ", menu_gamepads).strip()
-                    if not choice_input: continue
-                    joystick = pygame.joystick.Joystick(int(choice_input) - 1)
-                    print(f"\nSelected gamepad: {joystick.get_name()}")
-                    break
-                except (ValueError, IndexError):
-                    print_error(f"Invalid selection! Please enter 1-{joystick_count}.")
-        else:
-            joystick = pygame.joystick.Joystick(0)
+    direct_steam_devices = SteamControllerDirect.available_devices()
+    if direct_steam_devices:
+        try:
+            joystick = SteamControllerDirect.open_first()
             print(f"\nAutoselected gamepad: {joystick.get_name()}")
+        except (RuntimeError, OSError) as e:
+            print_error(f"Failed to open Steam Controller direct HID: {e}")
+            joystick = None
+
+    if joystick is None:
+        joystick_count = pygame.joystick.get_count()
+        if joystick_count:
+            if joystick_count > 1:
+                menu_gamepads = "Available gamepads:\n" + "\n".join([f"{i + 1}: {pygame.joystick.Joystick(i).get_name()}" for i in range(joystick_count)])
+                while True:
+                    try:
+                        choice_input = get_input_with_countdown(f"Select gamepad (1-{joystick_count}): ", menu_gamepads).strip()
+                        if not choice_input:
+                            continue
+                        joystick = pygame.joystick.Joystick(int(choice_input) - 1)
+                        print(f"\nSelected gamepad: {joystick.get_name()}")
+                        break
+                    except (ValueError, IndexError):
+                        print_error(f"Invalid selection! Please enter 1-{joystick_count}.")
+            else:
+                joystick = pygame.joystick.Joystick(0)
+                print(f"\nAutoselected gamepad: {joystick.get_name()}")
+        else:
+            print_error("No gamepad found! Some features will be unavailable.")
+            if hid is None:
+                print_error("Direct Steam Controller support also needs the Python 'hid' package.")
+            else:
+                for line in SteamControllerDirect.diagnostic_lines():
+                    print(f"{Fore.YELLOW}{line}{Fore.RESET}")
+                print(f"{Fore.YELLOW}Tip: close Steam while testing direct HID mode, and use a USB-C data cable, not a charge-only cable.{Fore.RESET}")
+
+    if joystick:
         joystick.init()
-        
-        # Detect gamepad mode (XInput, DInput, Sony, Switch)
+
+        # Detect gamepad mode (XInput, DInput, Sony, Switch, Steam Direct)
         detected_mode = detect_gamepad_mode(joystick)
         print(f"Detected protocol:  {Fore.GREEN}{detected_mode}{Fore.RESET}")
-    else:
-        print_error("No gamepad found! Some features will be unavailable.")
 
     # Select test type
     menu_test_type = "Select test type:\n1: Gamepad\t- Test analog stick\n2: Gamepad\t- Test button\n3: Keyboard\t- Test key\n4: Hardware\t- Test solenoid and sensor"
@@ -1620,16 +1958,20 @@ if __name__ == "__main__":
                                 open_label = "Open on Gamepadla.com"
                             export_label = f"{Fore.LIGHTBLACK_EX}Export to CSV (already used){Fore.RESET}" if exported_to_csv else "Export to CSV"
                             print(f"\nSelect action:\n1: {open_label}\n2: {export_label}\n3: Restart test\n4: Exit")
-                            try:
-                                choice_val = get_input_with_countdown("Enter your choice (1-4): ", show_cooling=False)
-                                if not choice_val: continue
-                                choice = int(choice_val)
-                                if choice not in [1, 2, 3, 4]:
-                                    print("Invalid selection! Please enter 1, 2, 3, or 4.")
-                                    continue
-                            except ValueError:
-                                print_error("Invalid input! Please enter 1, 2, 3, or 4.")
-                                continue
+                            clear_console_key_buffer()
+                            while True:
+                                try:
+                                    choice_val = get_input_with_countdown("Enter your choice (1-4): ", show_cooling=False).strip()
+                                    if not choice_val:
+                                        print("Please enter 1, 2, 3, or 4.")
+                                        continue
+                                    choice = int(choice_val)
+                                    if choice not in [1, 2, 3, 4]:
+                                        print("Invalid selection! Please enter 1, 2, 3, or 4.")
+                                        continue
+                                    break
+                                except ValueError:
+                                    print_error("Invalid input! Please enter 1, 2, 3, or 4.")
 
                             if choice == 1:
                                 if stats['valid_samples'] < 200:
@@ -1658,7 +2000,7 @@ if __name__ == "__main__":
                                         'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
                                         'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
                                         'driver': joystick.get_name() if joystick else "N/A", 'connection': connection,
-                                        'mode': detected_mode if detected_mode else "Unknown",
+                                        'mode': server_protocol_name(detected_mode),
                                         'name': gamepad_name, 'os_name': platform.system(), 'os_version': platform.uname().version,
                                         'min_latency': round(stats['min'], 2), 'max_latency': round(stats['max'], 2),
                                         'avg_latency': round(stats['avg'], 2), 'jitter': stats['jitter'],
@@ -1701,6 +2043,11 @@ if __name__ == "__main__":
     except Exception as e:
         print_error(f"While setting up COM port: {e}")
     finally:
+        try:
+            if isinstance(joystick, SteamControllerDirect):
+                joystick.close()
+        except Exception:
+            pass
         stop_async_logger()
         pygame.quit()
         if wait_on_exit:
