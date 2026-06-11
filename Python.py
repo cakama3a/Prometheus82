@@ -1698,40 +1698,55 @@ if __name__ == "__main__":
     joystick = None
     detected_mode = None
     direct_steam_devices = SteamControllerDirect.available_devices()
+    
+    options = []
     if direct_steam_devices:
-        try:
-            joystick = SteamControllerDirect.open_first()
-            print(f"\nAutoselected gamepad: {joystick.get_name()}")
-        except (RuntimeError, OSError) as e:
-            print_error(f"Failed to open Steam Controller direct HID: {e}")
-            joystick = None
+        is_dongle = direct_steam_devices[0].get("product_id") == SteamControllerDirect.SC2026_DONGLE_PID
+        steam_name = "Steam Controller 2026 (Direct HID Puck)" if is_dongle else "Steam Controller 2026 (Direct HID USB)"
+        options.append(("steam", steam_name, None))
+        
+    for i in range(pygame.joystick.get_count()):
+        pj = pygame.joystick.Joystick(i)
+        options.append(("pygame", pj.get_name(), pj))
 
-    if joystick is None:
-        joystick_count = pygame.joystick.get_count()
-        if joystick_count:
-            if joystick_count > 1:
-                menu_gamepads = "Available gamepads:\n" + "\n".join([f"{i + 1}: {pygame.joystick.Joystick(i).get_name()}" for i in range(joystick_count)])
-                while True:
-                    try:
-                        choice_input = get_input_with_countdown(f"Select gamepad (1-{joystick_count}): ", menu_gamepads).strip()
-                        if not choice_input:
-                            continue
-                        joystick = pygame.joystick.Joystick(int(choice_input) - 1)
-                        print(f"\nSelected gamepad: {joystick.get_name()}")
-                        break
-                    except (ValueError, IndexError):
-                        print_error(f"Invalid selection! Please enter 1-{joystick_count}.")
-            else:
-                joystick = pygame.joystick.Joystick(0)
-                print(f"\nAutoselected gamepad: {joystick.get_name()}")
+    if len(options) == 0:
+        print_error("No gamepad found! Some features will be unavailable.")
+        if hid is None:
+            print_error("Direct Steam Controller support also needs the Python 'hid' package.")
         else:
-            print_error("No gamepad found! Some features will be unavailable.")
-            if hid is None:
-                print_error("Direct Steam Controller support also needs the Python 'hid' package.")
-            else:
-                for line in SteamControllerDirect.diagnostic_lines():
-                    print(f"{Fore.YELLOW}{line}{Fore.RESET}")
-                print(f"{Fore.YELLOW}Tip: close Steam while testing direct HID mode, and use a USB-C data cable, not a charge-only cable.{Fore.RESET}")
+            for line in SteamControllerDirect.diagnostic_lines():
+                print(f"{Fore.YELLOW}{line}{Fore.RESET}")
+            print(f"{Fore.YELLOW}Tip: close Steam while testing direct HID mode, and use a USB-C data cable, not a charge-only cable.{Fore.RESET}")
+    else:
+        if len(options) == 1:
+            choice = 0
+            prefix = "Autoselected"
+        else:
+            menu_gamepads = "Available gamepads:\n" + "\n".join([f"{i + 1}: {opt[1]}" for i, opt in enumerate(options)])
+            while True:
+                try:
+                    choice_input = get_input_with_countdown(f"Select gamepad (1-{len(options)}): ", menu_gamepads).strip()
+                    if not choice_input:
+                        continue
+                    if 0 < int(choice_input) <= len(options):
+                        choice = int(choice_input) - 1
+                        break
+                    print_error(f"Invalid selection! Please enter 1-{len(options)}.")
+                except ValueError:
+                    print_error("Invalid input! Please enter a number.")
+            prefix = "Selected"
+
+        opt_type, name, dev = options[choice]
+        if opt_type == "steam":
+            try:
+                joystick = SteamControllerDirect.open_first()
+            except (RuntimeError, OSError) as e:
+                print_error(f"Failed to open Steam Controller direct HID: {e}")
+        else:
+            joystick = dev
+            
+        if joystick:
+            print(f"\n{prefix} gamepad: {joystick.get_name()}")
 
     if joystick:
         joystick.init()
