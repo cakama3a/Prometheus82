@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.3.0.1"                 # Updated version with microsecond support
+VERSION = "5.3.0.2"                 # Updated version with microsecond support
 MAX_CONSECUTIVE_TIMEOUTS = 15       # Global limit for missed hits
 
 import time
@@ -385,7 +385,8 @@ class SteamControllerDirect:
     VENDOR_USAGE_PAGE = 0xFF00
     REPORT_STATE = 0x42
     REPORT_EXTENDED_STATE = 0x45
-    REPORT_PUCK_STATE = 0x7B
+    REPORT_PUCK_STATE = 0x47
+    SERVICE_REPORTS = {0x7B}
     FEATURE_REPORT_CMD = 0x01
     FEATURE_REPORT_CMD_FALLBACK = 0x02
     CMD_CLEAR_DIGITAL_MAPPINGS = 0x81
@@ -590,7 +591,7 @@ class SteamControllerDirect:
     def update(self):
         if not self.device:
             return
-        for _ in range(8):
+        for _ in range(32):
             try:
                 data = self.device.read(64, 0)
             except TypeError:
@@ -599,6 +600,8 @@ class SteamControllerDirect:
                 return
             if not data:
                 return
+            if data[0] in self.SERVICE_REPORTS:
+                continue
             if data[0] not in (self.REPORT_STATE, self.REPORT_EXTENDED_STATE, self.REPORT_PUCK_STATE) or len(data) < 18:
                 continue
             self._parse_state_report(data)
