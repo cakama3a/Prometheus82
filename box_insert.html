@@ -182,23 +182,92 @@
       line-height: 1.5;
     }
 
+    .customs-disclaimer {
+      margin-top: 24px;
+      padding: 12px 16px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--muted);
+      background: #fffdf9;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 12mm;
+    }
+
     @media print {
       body {
         padding: 0;
+        margin: 0;
         background: #fff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
 
       .sheet {
-        max-width: none;
-        min-height: 100vh;
+        max-width: 100%;
+        width: 100%;
+        min-height: 0;
+        height: auto;
         margin: 0;
         border: none;
         border-radius: 0;
         box-shadow: none;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html, body, .sheet {
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }
+
+      .ascii-title {
+        margin: 15px 0 10px;
+        font-size: 7.5px;
+      }
+
+      h1 {
+        margin: 10px 0 5px 0;
+        font-size: 22px;
+      }
+
+      .lead {
+        font-size: 14px;
+      }
+
+      .qr-card {
+        width: 160px;
+        flex: 0 0 160px;
+        padding: 8px;
+        border-radius: 10px;
+      }
+
+      .grid {
+        gap: 16px;
+      }
+
+      .panel {
+        padding: 14px;
+        border-radius: 10px;
+      }
+
+      .customs-disclaimer {
+        margin-top: 16px;
+        padding: 10px 12px;
+        border-radius: 8px;
+      }
+
+      .footer {
+        margin-top: 16px;
+        padding-top: 12px;
       }
     }
 
-    @media (max-width: 760px) {
+    @media screen and (max-width: 760px) {
       .header,
       .grid,
       .footer {
@@ -233,8 +302,8 @@
  ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝  ╚════╝ ╚══════╝</pre>
         <h1>Thank you for your purchase</h1>
         <p class="lead">
-          Every Prometheus 82 unit is personally built and tested by John Punch before shipping.
-          I verify each device against a reference unit to make sure it performs as expected.
+          Every Prometheus 82 unit is personally built and tested before shipping.
+          Each device is verified against a reference unit to make sure it performs as expected.
         </p>
       </div>
       <aside class="qr-card">
@@ -277,13 +346,9 @@
         <h2>If something goes wrong</h2>
         <p>
           Hardware failures during use are rare, but they are still possible. If a part wears out or stops working,
-          you can request a replacement part here:
+          you can request a replacement part.
         </p>
         <p>
-          ko-fi.com/s/a4c414c6f3
-        </p>
-        <p>
-          Choose <strong>Shipping Part</strong> and write in the chat which part you want to replace.
           Replacement parts are free; you only pay for shipping.
         </p>
         <p>
@@ -297,12 +362,15 @@
       </article>
     </section>
 
+    <div class="customs-disclaimer">
+      <strong>Hardware &amp; Service Valuation:</strong> This package contains the Prometheus 82 hardware assembly (declared customs value: $25.00 USD). The purchase price includes custom manual assembly, quality assurance testing, reference unit verification, and a 1-year hardware warranty support package.
+    </div>
+
     <section class="footer">
-      <div class="signature">Built and tested personally by John Punch</div>
+      <div class="signature">Hand-built &amp; Tested</div>
       <div class="links">
-        Prometheus 82 by John Punch<br>
-        github.com/cakama3a/Prometheus82<br>
-        ko-fi.com/s/a4c414c6f3
+        Prometheus 82 Input Latency Tester<br>
+        github.com/cakama3a/Prometheus82
       </div>
     </section>
   </main>
