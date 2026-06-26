@@ -13,6 +13,15 @@
       --accent: #9d2f2f;
       --accent-dark: #6d1f1f;
       --border: #d9cfc3;
+
+      /* CMYK Head cleaning colors */
+      --blue: #0055cc; /* Cyan/Blue */
+      --red: #d93838; /* Magenta/Red */
+      --red-bg: #fff5f5;
+      --red-text: #a62626;
+      --yellow: #d97706; /* Yellow/Amber */
+      --yellow-bg: #fffbeb;
+      --yellow-text: #b45309;
     }
 
     * {
@@ -73,6 +82,7 @@
       font-size: 26px;
       line-height: 1.1;
       margin: 20px 0 10px 0;
+      color: var(--blue);
     }
 
     .lead {
@@ -130,7 +140,7 @@
     h2 {
       font-size: 20px;
       margin: 0 0 12px;
-      color: var(--accent-dark);
+      color: var(--blue);
     }
 
     p {
@@ -153,8 +163,21 @@
     .note {
       margin-top: 22px;
       padding: 16px 18px;
-      border-left: 5px solid var(--accent);
-      background: #fff7f4;
+      border-left: 5px solid var(--red);
+      background: var(--red-bg);
+      color: var(--red-text);
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .warning-box {
+      margin-top: 14px;
+      margin-bottom: 14px;
+      padding: 14px 16px;
+      border-left: 5px solid var(--yellow);
+      background: var(--yellow-bg);
+      color: var(--yellow-text);
       border-radius: 10px;
       font-size: 14px;
       line-height: 1.6;
@@ -182,19 +205,21 @@
       line-height: 1.5;
     }
 
-
     @page {
       size: A4 portrait;
       margin: 12mm;
     }
 
     @media print {
-      body {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      html, body {
         padding: 0;
         margin: 0;
-        background: #fff;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+        background: #fff !important;
       }
 
       .sheet {
@@ -208,6 +233,7 @@
         box-shadow: none;
         padding: 0;
         box-sizing: border-box;
+        background: #fff !important;
       }
 
       html, body, .sheet {
@@ -244,7 +270,6 @@
         padding: 14px;
         border-radius: 10px;
       }
-
 
       .footer {
         margin-top: 16px;
@@ -312,9 +337,9 @@
           Prometheus 82 requires the Prometheus 82 software. Download the latest release here:
           github.com/cakama3a/Prometheus82/releases
         </p>
-        <p>
-          Power supply recommendation: use a 20W (or higher) power adapter. Weak adapters may cause unpredictable test results.
-        </p>
+        <div class="warning-box">
+          <strong>Power Recommendation:</strong> Use a 20W (or higher) power adapter. Weak adapters may cause unpredictable test results.
+        </div>
         <p>
           Each tester is checked before dispatch, including a comparison of measured latency behavior against a known-good reference sample.
           This helps ensure your unit arrives ready to use.
