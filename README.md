@@ -247,7 +247,7 @@ By purchasing a license, you not only ensure legal compliance but also support t
 *We respect our clients' privacy. Licensees can choose to be listed by their company name or a unique anonymous identifier (UUID).*
 
 ## Credits
-- **Yaroslav Solovey (Ярослав Соловей)** - PCB design and assistance with the hardware architecture of the physical version of Prometheus 82.
+- **Yaroslav Solovei (Ярослав Соловей)** - PCB design and assistance with the hardware architecture of the physical version of Prometheus 82.
 
 ## Contact
 john@gamepadla.com
