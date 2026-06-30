@@ -174,7 +174,7 @@ You can find it on thingiverse under the name P82_2006_Reverse_Solenoid_mod.3mf 
 | 18 | Cosplay Eva Foam 2mm (35x50cm) (~5% matherial) | $2.84 | Eva material for the stand, necessary for the gamepad to be securely fixed | [AliExpress](https://www.aliexpress.com/item/1005005603490236.html) |
 | 19 | Heat Shrink Tube 5mm (5/100cm) | $0.55 | It is required when creating a cable connecting the main board with the solenoid unit | [AliExpress](https://www.aliexpress.com/item/1005008540789806.html) |
 | 20 | PET Expandable Cable Sleeve 4mm (30/100cm) | $0.32 | Wrapping the cable to make it look good | [AliExpress](https://www.aliexpress.com/item/32998589638.html) |
-| 21 | Brass Heat Insert Nut M3/5.3mm (1/80pcs) | $3.59 | Required for secure fixation of the button at the end of the solenoid | [AliExpress](https://www.aliexpress.com/item/4001307378488.html) |
+| 21 | Brass Heat Insert Nut M3/5.3mm (Height: 3mm, 1/80pcs) | $3.59 | Required for secure fixation of the button at the end of the solenoid. Height must be 3mm. | [AliExpress](https://www.aliexpress.com/item/4001307378488.html) |
 | 22 | Screws M3 50Pcs, 8mm (7/50pcs) | $2.08 | To connect components printed on a 3D printer | [AliExpress](https://www.aliexpress.com/item/1005007593838226.html) |
 | 22a | Screws M3 50Pcs, 4mm (2/50pcs) | $1.08 | For Solenoid fix | [AliExpress](https://www.aliexpress.com/item/1005007593838226.html) |
 
@@ -199,7 +199,7 @@ For testing sticks according to the new standard
 | 30 | Kailh Mute Button 6x6x7.3mm | $2.00 | To record the moment you press a button or stick on the gamepad | [AliExpress](https://s.click.aliexpress.com/e/_c2xn8EG7), [Amazon](https://amzn.to/4qVE7lD) |
 | 31 | Wire 30AWG (20cm/1m) | $1.04 | Must be elastic to connect the sensor button | [Aliexpress](https://s.click.aliexpress.com/e/_c2yFyGpN) |
 | 32 | Screws M3 50Pcs, 4mm (3/50pcs) | $1.08 | For Solenoid fix | [AliExpress](https://www.aliexpress.com/item/1005007593838226.html) |
-| 33 | Brass Heat Insert Nut M3/5.3mm (1/80pcs) | $3.59 | Required for secure fixation of the button at the end of the solenoid | [AliExpress](https://s.click.aliexpress.com/e/_c39Fuau3) |
+| 33 | Brass Heat Insert Nut M3/5.3mm (Height: 3mm, 1/80pcs) | $3.59 | Required for secure fixation of the button at the end of the solenoid. Height must be 3mm. | [AliExpress](https://s.click.aliexpress.com/e/_c39Fuau3) |
 | 34 | Wire Connector 4Pin XH2.54 mm (2/80pcs) | $3.10 | A set of ports and connectors for creating connections | [AliExpress](https://www.aliexpress.com/item/1005003422202370.html) |
 
 ## Notes and tips
@@ -245,6 +245,9 @@ By purchasing a license, you not only ensure legal compliance but also support t
 **To purchase your kit or learn more, contact us at `john@gamepadla.com`.**
 
 *We respect our clients' privacy. Licensees can choose to be listed by their company name or a unique anonymous identifier (UUID).*
+
+## Credits
+- **Yaroslav Solovey (Ярослав Соловей)** - PCB design and assistance with the hardware architecture of the physical version of Prometheus 82.
 
 ## Contact
 john@gamepadla.com
