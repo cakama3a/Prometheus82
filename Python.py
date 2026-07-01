@@ -681,6 +681,7 @@ class LatencyTester:
         self._last_render_time = 0.0
         self._stick_runtime_fallback_used = False
         self._consecutive_timeouts = 0
+        self._timeout_skipped = False
         self.test_aborted = False
         self._protocol = protocol
         self.set_pulse_duration(PULSE_DURATION)  # Use milliseconds for Arduino compatibility
@@ -973,7 +974,7 @@ class LatencyTester:
         except Exception:
             pass
             
-        for i in range(iterations):
+        for i in range(iterations + 1):
             pygame.event.clear()
             baseline_axes = []
             if self.joystick:
@@ -1024,7 +1025,8 @@ class LatencyTester:
             hold_ok = None
 
             if not contact_time_us:
-                invalid_contact_count += 1
+                if i > 0:
+                    invalid_contact_count += 1
             else:
                 # 20 ms hold-check
                 try:
@@ -1057,16 +1059,23 @@ class LatencyTester:
             
             if deflection_pct < 99:
                 deflection_str = f"{Fore.RED}{deflection_pct}%{Fore.RESET}"
-                invalid_deflection_count += 1
+                if i > 0:
+                    invalid_deflection_count += 1
             else:
                 deflection_str = f"{deflection_pct}%"
 
             if not contact_time_us or hold_ok is False:
-                if hold_ok is False:
+                if hold_ok is False and i > 0:
                     invalid_hold_count += 1
-                print(f"Hit {i+1}/{iterations}: {Fore.RED}FAIL{Fore.RESET} | Deflection {deflection_str}")
+                if i == 0:
+                    print(f"Hit {i}/{iterations}: {Fore.RED}FAIL{Fore.RESET} | Deflection {deflection_str} (ignored)")
+                else:
+                    print(f"Hit {i}/{iterations}: {Fore.RED}FAIL{Fore.RESET} | Deflection {deflection_str}")
             else:
-                print(f"Hit {i+1}/{iterations}: OK | Deflection {deflection_str}")
+                if i == 0:
+                    print(f"Hit {i}/{iterations}: OK | Deflection {deflection_str} (ignored)")
+                else:
+                    print(f"Hit {i}/{iterations}: OK | Deflection {deflection_str}")
                 
             time.sleep(0.1)
             try:
@@ -1510,9 +1519,13 @@ class LatencyTester:
                         missing = []
                         if not self._s_received: missing.append("S (Arduino)")
                         if not self._g_received: missing.append("G (gamepad)")
-                        self.invalid_measurements += 1
-                        self._consecutive_timeouts += 1
-                        print(f"Invalid measurement: timeout — missing {', '.join(missing)}")
+                        if not self._timeout_skipped:
+                            self._timeout_skipped = True
+                            print(f"Invalid measurement: timeout — missing {', '.join(missing)} (ignored once)")
+                        else:
+                            self.invalid_measurements += 1
+                            self._consecutive_timeouts += 1
+                            print(f"Invalid measurement: timeout — missing {', '.join(missing)}")
                         self._cycle_active = False
 
                         limit = STICK_MAX_CONSECUTIVE_TIMEOUTS if self.test_type == TEST_TYPE_STICK else MAX_CONSECUTIVE_TIMEOUTS
