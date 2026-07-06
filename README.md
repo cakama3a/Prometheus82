@@ -216,7 +216,7 @@ This project operates under a dual-license model. Please choose the one that fit
 
 -   **Personal & Non-Commercial Use:** You are free to build and use Prometheus 82 for personal projects, academic research, and non-monetized content. For the full terms, please see the **[Personal Use License](LICENSE)**.
 
--   **Commercial Use:** A commercial license is **required** for any organization using the device for business purposes (e.g., product R&D, quality assurance, marketing). To review the terms and pricing, please see the full **[Commercial License Agreement](COMMERCIAL_LICENSE.md)**.
+-   **Commercial Use:** A commercial license is **required** for any organization using the device for business purposes (e.g., product R&D, quality assurance, marketing). To review the terms and request a quote, please see the full **[Commercial License Agreement](COMMERCIAL_LICENSE.md)**.
 
 
 ## 🛡️ Official Licensee Registry
@@ -235,14 +235,13 @@ Each license is verified and has a specific validity period.
 ---
 ### How to Get Your License
 
-Interested in using Prometheus 82 for your business? The best way to get started is with our **Commercial Kit**, which includes:
-* A pre-built, calibrated, and ready-to-use Prometheus 82 device.
-* Your first year's **Professional License**.
-* Priority technical support.
+Interested in using Prometheus 82 for your business? Pricing is formed individually to be practical and fit your company's scale and activities. To request a quote and get your **Commercial Kit** (which includes a pre-built, calibrated, and ready-to-use device, your commercial license, and technical support), please contact us at `john@gamepadla.com`. 
+
+In your email, please specify:
+* A brief overview of what your company/project does.
+* Your main goals and intended use cases for the device.
 
 By purchasing a license, you not only ensure legal compliance but also support the continued development of this open-source project.
-
-**To purchase your kit or learn more, contact us at `john@gamepadla.com`.**
 
 *We respect our clients' privacy. Licensees can choose to be listed by their company name or a unique anonymous identifier (UUID).*
 

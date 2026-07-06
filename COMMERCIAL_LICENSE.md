@@ -10,7 +10,7 @@ This Commercial License Agreement (the "Agreement") governs the terms for the co
 
 ### 1. Acceptance of Agreement
 
-This Agreement becomes legally binding upon the Licensee’s full payment of an invoice for a commercial offering listed in Section 4. **Payment constitutes the Licensee's full and unconditional acceptance of all terms and conditions set forth in this document.** No physical or digital signature is required unless specifically requested by the Licensee.
+This Agreement becomes legally binding upon the Licensee’s full payment of an invoice issued by the Licensor for the agreed commercial plan. **Payment constitutes the Licensee's full and unconditional acceptance of all terms and conditions set forth in this document.** No physical or digital signature is required unless specifically requested by the Licensee.
 
 ### 2. Definitions
 
@@ -26,12 +26,18 @@ Subject to the terms and conditions of this Agreement, the Licensor grants the L
 
 ### 4. License Plans & Usage Rights
 
-The following commercial plans are available. The Licensee's rights depend on the plan purchased.
+Commercial licensing and pricing are customized individually based on the company's scope of operations, target goals, and specific needs. 
+
+To request a quote and commercial license, please contact John Punch at `john@gamepadla.com` and provide:
+1. A brief overview of your company/project and its activities.
+2. The intended use case for the Prometheus 82 device (e.g., specific testing needs, internal QA, public benchmarking, or marketing).
+3. The number of physical testing units required.
+
+The final pricing will be tailored to your specific business case and budget.
 
 | Feature | Professional License | Enterprise License |
 | :--- | :--- | :--- |
-| **First Year Cost** | **$1,500 / first year** | **Contact for Quote** |
-| **Renewal Fee** | **$800 / year** | **Contact for Quote** |
+| **Pricing** | **Individual Quote** | **Individual Quote** |
 | **Hardware Included** | ✅ Yes (1 Unit) | ✅ Yes (Multiple Units) |
 | **Target Audience** | Hardware Manufacturers, R&D Labs, Reviewers, Media | Large Corporations, Certification Bodies, Holding Companies |
 | **Scope of Use** | Single Brand R&D, QA, Marketing | Multi-Brand / Subsidiary Support |
