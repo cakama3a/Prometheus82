@@ -35,15 +35,15 @@ To request a quote and commercial license, please contact John Punch at `john@ga
 
 The final pricing will be tailored to your specific business case and budget.
 
-| Feature | Professional License | Enterprise License |
-| :--- | :--- | :--- |
-| **Pricing** | **Individual Quote** | **Individual Quote** |
-| **Hardware Included** | ✅ Yes (1 Unit) | ✅ Yes (Multiple Units) |
-| **Target Audience** | Hardware Manufacturers, R&D Labs, Reviewers, Media | Large Corporations, Certification Bodies, Holding Companies |
-| **Scope of Use** | Single Brand R&D, QA, Marketing | Multi-Brand / Subsidiary Support |
-| **Publishing Rights** | ✅ Yes (Benchmarks, Reviews, Ads) | ✅ Yes (Benchmarks, Reviews, Ads) |
-| **Attribution** | Required (see Section 6.2) | Required (see Section 6.2) |
-| **Support** | Priority Email Support | Dedicated Channel + Calibration Services |
+| Feature | Commercial License Details |
+| :--- | :--- |
+| **Pricing** | **Individual Quote** (tailored to project scope and budget) |
+| **Hardware Included** | ✅ Yes (1 or more Units depending on the agreement) |
+| **Target Audience** | Hardware Manufacturers, R&D Labs, Reviewers, Media, and Corporations |
+| **Scope of Use** | R&D, QA, marketing, and benchmarking |
+| **Publishing Rights** | ✅ Yes (Benchmarks, Reviews, Ads, packaging claims) |
+| **Attribution** | Required (see Section 6.2) |
+| **Support** | Priority Email Support (dedicated channel & calibration services optional) |
 
 **4.3. Ownership**
 
