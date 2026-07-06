@@ -38,6 +38,7 @@ The final pricing will be tailored to your specific business case and budget.
 | Feature | Commercial License Details |
 | :--- | :--- |
 | **Pricing** | **Individual Quote** (tailored to project scope and budget) |
+| **Renewal** | **Individual Quote** (typically offered at a reduced rate since hardware is already provided) |
 | **Hardware Included** | ✅ Yes (1 or more Units depending on the agreement) |
 | **Target Audience** | Hardware Manufacturers, R&D Labs, Reviewers, Media, and Corporations |
 | **Scope of Use** | R&D, QA, marketing, and benchmarking |
