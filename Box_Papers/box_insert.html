@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Prometheus 82 - Thank You</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
     :root {
       --bg: #f4f1ea;
       --card: #fffdf9;
@@ -33,7 +35,8 @@
       padding: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      letter-spacing: -0.01em;
     }
 
     body {
@@ -64,18 +67,10 @@
       max-width: 560px;
     }
 
-    .ascii-title {
+    .logo {
+      height: 60px;
       margin: 40px 0 12px;
-      padding: 0;
-      font-family: "Courier New", Courier, monospace;
-      font-size: 9px;
-      line-height: 1;
-      font-weight: 700;
-      color: var(--text);
-      white-space: pre;
-      max-width: 100%;
-      overflow: hidden;
-      text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.15);
+      display: block;
     }
 
     h1 {
@@ -246,10 +241,10 @@
         flex: 1 1 auto;
       }
 
-      .ascii-title {
+      .logo {
+        height: 48px;
         margin: 15px 0 10px;
-        font-size: 6.2px;
-        letter-spacing: -0.2px;
+        display: block;
       }
 
       h1 {
@@ -310,12 +305,7 @@
   <main class="sheet">
     <section class="header">
       <div class="brand">
-        <pre class="ascii-title" aria-label="PROMETHEUS 82"> ██████╗ ██████╗  ██████╗ ███╗   ███╗███████╗████████╗██╗  ██╗███████╗██╗   ██╗███████╗  █████╗ ██████╗ 
- ██╔══██╗██╔══██╗██╔═══██╗████╗ ████║██╔════╝╚══██╔══╝██║  ██║██╔════╝██║   ██║██╔════╝ ██╔══██╗╚════██╗ 
- ██████╔╝██████╔╝██║   ██║██╔████╔██║█████╗     ██║   ███████║█████╗  ██║   ██║███████╗ ╚█████╔╝ █████╔╝ 
- ██╔═══╝ ██╔══██╗██║   ██║██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██╔══╝  ██║   ██║╚════██║ ██╔══██╗██╔═══╝ 
- ██║     ██║  ██║╚██████╔╝██║ ╚═╝ ██║███████╗   ██║   ██║  ██║███████╗╚██████╔╝███████║ ╚█████╔╝███████╗ 
- ╚═╝     ╚═╝  ╚═╝ ╚═════╝ ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚══════╝  ╚════╝ ╚══════╝</pre>
+        <img src="P82.svg" class="logo" alt="PROMETHEUS 82" />
         <h1>Thank you for choosing Prometheus 82</h1>
         <p class="lead">
           Every Prometheus 82 unit is personally built and tested before shipping.
@@ -324,11 +314,11 @@
       </div>
       <aside class="qr-card">
         <img
-          src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=https%3A%2F%2Fwww.youtube.com%2Fwatch%3Fv%3DJr5kND7qLt8"
+          src="https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=https%3A%2F%2Fyoutu.be%2FJr5kND7qLt8"
           alt="QR code to the Prometheus 82 setup video"
         >
-        <strong>Scan for the latest guide</strong>
-        <span>youtube.com/watch?v=Jr5kND7qLt8</span>
+        <strong>Scan for the guide</strong>
+        <span>youtu.be/Jr5kND7qLt8</span>
       </aside>
     </section>
 
