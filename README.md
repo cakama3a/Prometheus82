@@ -39,6 +39,8 @@ Prometheus 82 uses a standardized **Center-to-Edge** measurement method for anal
 
 > [!TIP]
 > **Proper Positioning:** For the most accurate results, the distance between the solenoid and the stick should be **~1 mm** before the test starts. This prevents "[unrealistic overloads](https://www.reddit.com/r/GPDL/comments/1tayl2v/standardization_of_stick_testing_on_gamepadlacom/)" caused by the solenoid's extreme speed (3x faster than a human finger), which a player could never replicate.
+> 
+> ![P82 Positioning Guide](Box_Papers/P82%20Positioning%20Guide.png)
 
 1. **T0 (Start):** The solenoid is activated to strike the stick.
 2. **Physical Travel:** The solenoid arm pushes the stick from the center (0%) towards the edge (100%).
@@ -107,7 +109,7 @@ You have two options to obtain a Prometheus 82 device:
 2. Connect the power supply to the device (Lower port).
 3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
 4. Place the gamepad in the test stand and secure it (not too tightly).
-5. Adjust the solenoid for testing the gamepad's buttons or sticks as shown in the video (important! For sticks, keep a **~1 mm** distance).
+5. Adjust the solenoid for testing the gamepad's buttons or sticks as shown in the video (important! For sticks, keep a **~1 mm** distance; see the [Positioning Guide](Box_Papers/P82%20Positioning%20Guide.png)).
 7. Launch the testing program: https://github.com/cakama3a/Prometheus82/releases/
 8. Select the testing option for the gamepad's sticks or buttons in the program menu.
 9. Start the test and wait for it to complete.
