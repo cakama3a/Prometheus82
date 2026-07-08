@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="Logos/P82.svg" alt="Prometheus 82 Logo" width="600" />
+  <img src="Logos/P82_white.svg" alt="Prometheus 82 Logo" width="100%" />
 </p>
-
-![image](https://github.com/user-attachments/assets/c381a466-5ec2-460f-a508-51514bf5bfd5)
 
 An up-to-date user guide: https://www.youtube.com/watch?v=Jr5kND7qLt8
 
