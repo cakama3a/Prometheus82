@@ -4,11 +4,6 @@
 
 An up-to-date user guide: https://www.youtube.com/watch?v=Jr5kND7qLt8
 
-> [!IMPORTANT]
-> **UPDATE 2026:** Starting in 2026, a separate sensor (along with a second solenoid) with a reverse button layout has been added for testing sticks. If you have an older version with a single button at the end of the solenoid, here is the [latest stable release for it](https://github.com/cakama3a/Prometheus82/releases/tag/5.2.3.6).  
-[Backup branch on GitHub](https://github.com/cakama3a/Prometheus82/tree/One_Solenoid)  
-P.S. Video instructions on how to use the new reversible solenoid [here](https://youtu.be/MLsXo8Si730).
-
 ## Description
 Prometheus 82 is an open-source, Arduino-based electromechanical device designed for precise testing of gamepad input latency. Utilizing a solenoid to physically simulate button presses and analog stick movements, paired with Python software that mimics a game engine, it accurately measures the delay between a physical action and the system's response. Unlike traditional end-to-end latency testing methods using high-speed cameras, which include delays from monitors, GPU frame rendering, and vary depending on specific games, Prometheus 82 directly captures the entire signal chain from physical input to system registration, eliminating these delays. This method ensures consistent testing conditions across different testers, requiring no synchronization of equipment such as monitors, GPUs, or game engines for comparable results. This makes Prometheus 82 an ideal tool for gamepad enthusiasts, developers, and researchers seeking accurate and comparable input latency data. [Reddit article](https://www.reddit.com/r/Controller/comments/1i5uglp/gamepad_punch_tester_a_new_method_for_testing/) 
 
@@ -48,9 +43,7 @@ Prometheus 82 uses a standardized **Center-to-Edge** measurement method for anal
 2. **Physical Travel:** The solenoid arm pushes the stick from the center (0%) towards the edge (100%).
 3. **Sensor Trigger:** The sensor button (new Reverse Solenoid mod) is pressed exactly when the stick reaches its maximum physical deflection.
 4. **T1 (Stop):** The timer stops the precise moment the gamepad reports a logical value of **≥99%** deviation.
-5. ~~**Calculation:** `Total Time - 3.5ms = Input Latency`~~  
-   > [!IMPORTANT]  
-   > **UPDATE (v5.2.4.3+):** Starting with the 2026 hardware revision (Reverse Solenoid), **manual offset subtraction is no longer required**. The new hardware design captures the end-of-travel event directly, providing a real-time hardware trigger.
+5. **Calculation:** Since the hardware design (Reverse Solenoid) captures the end-of-travel event directly, providing a real-time hardware trigger, **no manual offset subtraction is required**.
 
 
 ### Accuracy and Permissible Errors
@@ -105,8 +98,7 @@ You have two options to obtain a Prometheus 82 device:
 
 ## How to Use Prometheus 82
 [![2025-07-13_09-59](https://github.com/user-attachments/assets/1f5d08aa-0afb-40de-a22f-f82d48ff92d4)](https://www.youtube.com/watch?v=NBS_tU-7VqA)  
-> [!IMPORTANT]
-> **UPDATE 2026:** Starting with version 5.2.4.3, stick testing should be performed as shown in [this video](https://www.youtube.com/watch?v=MLsXo8Si730). 
+*(For stick testing, see the [Stick Testing Video Guide (Reverse Solenoid)](https://www.youtube.com/watch?v=MLsXo8Si730))* 
 1. Connect the P82 device to the computer (Upper port).
 2. Connect the power supply to the device (Lower port).
 3. Connect the gamepad to the computer (via cable, receiver, or Bluetooth).
@@ -135,7 +127,7 @@ The diagrams show the schematic of the current Prometheus 82 tester assembly of 
 1. Video: [Main board assembly](https://youtu.be/GRk6pmUU0J8)
 2. Video: [Solenoid assembly](https://ko-fi.com/post/Prometheus-82-Assembling-solenoid-block-instructi-P5P41GFCHP) (Only available to ko-fi supporters for now)
 3. Video: [Solenoid assembly v2](https://youtu.be/f90D_e_PUD4) (For DIY Set Byers)
-4. Video: [Cable assembly](https://youtu.be/LMggf17Mmno) (A bit outdated, because now you can buy the cable ready-made)
+4. Video: [Cable assembly](https://youtu.be/LMggf17Mmno) (Optional, if not using a ready-made cable)
 5. Video: [Stand assembly](https://youtu.be/FciFS4pwg_E)
 
 ## Components for Assembly
@@ -234,6 +226,7 @@ Each license is verified and has a specific validity period.
 | **GuliKit** | `Commercial` | ✅ Active   | `July 31, 2026`  |
 | `8a4b1c9e-7d2f-4b0a-8c1f-9e6a5b3d7c0f`         | `Commercial` | ✅ Active   | `October 15, 2026` |
 | **GameSir**         | `Commercial` | ✅ Active   | `December 15, 2026` |
+| **Retro Fighters**                             | `Commercial` | ✅ Active   | `July 31, 2027`  |
 | `f3b4d2e1-a0c9-4b8a-9d7e-6f5a4b3c2d1e`         | `Commercial` | ✅ Active   | `May 11, 2031` |
 
 ---
