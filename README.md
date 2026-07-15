@@ -223,11 +223,11 @@ Each license is verified and has a specific validity period.
 
 | Licensee / Identifier                          | Plan         | Status      | Valid Until      |
 | ---------------------------------------------- | ------------ | ----------- | ---------------- |
-| **GuliKit** | `Commercial` | ✅ Active   | `July 31, 2026`  |
 | `8a4b1c9e-7d2f-4b0a-8c1f-9e6a5b3d7c0f`         | `Commercial` | ✅ Active   | `October 15, 2026` |
-| **GameSir**         | `Commercial` | ✅ Active   | `December 15, 2026` |
+| **GameSir**                                    | `Commercial` | ✅ Active   | `December 15, 2026` |
 | **Retro Fighters**                             | `Commercial` | ✅ Active   | `July 31, 2027`  |
-| `f3b4d2e1-a0c9-4b8a-9d7e-6f5a4b3c2d1e`         | `Commercial` | ✅ Active   | `May 11, 2031` |
+| **GuliKit**                                    | `Commercial` | ✅ Active   | `August 31, 2027` |
+| `f3b4d2e1-a0c9-4b8a-9d7e-6f5a4b3c2d1e`         | `Commercial` | ✅ Active   | `May 11, 2031`   |
 
 ---
 ### How to Get Your License
