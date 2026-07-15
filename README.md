@@ -5,7 +5,7 @@
 An up-to-date user guide: https://www.youtube.com/watch?v=Jr5kND7qLt8
 
 ## Partners
-These brands use Prometheus 82 to research and develop their gamepads:
+These brands officially use Prometheus 82 to research and develop their gamepads:
 
 <p align="center">
   <a href="https://www.gulikit.com"><img src="Logos/Gulikit_v2.png" alt="GuliKit" height="40" /></a>
