@@ -8,11 +8,11 @@ An up-to-date user guide: https://www.youtube.com/watch?v=Jr5kND7qLt8
 These brands use Prometheus 82 to research and develop their gamepads:
 
 <p align="center">
-  <img src="Logos/Gulikit_v2.png" alt="GuliKit" height="40" />
+  <a href="https://www.gulikit.com"><img src="Logos/Gulikit_v2.png" alt="GuliKit" height="40" /></a>
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="Logos/gamesir_v2.png" alt="GameSir" height="40" />
+  <a href="https://www.gamesir.hk"><img src="Logos/gamesir_v2.png" alt="GameSir" height="40" /></a>
   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="Logos/retro_fighters_v2.webp" alt="Retro Fighters" height="40" />
+  <a href="https://retrofighters.com"><img src="Logos/retro_fighters_v2.webp" alt="Retro Fighters" height="40" /></a>
 </p>
 
 ## Description
