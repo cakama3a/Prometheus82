@@ -1,92 +1,111 @@
-# Prometheus 82 - Commercial License Agreement
+# Prometheus 82 — Perpetual Commercial License Agreement
 
-**Last Updated:** July 8, 2026
+**Last Updated:** October 30, 2026
 
-This Commercial License Agreement (the "Agreement") governs the terms for the commercial use of the Prometheus 82 device, including its hardware designs, software, and related documentation (collectively, the "Device").
+**Version:** 2.0
 
-**Licensor:** John Punch ("the Author")
+**Status: Public template for individually agreed commercial licenses.** This repository document describes proposed standard terms; publication alone is not a commercial license grant. The terms applicable to a particular Licensee are those expressly agreed by both parties in written correspondence or a separately executed agreement, as described in Sections 1 and 11. Downloading the Project or purchasing hardware alone does not grant commercial permission.
 
-**Licensee:** The individual or legal entity purchasing a commercial license by paying an invoice issued by the Licensor.
+This Agreement covers commercial use of the Prometheus 82 hardware designs, firmware, software and documentation (the "Project"), subject to the rights actually controlled by its copyright owner.
 
-### 1. Acceptance of Agreement
+**Author / copyright owner:** John Punch (gamepadla.com).
 
-This Agreement becomes legally binding upon the Licensee’s full payment of an invoice issued by the Licensor for the agreed commercial plan. **Payment constitutes the Licensee's full and unconditional acceptance of all terms and conditions set forth in this document.** No physical or digital signature is required unless specifically requested by the Licensee.
+**Licensor:** The Author, or a representative authorized by the Author to grant these rights and expressly identified as the contracting licensor in the agreed quotation and invoice. Any representative may grant only rights within that authority.
 
-### 2. Definitions
+**Licensee:** The legal entity or individual identified in the agreed commercial record and invoice. Brand names alone do not identify the legal party. Additional legal entities are covered only if expressly named.
 
-**2.1. The Device:** Refers to the electromechanical hardware designs (including STL files), software, and documentation of the Prometheus 82 project, publicly available at `https://github.com/cakama3a/Prometheus82`.
+### 1. Individual agreement and effective date
 
-**2.2. Commercial Use:** Refers to any use of the Device for purposes that are directly or indirectly intended for commercial advantage or monetary compensation. This includes, but is not limited to, product research and development (R&D), quality assurance (QA), marketing, comparative advertising, and content creation for monetized platforms.
+Before a commercial license is granted, the Licensor and the Licensee must expressly agree the final terms in writing. Email correspondence between their authorized representatives is sufficient; a separate PDF or physical or digital signature is not required unless the parties agree otherwise.
 
-**2.3. Term:** The license is valid for one (1) year from the date of payment, unless terminated earlier as provided in this Agreement.
+The written confirmation must identify the exact agreed text, for example by an attachment, full text in the correspondence, or an immutable repository revision, and record any agreed variations. This public template applies only to the extent expressly incorporated into that confirmation. The individually agreed terms prevail over conflicting wording in this public template.
 
-### 3. Grant of License
+Unless the individually agreed terms expressly provide otherwise, the license becomes effective only after both parties' written confirmation and receipt of the full agreed fee in cleared funds. The Effective Date is the later of those events. The invoice must identify the agreed terms, covered entities, fee and any separate equipment order.
 
-Subject to the terms and conditions of this Agreement, the Licensor grants the Licensee a non-exclusive, non-transferable, worldwide, limited license to use the Device for Commercial Use during the Term.
+Payment alone does not establish acceptance of an unspecified or unagreed version. Silence, receipt of a proposal and preliminary discussions do not grant permission. An unaccepted message or a later repository update does not amend a completed agreement.
 
-### 4. License Plans & Usage Rights
+### 2. Definitions and term
 
-Commercial licensing and pricing are customized individually based on the company's scope of operations, target goals, and specific needs. 
+**2.1. Project:** Author-controlled Prometheus 82 hardware designs, firmware, software and documentation publicly released at https://github.com/cakama3a/Prometheus82 on or before the Effective Date, together with later author-controlled updates publicly released there as part of Prometheus 82.
 
-To request a quote and commercial license, please contact John Punch at `john@gamepadla.com` and provide:
-1. A brief overview of your company/project and its activities.
-2. The intended use case for the Prometheus 82 device (e.g., specific testing needs, internal QA, public benchmarking, or marketing).
-3. The number of physical testing units required.
+Separately offered successor products, private designs and third-party components are not licensed beyond rights the Licensor is authorized to grant. Third-party components retain their own applicable terms.
 
-The final pricing will be tailored to your specific business case and budget.
+**2.2. Commercial Use:** Use for commercial advantage, including R&D, QA, product evaluation and optimization, internal automated testing, benchmarking, marketing, comparative advertising and monetized reviews or other content.
 
-| Feature | Commercial License Details |
-| :--- | :--- |
-| **Pricing** | **Individual Quote** (tailored to project scope and budget) |
-| **Renewal** | **Individual Quote** (typically offered at a reduced rate since hardware is already provided) |
-| **Hardware Included** | ✅ Yes (1 or more Units depending on the agreement) |
-| **Target Audience** | Hardware Manufacturers, R&D Labs, Reviewers, Media, and Corporations |
-| **Scope of Use** | R&D, QA, marketing, and benchmarking |
-| **Publishing Rights** | ✅ Yes (Benchmarks, Reviews, Ads, packaging claims) |
-| **Attribution** | Required (see Section 7.2) |
-| **Support** | Priority Email Support (dedicated channel & calibration services optional) |
+**2.3. Term:** Perpetual, without an annual expiry or renewal payment, subject only to termination under Section 10. The licence is non-exclusive and worldwide. Rights for other legal entities or an assignment require separate agreement.
 
-### 5. Ownership
+### 3. Grant of rights
 
-The Device remains the intellectual property of the Licensor. The Licensee does not acquire any ownership rights to the Device. Any derivative works to the Device itself, including modifications to the Device’s hardware designs, firmware, or software, shall belong to the Licensor. **For clarity, testing data, test results, analytical methods, measurement methodologies, calibration processes, and internal evaluation frameworks developed by the Licensee using the Device shall not be considered derivative works and remain the property of the Licensee.**
+For the covered entities and purposes, the Licensee may:
 
-### 6. Restrictions
+- use, reproduce, configure and integrate the Project for Commercial Use;
+- modify the hardware designs, firmware, software, documentation, calibration procedures and internal workflows at its discretion;
+- build and use additional Project-based testing units internally without a per-unit licence fee;
+- permit employees and contractors to perform those activities solely on its behalf, while remaining responsible for their compliance;
+- keep measurements, methods, reports and original modifications confidential, or publish resulting data and reports commercially.
 
-**6.1. No Resale of Hardware:** The Licensee may not sell, rent, lease, or distribute the physical Device produced under this license to third parties without explicit written permission.
+No prior approval or report submission is required. This does not grant a right to sell or distribute the Project or Project-based testers to third parties under this Agreement.
 
-**6.2. No Sublicensing:** The Licensee may not sublicense the rights granted under this Agreement.
+This is an alternative commercial permission. The personal-use-only restriction and prominent user-interface attribution condition in the Personal Use License do not apply to activities authorized by this Agreement. Existing copyright and applicable licence notices must remain in retained Project copies; third-party terms continue to apply.
 
-**6.3. Open Source Compliance:** Any modifications made to the software or firmware of the Device must comply with the underlying open-source licenses (e.g., GPL, MIT) where applicable.
+### 4. Fees, hardware and instruction
 
-### 7. Publication of Results & Marketing
+**4.1. Commercial record:** The one-time fee is quoted individually and recorded in the accepted invoice/commercial record. There are no annual renewal fees, per-test charges or per-controller royalties. New rates published later do not change an accepted licence. Hardware, replacement parts, shipping, repairs and calibration are separate purchases unless expressly included in a separate order.
 
-**7.1. Right to Publish:** The Licensee is authorized to publish test results, benchmarks, and data generated using the Device for commercial purposes (e.g., marketing materials, reviews, packaging claims).
+**4.2. Self-service instruction:** Usage guidance consists of existing publicly available documentation and instructional videos, including the guide currently linked from the Project README: https://www.youtube.com/watch?v=Jr5kND7qLt8. These are general self-service materials, not personalized training or a promise of future availability or revision. The Licensee may retain copies of Project documentation included in covered releases.
 
-**7.2. Attribution:** Any public commercial material (videos, articles, white papers, marketing copy) utilizing data from the Device must credit the Prometheus 82 project.
-* *Example:* "Latency measured using Prometheus 82."
+**4.3. No service commitment:** The licence fee does not include technical support, priority email responses, troubleshooting, individual onboarding, custom training, integration, repairs, calibration, maintenance, bug fixes, response deadlines or an SLA. The Licensor and Author have no contractual obligation under this Agreement to provide those services. Occasional assistance is voluntary and does not create a continuing service commitment. Any paid or guaranteed services require a separate express written agreement.
 
-**7.3. Accuracy:** The Licensee agrees to present data accurately and not to manipulate results to mislead consumers.
+**4.4. Updates and continuity:** Permissions cover later public Prometheus 82 updates as defined in Section 2.1. The Licensor and Author are not obliged to create or release updates, add features, support any particular present or future controller, maintain compatibility, continue development or keep a website/repository/video hosted. Discontinuation does not revoke the perpetual right to use covered copies already obtained. This section does not remove mandatory rights or obligations under a separate equipment or service contract.
 
-**7.4. "Prometheus 82 Certified" Badge:** Licensees with an active Commercial License may use the "Prometheus 82" badge and name in marketing and promotional materials for the duration of an active license Term, provided that such use is fair, accurate, and complies with the conditions in Section 6.1.
+### 5. Underlying Project
 
-**7.5. Protection of Reputation:** The Licensor reserves the right to review public materials. **The Licensor may request a public retraction only if the published results are materially false, technically inaccurate, or non-compliant with this Agreement, and after providing the Licensee a reasonable opportunity to review and address the concern.**
+The Author retains the intellectual property rights in the underlying Project. This Agreement grants permission to use and modify the Project; it does not transfer ownership of the underlying Project.
 
-### 8. Disclaimer of Warranty
+### 6. Retained limits
 
-The Device is provided "AS IS", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and non-infringement.
+**6.1. No onward product distribution:** This Agreement does not authorize sale, rental, leasing, public distribution or sublicensing of the Project or Project-based testing devices to third parties, or incorporation of Project code/designs into customer products. Such rights can be agreed separately. Employees/contractors acting solely for a covered entity under Section 3 are permitted. Publishing measurements is not distribution of the Project.
 
-### 9. Limitation of Liability
+**6.2. Third-party rights:** Third-party components remain governed by their respective licenses, including any applicable notice, attribution or distribution obligations. This Agreement grants no rights the Licensor is not authorized to grant.
 
-In no event shall the Licensor be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the Device or the use or other dealings in the Device. The Licensor's entire liability under this Agreement shall be limited to the amount paid by the Licensee for the current license Term.
+### 7. Results, attribution and names
 
-### 10. Termination
+**7.1. Optional publication:** The Licensee may publish or keep confidential its results, benchmarks, reports and marketing materials without submission to or approval by the Licensor or Author. There is no obligation to publish any result, disclose use of the Project, provide publicity or grant brand/logo permission.
 
-This license will terminate automatically if the Licensee fails to comply with any of the terms and conditions. The license will expire at the end of the Term if not renewed. Upon termination or expiration, the Licensee must cease all Commercial Use of the Device and discontinue the use of any associated trademarks. **Termination or expiration of this Agreement shall not require the withdrawal or retraction of any test results or materials lawfully published by the Licensee during the term of the Agreement in compliance with its terms.**
+**7.2. Voluntary acknowledgement:** Attribution to Prometheus 82 is optional. The Licensee is permitted, but not required, to use a truthful statement such as "Measured using Prometheus 82" or a link to gamepadla.com in connection with measurements actually made using the Project. No credit is required in reports, videos, articles, packaging or advertising.
 
-### 11. Governing Law
+**7.3. Responsibility for claims:** The Licensee is responsible for validating its setup, modifications and published claims. References to the Project must not falsely imply the Author reviewed, endorsed or certified a result or product. No automatic "Prometheus 82 Certified" status or certification badge is granted by this licence.
 
-This Agreement shall be governed by and construed in accordance with the laws of England and Wales, without regard to its conflict of law provisions.
+**7.4. Separate brand permission:** This Agreement grants the Licensor and Author no permission to list the Licensee publicly or display its logo. Any such publicity needs separate authorized written permission. Private identification for contract, accounting and licence administration is allowed.
 
-### 12. Contact
+### 8. Warranty
 
-For any questions regarding this license or to purchase a commercial plan, please contact John Punch at `john@gamepadla.com`.
+To the extent permitted by applicable law, the Project and self-service materials are supplied AS IS, without express or implied warranties, including accuracy, compatibility, fitness for a particular purpose, merchantability and non-infringement. The Licensee is responsible for its testing environment, modifications and conclusions. This clause does not exclude any mandatory rights or separately agreed equipment obligations.
+
+### 9. Liability
+
+To the extent permitted by applicable law, the Licensor and Author are not liable for indirect or consequential loss, lost profits or business interruption arising from the Project. Their combined aggregate liability arising under this Agreement is limited to the licence fee paid under this Agreement; the same amount is not multiplied by the number of claims or covered entities.
+
+Nothing excludes or limits liability for fraud, fraudulent misrepresentation, death or personal injury caused by negligence, or liability that cannot lawfully be excluded or limited. These limitations do not permit the Licensor to withdraw the perpetual licence for convenience or replace its agreed fee with later charges.
+
+### 10. Material breach and termination
+
+The Licensor may terminate prospective rights only for a material breach remaining uncured after written notice describing it and a 30-day opportunity to cure. No termination or renewal demand may be based on a failure to publish results, add attribution, provide a logo, pay for support or buy updates: this Agreement requires none of those.
+
+After valid termination, affected entities must stop further use under this Agreement unless another permission applies. Termination does not require withdrawal of results lawfully produced and published while licensed. No expiry or termination occurs merely because the Licensor stops development or hosting.
+
+### 11. Existing agreements, changes and law
+
+This version does not retroactively change existing agreements or authorize use before the Effective Date. Any amendment or resolution of prior use requires a separate express agreement identifying its scope.
+
+The version and variations expressly agreed in the parties' written correspondence or separately executed agreement govern that Licensee's license. A later revision of this public template does not replace them. Changes require a new express written agreement by both parties identifying what is changed; neither a unilateral message nor silence is an amendment.
+
+This Agreement is governed by the laws of England and Wales, without regard to conflict-of-law rules and without excluding mandatory protections that cannot lawfully be waived.
+
+### 12. Contact and commercial record
+
+To request a commercial quote, contact John Punch at john@gamepadla.com with a brief description of your company, intended use, legal entities requiring coverage, and any physical testing units required.
+
+The written agreement and corresponding invoice must identify the contracting parties and their capacity, covered entities, one-time fee and any applicable taxes, the exact agreed license text and variations, and any separate hardware or service order. Retain the correspondence confirming those terms with the invoice.
+
+Payment confirmation and the applicable Effective Date should be retained with the accepted version. A separate written agreement is required for any services, additional distribution rights or resolution of prior use.
