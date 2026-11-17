@@ -1,6 +1,7 @@
 *.txt
 *82.exe
 *.bat
+!P82_build.bat
 Other.py
 /Prometheus82_PyInstaller
 /__pycache__

@@ -1,7 +1,7 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.3.0.3"                 # Updated version with microsecond support
+VERSION = "5.3.0.4"                 # Updated version with microsecond support
 MAX_CONSECUTIVE_TIMEOUTS = 15       # Global limit for missed hits
 
 import sys
@@ -314,6 +314,8 @@ def load_window_icon():
             pass
     
     return None
+
+init(autoreset=True) # Initialize colorama before printing banner
 
 # ASCII Logo
 print(f" ")
@@ -1772,8 +1774,11 @@ if __name__ == "__main__":
             options.append(("steam", steam_name, None))
         
         for i in range(pygame.joystick.get_count()):
-            pj = pygame.joystick.Joystick(i)
-            options.append(("pygame", pj.get_name(), pj))
+            try:
+                pj = pygame.joystick.Joystick(i)
+                options.append(("pygame", pj.get_name(), pj))
+            except pygame.error as e:
+                print_error(f"Skipping gamepad #{i}: {e}")
 
         if len(options) == 0:
             print_error("No gamepad found! Some features will be unavailable.")
