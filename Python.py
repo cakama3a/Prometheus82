@@ -1,11 +1,34 @@
 # Author: John Punch
 # Email: john@gamepadla.com
 # License: For non-commercial use only. See full license at https://github.com/cakama3a/Prometheus82/blob/main/LICENSE
-VERSION = "5.3.0.2"                 # Updated version with microsecond support
+VERSION = "5.3.0.3"                 # Updated version with microsecond support
 MAX_CONSECUTIVE_TIMEOUTS = 15       # Global limit for missed hits
 
-import time
+import sys
+import traceback
 import platform
+
+def _excepthook(exc_type, exc_value, exc_tb):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_tb)
+        return
+    traceback.print_exception(exc_type, exc_value, exc_tb)
+    if platform.system() == "Windows":
+        try:
+            import msvcrt
+            print("\nPress any key to exit...")
+            msvcrt.getch()
+            return
+        except Exception:
+            pass
+    try:
+        input("\nPress Enter to exit...")
+    except Exception:
+        pass
+
+sys.excepthook = _excepthook
+
+import time
 import gc
 import serial
 import requests
@@ -25,6 +48,8 @@ import ctypes
 import threading
 import queue
 import math
+import traceback
+import faulthandler
 
 try:
     import hid
@@ -1666,420 +1691,455 @@ def restart_current_program():
         pass
     os.execv(sys.executable, [sys.executable] + sys.argv)
 
+def pause_before_exit(message="Press any key to exit..."):
+    try:
+        sys.stdout.flush()
+        sys.stderr.flush()
+    except Exception:
+        pass
+    if platform.system() == "Windows":
+        try:
+            clear_console_key_buffer()
+            print(f"\n{message}")
+            msvcrt.getch()
+            return
+        except Exception:
+            pass
+    try:
+        input(f"\n{message}")
+    except Exception:
+        pass
+
 if __name__ == "__main__":
     wait_on_exit = True
-    pygame.init()
-    init(autoreset=True) # Initialize colorama
-    pygame.joystick.init()
-    start_async_logger()
-    try:
-        if not pygame.display.get_init():
-            pygame.display.init()
-        if pygame.display.get_surface() is None:
-            # Load and set window icon
-            icon = load_window_icon()
-            if icon:
-                pygame.display.set_icon(icon)
-            pygame.display.set_mode((800, 600))
-            pygame.display.set_caption("Prometheus 82 - Testing")
-            pygame.font.init()
-        # Show premium initial instructions in the Pygame window
-        screen = pygame.display.get_surface()
-        font_large = pygame.font.Font(None, 48)
-        font_small = pygame.font.Font(None, 32)
-        
-        # Background gradient
-        for y in range(0, 600, 4):
-            c = (15 + y//100, 20 + y//80, 30 + y//60)
-            pygame.draw.rect(screen, c, (0, y, 800, 4))
-            
-        msg1 = "PROMETHEUS 82 IS READY"
-        msg2 = "Please go to the console to configure the test."
-        msg3 = "Do not close this window."
-        
-        surf1 = font_large.render(msg1, True, (0, 200, 255))
-        surf2 = font_small.render(msg2, True, (200, 200, 200))
-        surf3 = font_small.render(msg3, True, (150, 150, 50))
-        
-        screen.blit(surf1, (400 - surf1.get_width()//2, 240))
-        screen.blit(surf2, (400 - surf2.get_width()//2, 300))
-        screen.blit(surf3, (400 - surf3.get_width()//2, 550))
-        pygame.display.flip()
-    except Exception as e:
-        print_error(f"Couldn't create window at startup: {e}")
-    
-    # Cooling period check will be performed after selecting test iterations
-    
-    # Select gamepad
     joystick = None
-    detected_mode = None
-    direct_steam_devices = SteamControllerDirect.available_devices()
-    
-    options = []
-    if direct_steam_devices:
-        is_dongle = direct_steam_devices[0].get("product_id") == SteamControllerDirect.SC2026_DONGLE_PID
-        steam_name = "Steam Controller 2026 (Direct HID Puck)" if is_dongle else "Steam Controller 2026 (Direct HID USB)"
-        options.append(("steam", steam_name, None))
-        
-    for i in range(pygame.joystick.get_count()):
-        pj = pygame.joystick.Joystick(i)
-        options.append(("pygame", pj.get_name(), pj))
-
-    if len(options) == 0:
-        print_error("No gamepad found! Some features will be unavailable.")
-        if hid is None:
-            print_error("Direct Steam Controller support also needs the Python 'hid' package.")
-        else:
-            for line in SteamControllerDirect.diagnostic_lines():
-                print(f"{Fore.YELLOW}{line}{Fore.RESET}")
-            print(f"{Fore.YELLOW}Tip: close Steam while testing direct HID mode, and use a USB-C data cable, not a charge-only cable.{Fore.RESET}")
-    else:
-        if len(options) == 1:
-            choice = 0
-            prefix = "Autoselected"
-        else:
-            menu_gamepads = "Available gamepads:\n" + "\n".join([f"{i + 1}: {opt[1]}" for i, opt in enumerate(options)])
-            while True:
-                try:
-                    choice_input = get_input_with_countdown(f"Select gamepad (1-{len(options)}): ", menu_gamepads).strip()
-                    if not choice_input:
-                        continue
-                    if 0 < int(choice_input) <= len(options):
-                        choice = int(choice_input) - 1
-                        break
-                    print_error(f"Invalid selection! Please enter 1-{len(options)}.")
-                except ValueError:
-                    print_error("Invalid input! Please enter a number.")
-            prefix = "Selected"
-
-        opt_type, name, dev = options[choice]
-        if opt_type == "steam":
-            try:
-                joystick = SteamControllerDirect.open_first()
-            except (RuntimeError, OSError) as e:
-                print_error(f"Failed to open Steam Controller direct HID: {e}")
-        else:
-            joystick = dev
-            
-        if joystick:
-            print(f"\n{prefix} gamepad: {joystick.get_name()}")
-
-    if joystick:
-        joystick.init()
-
-        # Detect gamepad mode (XInput, DInput, Sony, Switch, Steam Direct)
-        detected_mode = detect_gamepad_mode(joystick)
-        print(f"Detected protocol:  {Fore.GREEN}{detected_mode}{Fore.RESET}")
-
-    # Select test type
-    menu_test_type = "Select test type:\n1: Gamepad\t- Test analog stick\n2: Gamepad\t- Test button\n3: Keyboard\t- Test key\n4: Hardware\t- Test solenoid and sensor"
-    while True:
+    try:
+        faulthandler.enable()
+    except Exception:
+        pass
+    try:
+        pygame.init()
+        init(autoreset=True) # Initialize colorama
+        pygame.joystick.init()
+        start_async_logger()
         try:
-            choice_input = get_input_with_countdown("Enter your choice (1-4): ", menu_test_type).strip()
-            if not choice_input:
-                continue
-            test_choice = int(choice_input)
-            test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE}.get(test_choice)
-            if not test_type:
-                print_error("Invalid choice! Please select 1-4.")
-                continue
-                
-            if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) and not joystick:
-                print_error(f"No gamepad found! Can't run {test_type} test.")
-                continue # Allow selecting another type or connecting gamepad? Actually joystick was detected earlier.
+            if not pygame.display.get_init():
+                pygame.display.init()
+            if pygame.display.get_surface() is None:
+                # Load and set window icon
+                icon = load_window_icon()
+                if icon:
+                    pygame.display.set_icon(icon)
+                pygame.display.set_mode((800, 600))
+                pygame.display.set_caption("Prometheus 82 - Testing")
+                pygame.font.init()
+            # Show premium initial instructions in the Pygame window
+            screen = pygame.display.get_surface()
+            font_large = pygame.font.Font(None, 48)
+            font_small = pygame.font.Font(None, 32)
+        
+            # Background gradient
+            for y in range(0, 600, 4):
+                c = (15 + y//100, 20 + y//80, 30 + y//60)
+                pygame.draw.rect(screen, c, (0, y, 800, 4))
             
-            remaining = get_cooling_remaining_seconds(test_type)
-            if remaining >= 40:
-                print(f"\n{Fore.YELLOW}WARNING: Device has not cooled yet. Running this test now may cause degradation. Remaining cooling time: {remaining} seconds.{Fore.RESET}")
-                inner_choice = ""
-                while inner_choice not in ('Y', 'N'):
-                    inner_choice = get_input_with_countdown("Continue anyway? (Y/N): ", show_cooling=False).upper().strip()
-                if inner_choice == 'N':
-                    print("Please wait for cooling or select another test.")
-                    continue
-            
-            # If we reach here, selection is valid
-            break
-        except ValueError:
-            print_error("Invalid input! Please enter a number.")
-
-    # Select iterations (affects cooling timeout)
-    if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
-        menu_iters = "Select number of iterations:\n1: 400 (For Gamepadla.com validation)\n2: 200\n3: 100\nOr enter a custom number between 10 and 400."
-        while True:
-            try:
-                iter_input = get_input_with_countdown("Enter your choice (1/2/3 or custom 10-400): ", menu_iters).strip()
-                if iter_input == '1':
-                    TEST_ITERATIONS = 400
-                    break
-                elif iter_input == '2':
-                    TEST_ITERATIONS = 200
-                    break
-                elif iter_input == '3':
-                    TEST_ITERATIONS = 100
-                    break
-                else:
-                    custom_iters = int(iter_input)
-                    if 10 <= custom_iters <= 400:
-                        TEST_ITERATIONS = custom_iters
-                        break
-                    else:
-                        print_error("Invalid number! Please enter a value between 10 and 400.")
-            except ValueError:
-                print_error("Invalid input! Please enter 1, 2, 3, or a number.")
-
-    # Setup serial connection
-    # --- MODIFICATION START ---
-    all_ports = list_ports.comports()
-    # Filter out ports that have "Bluetooth" in their description (case-insensitive)
-    ports = [p for p in all_ports if "bluetooth" not in p.description.lower()]
-
-    if not ports:
-        print_error("No suitable COM ports found. Perhaps you have not connected Prometheus 82 to your computer.")
-        get_input_with_countdown("Press Enter to close...", show_cooling=False)
-        pygame.quit()
-        sys.exit()
+            msg1 = "PROMETHEUS 82 IS READY"
+            msg2 = "Please go to the console to configure the test."
+            msg3 = "Do not close this window."
+        
+            surf1 = font_large.render(msg1, True, (0, 200, 255))
+            surf2 = font_small.render(msg2, True, (200, 200, 200))
+            surf3 = font_small.render(msg3, True, (150, 150, 50))
+        
+            screen.blit(surf1, (400 - surf1.get_width()//2, 240))
+            screen.blit(surf2, (400 - surf2.get_width()//2, 300))
+            screen.blit(surf3, (400 - surf3.get_width()//2, 550))
+            pygame.display.flip()
+        except Exception as e:
+            print_error(f"Couldn't create window at startup: {e}")
     
-    port = None
-    if len(ports) == 1:
-        port = ports[0]
-    else:
-        menu_ports = "Available COM ports:\n" + "\n".join([f"{i + 1}: {p.device} - {p.description}" for i, p in enumerate(ports)])
+        # Cooling period check will be performed after selecting test iterations
+    
+        # Select gamepad
+        joystick = None
+        detected_mode = None
+        direct_steam_devices = SteamControllerDirect.available_devices()
+    
+        options = []
+        if direct_steam_devices:
+            is_dongle = direct_steam_devices[0].get("product_id") == SteamControllerDirect.SC2026_DONGLE_PID
+            steam_name = "Steam Controller 2026 (Direct HID Puck)" if is_dongle else "Steam Controller 2026 (Direct HID USB)"
+            options.append(("steam", steam_name, None))
+        
+        for i in range(pygame.joystick.get_count()):
+            pj = pygame.joystick.Joystick(i)
+            options.append(("pygame", pj.get_name(), pj))
+
+        if len(options) == 0:
+            print_error("No gamepad found! Some features will be unavailable.")
+            if hid is None:
+                print_error("Direct Steam Controller support also needs the Python 'hid' package.")
+            else:
+                for line in SteamControllerDirect.diagnostic_lines():
+                    print(f"{Fore.YELLOW}{line}{Fore.RESET}")
+                print(f"{Fore.YELLOW}Tip: close Steam while testing direct HID mode, and use a USB-C data cable, not a charge-only cable.{Fore.RESET}")
+        else:
+            if len(options) == 1:
+                choice = 0
+                prefix = "Autoselected"
+            else:
+                menu_gamepads = "Available gamepads:\n" + "\n".join([f"{i + 1}: {opt[1]}" for i, opt in enumerate(options)])
+                while True:
+                    try:
+                        choice_input = get_input_with_countdown(f"Select gamepad (1-{len(options)}): ", menu_gamepads).strip()
+                        if not choice_input:
+                            continue
+                        if 0 < int(choice_input) <= len(options):
+                            choice = int(choice_input) - 1
+                            break
+                        print_error(f"Invalid selection! Please enter 1-{len(options)}.")
+                    except ValueError:
+                        print_error("Invalid input! Please enter a number.")
+                prefix = "Selected"
+
+            opt_type, name, dev = options[choice]
+            if opt_type == "steam":
+                try:
+                    joystick = SteamControllerDirect.open_first()
+                except (RuntimeError, OSError) as e:
+                    print_error(f"Failed to open Steam Controller direct HID: {e}")
+            else:
+                joystick = dev
+            
+            if joystick:
+                print(f"\n{prefix} gamepad: {joystick.get_name()}")
+
+        if joystick:
+            joystick.init()
+
+            # Detect gamepad mode (XInput, DInput, Sony, Switch, Steam Direct)
+            detected_mode = detect_gamepad_mode(joystick)
+            print(f"Detected protocol:  {Fore.GREEN}{detected_mode}{Fore.RESET}")
+
+        # Select test type
+        menu_test_type = "Select test type:\n1: Gamepad\t- Test analog stick\n2: Gamepad\t- Test button\n3: Keyboard\t- Test key\n4: Hardware\t- Test solenoid and sensor"
         while True:
             try:
-                selection_input = get_input_with_countdown(f"Select COM port (1-{len(ports)}): ", menu_ports).strip()
-                if not selection_input: continue
-                selection = int(selection_input) - 1
-                if 0 <= selection < len(ports):
-                    port = ports[selection]
-                    break
-                else:
-                    print_error(f"Please select a number between 1 and {len(ports)}.")
+                choice_input = get_input_with_countdown("Enter your choice (1-4): ", menu_test_type).strip()
+                if not choice_input:
+                    continue
+                test_choice = int(choice_input)
+                test_type = {1: TEST_TYPE_STICK, 2: TEST_TYPE_BUTTON, 3: TEST_TYPE_KEYBOARD, 4: TEST_TYPE_HARDWARE}.get(test_choice)
+                if not test_type:
+                    print_error("Invalid choice! Please select 1-4.")
+                    continue
+                
+                if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON) and not joystick:
+                    print_error(f"No gamepad found! Can't run {test_type} test.")
+                    continue # Allow selecting another type or connecting gamepad? Actually joystick was detected earlier.
+            
+                remaining = get_cooling_remaining_seconds(test_type)
+                if remaining >= 40:
+                    print(f"\n{Fore.YELLOW}WARNING: Device has not cooled yet. Running this test now may cause degradation. Remaining cooling time: {remaining} seconds.{Fore.RESET}")
+                    inner_choice = ""
+                    while inner_choice not in ('Y', 'N'):
+                        inner_choice = get_input_with_countdown("Continue anyway? (Y/N): ", show_cooling=False).upper().strip()
+                    if inner_choice == 'N':
+                        print("Please wait for cooling or select another test.")
+                        continue
+            
+                # If we reach here, selection is valid
+                break
             except ValueError:
                 print_error("Invalid input! Please enter a number.")
-    # --- MODIFICATION END ---
 
-    try:
-        with serial.Serial(port.device, 115200, timeout=1) as ser:
-            ser.reset_input_buffer()
-            ser.reset_output_buffer()
-            
-            start_time = time.time()
-            ready = False
-            fw_version = None
-            while time.time() - start_time < 5:
-                if ser.in_waiting:
-                    b = ser.read()
-                    if b == b'R':
-                        ready = True
-                    elif b == b'V':
-                        buf = b""
-                        t0 = time.time()
-                        while time.time() - t0 < 1.0:
-                            if ser.in_waiting:
-                                c = ser.read()
-                                if c in (b'\n', b'\r'):
-                                    break
-                                buf += c
-                            else:
-                                time.sleep(0.001)
-                        try:
-                            fw_version = buf.decode("ascii").strip()
-                        except Exception:
-                            fw_version = None
-                        break
-                else:
-                    time.sleep(0.001)
-            if not ready:
-                print_error("Prometheus did not send ready signal ('R'). Check connection or Prometheus code.")
-                input("Press Enter to close...")
-                pygame.quit()
-                sys.exit()
-            if not fw_version:
-                print_error("Arduino firmware version not reported. Please update Arduino.\nhttps://github.com/cakama3a/Prometheus82/blob/main/README.md#how-to-update-the-firmware-of-a-p82-device")
-                input("Press Enter to close...")
-                pygame.quit()
-                sys.exit()
-            def _ver_tuple(s):
+        # Select iterations (affects cooling timeout)
+        if test_type in (TEST_TYPE_STICK, TEST_TYPE_BUTTON, TEST_TYPE_KEYBOARD):
+            menu_iters = "Select number of iterations:\n1: 400 (For Gamepadla.com validation)\n2: 200\n3: 100\nOr enter a custom number between 10 and 400."
+            while True:
                 try:
-                    return tuple(int(x) for x in s.split("."))
-                except Exception:
-                    return (0,)
-            if _ver_tuple(fw_version) < _ver_tuple(REQUIRED_ARDUINO_VERSION):
-                print_error(f"Arduino firmware v{fw_version} is outdated. Please update to at least v{REQUIRED_ARDUINO_VERSION}.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
-                get_input_with_countdown("Press Enter to close...", show_cooling=False)
-                pygame.quit()
-                sys.exit()
-            print(f"\nPrometheus 82 connected on {port.device} ({port.description}), Arduino FW v{fw_version}")
-
-            # Test Arduino latency and update CONTACT_DELAY
-            avg_latency = test_arduino_latency(ser)
-            if avg_latency is None:
-                print_error(f"Calibrating Arduino latency failed. Using default CONTACT_DELAY ({CONTACT_DELAY} ms).")
-                
-            else:
-                CONTACT_DELAY = avg_latency
-                print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
-
-            tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, TEST_ITERATIONS, detected_mode)
-            try:
-                if test_type == TEST_TYPE_HARDWARE:
-                    test_passed, timing_warning = tester.test_hardware()
-                    
-                    # Hardware test completed
-                    
-                    if test_passed:
-                        if timing_warning:
-                            print(f"\n{Fore.YELLOW}Hardware functional but with timing warnings. See above for details.{Fore.RESET}")
-                            print(f"{Fore.YELLOW}Ready for stick or button testing, but results may be affected.{Fore.RESET}")
-                        else:
-                            print(f"{Fore.GREEN}Hardware is fully functional. Ready for stick or button testing.{Fore.RESET}")
+                    iter_input = get_input_with_countdown("Enter your choice (1/2/3 or custom 10-400): ", menu_iters).strip()
+                    if iter_input == '1':
+                        TEST_ITERATIONS = 400
+                        break
+                    elif iter_input == '2':
+                        TEST_ITERATIONS = 200
+                        break
+                    elif iter_input == '3':
+                        TEST_ITERATIONS = 100
+                        break
                     else:
-                        print(f"{Fore.RED}Hardware issues detected. Please check connections and try again.{Fore.RESET}")
-                else:
-                    if test_type == TEST_TYPE_STICK:
-                        print(f"\n{Fore.YELLOW}Stick test setup:{Fore.RESET}")
-                        print("Use a reverse sensor for stick latency testing.")
-                        print("Set the solenoid tip about 1-2 mm from the stick in the neutral position.")
-                        print("Avoid a large gap: extra acceleration before contact can cause stick bounce and high jitter.")
-                        print("The sensor button should trigger near the end of stick travel.")
-                        print(f"Guide: {Fore.LIGHTRED_EX}https://youtu.be/MLsXo8Si730{Fore.RESET}")
-                    elif test_type == TEST_TYPE_KEYBOARD:
-                        print("\nKeyboard key will be selected when the test window opens. Press your key at the prompt.")
-                    
-                    tester.test_loop()
-                    
-                    # Test completed
-                    if getattr(tester, "test_aborted", False):
-                        get_input_with_countdown("Press Enter to exit...", show_cooling=False)
-                        pygame.quit()
-                        sys.exit()
-                    
-                    stats = tester.get_statistics()
-                    if stats:
-                        print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
-                        print(f"\n{Style.BRIGHT}{Fore.CYAN}" + "="*15 + f"LATENCY" + "="*15 + f"{Fore.RESET}{Style.RESET_ALL}")
-                        print(f"{'Min latency:':<26}{stats['min']:>8.2f} ms")
-                        print(f"{'Max latency:':<26}{stats['max']:>8.2f} ms")
-                        print(f"{Style.BRIGHT}{Fore.CYAN}" + f"{'Average latency:':<26}{stats['avg']:>8.2f} ms{Fore.RESET}" + f"{Style.RESET_ALL}")
-                        print(f"{'Jitter:':<26}{stats['jitter']:>8.2f} ms")
-                        print(f"{Style.BRIGHT}{Fore.CYAN}" + "="*37 + f"{Fore.RESET}{Style.RESET_ALL}")
-                        print(f"{Fore.LIGHTBLACK_EX}* Statistics are calculated using {int(LOWER_QUANTILE*100)}%-{int(UPPER_QUANTILE*100)}% quantile filtering.{Fore.RESET}")
-                        print(f"\n{Style.BRIGHT}Measurement Details{Style.RESET_ALL}")
-                        print(f"{'Iterations:':<26}{tester.iterations:>8}")
-                        print(f"{'Total measurements:':<26}{stats['total_samples']:>8}")
-                        print(f"{'Valid measurements:':<26}{stats['valid_samples']:>8}")
-                        print(f"{'Invalid measurements:':<26}{stats['invalid_samples']:>8} (>{stats['pulse_duration']*(RATIO-1):.1f} ms)")
-                        print(f"{'Filtered count:':<26}{stats['filtered_samples']:>8}")
-                        print(f"{'Pulse duration:':<26}{stats['pulse_duration']:>8.1f} ms")
-                        print(f"{'Contact delay:':<26}{stats['contact_delay']:>8.3f} ms")
-        
-                        if stats['contact_delay'] > 1.2:
-                            print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
+                        custom_iters = int(iter_input)
+                        if 10 <= custom_iters <= 400:
+                            TEST_ITERATIONS = custom_iters
+                            break
+                        else:
+                            print_error("Invalid number! Please enter a value between 10 and 400.")
+                except ValueError:
+                    print_error("Invalid input! Please enter 1, 2, 3, or a number.")
 
-                        uploaded_to_gamepadla = False
-                        exported_to_csv = False
-                        # Action selection with retry on invalid input
-                        while True:
-                            if uploaded_to_gamepadla:
-                                open_label = f"{Fore.LIGHTBLACK_EX}Open on Gamepadla.com (already used){Fore.RESET}"
-                            elif stats['valid_samples'] < 200:
-                                open_label = f"{Fore.LIGHTBLACK_EX}Open on Gamepadla.com (min 200 req.){Fore.RESET}"
-                            else:
-                                open_label = "Open on Gamepadla.com"
-                            export_label = f"{Fore.LIGHTBLACK_EX}Export to CSV (already used){Fore.RESET}" if exported_to_csv else "Export to CSV"
-                            print(f"\nSelect action:\n1: {open_label}\n2: {export_label}\n3: Restart test\n4: Exit")
-                            clear_console_key_buffer()
-                            while True:
-                                try:
-                                    choice_val = get_input_with_countdown("Enter your choice (1-4): ", show_cooling=False).strip()
-                                    if not choice_val:
-                                        print("Please enter 1, 2, 3, or 4.")
-                                        continue
-                                    choice = int(choice_val)
-                                    if choice not in [1, 2, 3, 4]:
-                                        print("Invalid selection! Please enter 1, 2, 3, or 4.")
-                                        continue
-                                    break
-                                except ValueError:
-                                    print_error("Invalid input! Please enter 1, 2, 3, or 4.")
+        # Setup serial connection
+        # --- MODIFICATION START ---
+        all_ports = list_ports.comports()
+        # Filter out ports that have "Bluetooth" in their description (case-insensitive)
+        ports = [p for p in all_ports if "bluetooth" not in p.description.lower()]
 
-                            if choice == 1:
-                                if stats['valid_samples'] < 200:
-                                    print_error(f"Test results cannot be uploaded to Gamepadla.com because they contain fewer than 200 measurements (current: {stats['valid_samples']}).")
-                                    print("Please run a test with at least 200 iterations to share your results.")
-                                    continue
-                                if uploaded_to_gamepadla:
-                                    print(f"{Fore.YELLOW}Warning: This result has already been opened on Gamepadla.com. Restart the test to send a new result.{Fore.RESET}")
-                                    continue
-                                while True:
-                                    test_key = generate_short_id()
-                                    gamepad_name = get_input_with_countdown("Enter gamepad name (max 60 chars): ", show_cooling=False, max_len=60).strip()
-                                    
-                                    if not gamepad_name:
-                                        print_error("Gamepad name cannot be empty!")
-                                        continue
-                                        
-                                    while True:
-                                        conn_choice = get_input_with_countdown("Current connection (1. Cable, 2. Dongle, 3. Bluetooth): ", show_cooling=False).strip()
-                                        if conn_choice in ("1", "2", "3"):
-                                            break
-                                        print_error("Invalid choice. Please enter 1, 2, or 3.")
-                                        
-                                    connection = {"1": "Cable", "2": "Dongle", "3": "Bluetooth"}[conn_choice]
-                                    data = {
-                                        'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
-                                        'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
-                                        'driver': joystick.get_name() if joystick else "N/A", 'connection': connection,
-                                        'mode': server_protocol_name(detected_mode),
-                                        'name': gamepad_name, 'os_name': platform.system(), 'os_version': platform.uname().version,
-                                        'min_latency': round(stats['min'], 2), 'max_latency': round(stats['max'], 2),
-                                        'avg_latency': round(stats['avg'], 2), 'jitter': stats['jitter'],
-                                        'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB', # mathod name is not a mistake!
-                                        'delay_list': ', '.join(str(round(x, 2)) for x in tester.latency_results),
-                                        'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
-                                        'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration']
-                                    }
-                                    try:
-                                        response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
-                                        if response.status_code == 200:
-                                            print("Test results successfully sent to the server.")
-                                            webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
-                                            uploaded_to_gamepadla = True
-                                            break
-                                        print(f"\nServer error. Status code: {response.status_code}")
-                                    except requests.exceptions.RequestException:
-                                        print("\nNo internet connection or server is unreachable")
-                                    if get_input_with_countdown("\nDo you want to try sending the data again? (Y/N): ", show_cooling=False).upper() != 'Y':
+        if not ports:
+            print_error("No suitable COM ports found. Perhaps you have not connected Prometheus 82 to your computer.")
+            pygame.quit()
+            sys.exit()
+    
+        port = None
+        if len(ports) == 1:
+            port = ports[0]
+        else:
+            menu_ports = "Available COM ports:\n" + "\n".join([f"{i + 1}: {p.device} - {p.description}" for i, p in enumerate(ports)])
+            while True:
+                try:
+                    selection_input = get_input_with_countdown(f"Select COM port (1-{len(ports)}): ", menu_ports).strip()
+                    if not selection_input: continue
+                    selection = int(selection_input) - 1
+                    if 0 <= selection < len(ports):
+                        port = ports[selection]
+                        break
+                    else:
+                        print_error(f"Please select a number between 1 and {len(ports)}.")
+                except ValueError:
+                    print_error("Invalid input! Please enter a number.")
+        # --- MODIFICATION END ---
+
+        try:
+            with serial.Serial(port.device, 115200, timeout=1) as ser:
+                ser.reset_input_buffer()
+                ser.reset_output_buffer()
+            
+                start_time = time.time()
+                ready = False
+                fw_version = None
+                while time.time() - start_time < 5:
+                    if ser.in_waiting:
+                        b = ser.read()
+                        if b == b'R':
+                            ready = True
+                        elif b == b'V':
+                            buf = b""
+                            t0 = time.time()
+                            while time.time() - t0 < 1.0:
+                                if ser.in_waiting:
+                                    c = ser.read()
+                                    if c in (b'\n', b'\r'):
                                         break
-                            elif choice == 2:
-                                if exported_to_csv:
-                                    print(f"{Fore.YELLOW}Warning: This result has already been exported to CSV. Restart the test to export a new result.{Fore.RESET}")
+                                    buf += c
+                                else:
+                                    time.sleep(0.001)
+                            try:
+                                fw_version = buf.decode("ascii").strip()
+                            except Exception:
+                                fw_version = None
+                            break
+                    else:
+                        time.sleep(0.001)
+                if not ready:
+                    print_error("Prometheus did not send ready signal ('R'). Check connection or Prometheus code.")
+                    pygame.quit()
+                    sys.exit()
+                if not fw_version:
+                    print_error("Arduino firmware version not reported. Please update Arduino.\nhttps://github.com/cakama3a/Prometheus82/blob/main/README.md#how-to-update-the-firmware-of-a-p82-device")
+                    pygame.quit()
+                    sys.exit()
+                def _ver_tuple(s):
+                    try:
+                        return tuple(int(x) for x in s.split("."))
+                    except Exception:
+                        return (0,)
+                if _ver_tuple(fw_version) < _ver_tuple(REQUIRED_ARDUINO_VERSION):
+                    print_error(f"Arduino firmware v{fw_version} is outdated. Please update to at least v{REQUIRED_ARDUINO_VERSION}.\nhttps://github.com/cakama3a/Prometheus82?tab=readme-ov-file#how-to-use-prometheus-82")
+                    pygame.quit()
+                    sys.exit()
+                print(f"\nPrometheus 82 connected on {port.device} ({port.description}), Arduino FW v{fw_version}")
+
+                # Test Arduino latency and update CONTACT_DELAY
+                avg_latency = test_arduino_latency(ser)
+                if avg_latency is None:
+                    print_error(f"Calibrating Arduino latency failed. Using default CONTACT_DELAY ({CONTACT_DELAY} ms).")
+                
+                else:
+                    CONTACT_DELAY = avg_latency
+                    print(f"\nSet CONTACT_DELAY to {CONTACT_DELAY:.3f} ms")
+
+                tester = LatencyTester(joystick, ser, test_type, CONTACT_DELAY, TEST_ITERATIONS, detected_mode)
+                try:
+                    if test_type == TEST_TYPE_HARDWARE:
+                        test_passed, timing_warning = tester.test_hardware()
+                    
+                        # Hardware test completed
+                    
+                        if test_passed:
+                            if timing_warning:
+                                print(f"\n{Fore.YELLOW}Hardware functional but with timing warnings. See above for details.{Fore.RESET}")
+                                print(f"{Fore.YELLOW}Ready for stick or button testing, but results may be affected.{Fore.RESET}")
+                            else:
+                                print(f"{Fore.GREEN}Hardware is fully functional. Ready for stick or button testing.{Fore.RESET}")
+                        else:
+                            print(f"{Fore.RED}Hardware issues detected. Please check connections and try again.{Fore.RESET}")
+                    else:
+                        if test_type == TEST_TYPE_STICK:
+                            print(f"\n{Fore.YELLOW}Stick test setup:{Fore.RESET}")
+                            print("Use a reverse sensor for stick latency testing.")
+                            print("Set the solenoid tip about 1-2 mm from the stick in the neutral position.")
+                            print("Avoid a large gap: extra acceleration before contact can cause stick bounce and high jitter.")
+                            print("The sensor button should trigger near the end of stick travel.")
+                            print(f"Guide: {Fore.LIGHTRED_EX}https://youtu.be/MLsXo8Si730{Fore.RESET}")
+                        elif test_type == TEST_TYPE_KEYBOARD:
+                            print("\nKeyboard key will be selected when the test window opens. Press your key at the prompt.")
+                    
+                        tester.test_loop()
+                    
+                        # Test completed
+                        if getattr(tester, "test_aborted", False):
+                            pygame.quit()
+                            sys.exit()
+                    
+                        stats = tester.get_statistics()
+                        if stats:
+                            print(f"\n{Fore.GREEN}Test completed!{Fore.RESET}")
+                            print(f"\n{Style.BRIGHT}{Fore.CYAN}" + "="*15 + f"LATENCY" + "="*15 + f"{Fore.RESET}{Style.RESET_ALL}")
+                            print(f"{'Min latency:':<26}{stats['min']:>8.2f} ms")
+                            print(f"{'Max latency:':<26}{stats['max']:>8.2f} ms")
+                            print(f"{Style.BRIGHT}{Fore.CYAN}" + f"{'Average latency:':<26}{stats['avg']:>8.2f} ms{Fore.RESET}" + f"{Style.RESET_ALL}")
+                            print(f"{'Jitter:':<26}{stats['jitter']:>8.2f} ms")
+                            print(f"{Style.BRIGHT}{Fore.CYAN}" + "="*37 + f"{Fore.RESET}{Style.RESET_ALL}")
+                            print(f"{Fore.LIGHTBLACK_EX}* Statistics are calculated using {int(LOWER_QUANTILE*100)}%-{int(UPPER_QUANTILE*100)}% quantile filtering.{Fore.RESET}")
+                            print(f"\n{Style.BRIGHT}Measurement Details{Style.RESET_ALL}")
+                            print(f"{'Iterations:':<26}{tester.iterations:>8}")
+                            print(f"{'Total measurements:':<26}{stats['total_samples']:>8}")
+                            print(f"{'Valid measurements:':<26}{stats['valid_samples']:>8}")
+                            print(f"{'Invalid measurements:':<26}{stats['invalid_samples']:>8} (>{stats['pulse_duration']*(RATIO-1):.1f} ms)")
+                            print(f"{'Filtered count:':<26}{stats['filtered_samples']:>8}")
+                            print(f"{'Pulse duration:':<26}{stats['pulse_duration']:>8.1f} ms")
+                            print(f"{'Contact delay:':<26}{stats['contact_delay']:>8.3f} ms")
+        
+                            if stats['contact_delay'] > 1.2:
+                                print(f"\n{Fore.RED}Warning: Tester's inherent latency ({stats['contact_delay']:.3f} ms) exceeds recommended 1.2 ms, which may affect results.{Fore.RESET}")
+
+                            uploaded_to_gamepadla = False
+                            exported_to_csv = False
+                            # Action selection with retry on invalid input
+                            while True:
+                                if uploaded_to_gamepadla:
+                                    open_label = f"{Fore.LIGHTBLACK_EX}Open on Gamepadla.com (already used){Fore.RESET}"
+                                elif stats['valid_samples'] < 200:
+                                    open_label = f"{Fore.LIGHTBLACK_EX}Open on Gamepadla.com (min 200 req.){Fore.RESET}"
+                                else:
+                                    open_label = "Open on Gamepadla.com"
+                                export_label = f"{Fore.LIGHTBLACK_EX}Export to CSV (already used){Fore.RESET}" if exported_to_csv else "Export to CSV"
+                                print(f"\nSelect action:\n1: {open_label}\n2: {export_label}\n3: Restart test\n4: Exit")
+                                clear_console_key_buffer()
+                                while True:
+                                    try:
+                                        choice_val = get_input_with_countdown("Enter your choice (1-4): ", show_cooling=False).strip()
+                                        if not choice_val:
+                                            print("Please enter 1, 2, 3, or 4.")
+                                            continue
+                                        choice = int(choice_val)
+                                        if choice not in [1, 2, 3, 4]:
+                                            print("Invalid selection! Please enter 1, 2, 3, or 4.")
+                                            continue
+                                        break
+                                    except ValueError:
+                                        print_error("Invalid input! Please enter 1, 2, 3, or 4.")
+
+                                if choice == 1:
+                                    if stats['valid_samples'] < 200:
+                                        print_error(f"Test results cannot be uploaded to Gamepadla.com because they contain fewer than 200 measurements (current: {stats['valid_samples']}).")
+                                        print("Please run a test with at least 200 iterations to share your results.")
+                                        continue
+                                    if uploaded_to_gamepadla:
+                                        print(f"{Fore.YELLOW}Warning: This result has already been opened on Gamepadla.com. Restart the test to send a new result.{Fore.RESET}")
+                                        continue
+                                    while True:
+                                        test_key = generate_short_id()
+                                        gamepad_name = get_input_with_countdown("Enter gamepad name (max 60 chars): ", show_cooling=False, max_len=60).strip()
+                                    
+                                        if not gamepad_name:
+                                            print_error("Gamepad name cannot be empty!")
+                                            continue
+                                        
+                                        while True:
+                                            conn_choice = get_input_with_countdown("Current connection (1. Cable, 2. Dongle, 3. Bluetooth): ", show_cooling=False).strip()
+                                            if conn_choice in ("1", "2", "3"):
+                                                break
+                                            print_error("Invalid choice. Please enter 1, 2, or 3.")
+                                        
+                                        connection = {"1": "Cable", "2": "Dongle", "3": "Bluetooth"}[conn_choice]
+                                        data = {
+                                            'test_key': test_key, 'version': VERSION, 'url': 'https://gamepadla.com',
+                                            'date': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
+                                            'driver': joystick.get_name() if joystick else "N/A", 'connection': connection,
+                                            'mode': server_protocol_name(detected_mode),
+                                            'name': gamepad_name, 'os_name': platform.system(), 'os_version': platform.uname().version,
+                                            'min_latency': round(stats['min'], 2), 'max_latency': round(stats['max'], 2),
+                                            'avg_latency': round(stats['avg'], 2), 'jitter': stats['jitter'],
+                                            'mathod': 'PNCS' if test_type == TEST_TYPE_STICK else 'PNCB', # mathod name is not a mistake!
+                                            'delay_list': ', '.join(str(round(x, 2)) for x in tester.latency_results),
+                                            'stick_threshold': STICK_THRESHOLD if test_type == TEST_TYPE_STICK else None,
+                                            'contact_delay': stats['contact_delay'], 'pulse_duration': stats['pulse_duration']
+                                        }
+                                        try:
+                                            response = requests.post('https://gamepadla.com/scripts/poster.php', data=data)
+                                            if response.status_code == 200:
+                                                print("Test results successfully sent to the server.")
+                                                webbrowser.open(f'https://gamepadla.com/result/{test_key}/')
+                                                uploaded_to_gamepadla = True
+                                                break
+                                            print(f"\nServer error. Status code: {response.status_code}")
+                                        except requests.exceptions.RequestException:
+                                            print("\nNo internet connection or server is unreachable")
+                                        if get_input_with_countdown("\nDo you want to try sending the data again? (Y/N): ", show_cooling=False).upper() != 'Y':
+                                            break
+                                elif choice == 2:
+                                    if exported_to_csv:
+                                        print(f"{Fore.YELLOW}Warning: This result has already been exported to CSV. Restart the test to export a new result.{Fore.RESET}")
+                                        continue
+                                    export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
+                                    exported_to_csv = True
                                     continue
-                                export_to_csv(stats, joystick.get_name() if joystick else "N/A", tester.latency_results)
-                                exported_to_csv = True
-                                continue
-                            elif choice == 3:
-                                print("\nRestarting with a fresh test session...")
-                                restart_current_program()
-                            elif choice == 4:
-                                wait_on_exit = False
-                                break
+                                elif choice == 3:
+                                    print("\nRestarting with a fresh test session...")
+                                    restart_current_program()
+                                elif choice == 4:
+                                    wait_on_exit = False
+                                    break
                             
-                            continue
-            except KeyboardInterrupt:
-                print("\nTest interrupted by user.")
-    except serial.SerialException as e:
-        print_error(f"Opening port failed: {e}")
+                                continue
+                except KeyboardInterrupt:
+                    print("\nTest interrupted by user.")
+        except serial.SerialException as e:
+            print_error(f"Opening port failed: {e}")
+        except Exception as e:
+            print_error(f"Unexpected error: {e}")
+            traceback.print_exc()
+    except SystemExit:
+        pass
+    except KeyboardInterrupt:
+        print("\nInterrupted by user.")
     except Exception as e:
-        print_error(f"While setting up COM port: {e}")
+        print_error(f"Unhandled error: {e}")
+        traceback.print_exc()
+        wait_on_exit = True
     finally:
         try:
             if isinstance(joystick, SteamControllerDirect):
                 joystick.close()
         except Exception:
             pass
-        stop_async_logger()
-        pygame.quit()
+        try:
+            stop_async_logger()
+        except Exception:
+            pass
+        try:
+            pygame.quit()
+        except Exception:
+            pass
         if wait_on_exit:
-            get_input_with_countdown("Press Enter to exit...", show_cooling=False)
+            pause_before_exit("Press any key to exit...")
