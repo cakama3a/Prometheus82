@@ -252,6 +252,7 @@ Each license is verified and has a specific validity period.
 | **Retro Fighters**                             | `Commercial` | ✅ Active   | `July 31, 2027`  |
 | **GuliKit**                                    | `Commercial` | ✅ Active   | `August 31, 2027` |
 | `f3b4d2e1-a0c9-4b8a-9d7e-6f5a4b3c2d1e`         | `Commercial` | ✅ Active   | `May 11, 2031`   |
+| `11dad14f-d784-45a4-8743-52adb15fd6e1`         | `Commercial` | ✅ Active   | `Perpetual`      |
 
 ---
 ### How to Get Your License
